@@ -1,0 +1,30 @@
+{
+  "name": "firebase-orm",
+  "version": "1.0.0",
+  "description": "Firestore Orm",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:full": "rimraf dist && npm run build",
+    "test": "echo \"Running Tests\""
+  },
+  "dependencies": {
+    "firebase": "^5.9.2",
+    "firesql": "^1.0.2",
+    "rxfire": "^3.3.10",
+    "rxjs": "^6.4.0",
+    "tslint": "^5.15.0",
+    "typescript": "^3.4.3"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/yariv.luts/firestore-orm.git"
+  },
+  "author": "Yariv Luts",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/yariv.luts/firestore-orm/issues"
+  },
+  "homepage": "https://gitlab.com/yariv.luts/firestore-orm#readme"
+}

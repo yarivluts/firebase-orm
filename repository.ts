@@ -1,4 +1,4 @@
-import firebase from "firebase";
+import * as firebase from "firebase";
 import { ModelAbstract } from "./abstract";
 import { ModelInterface } from "./interfaces/model.interface";
 import { FireSQL } from "firesql";
