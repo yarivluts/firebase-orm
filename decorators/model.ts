@@ -59,7 +59,11 @@ export function Model(options: ModelOptions) {
       }
 
       getReference(): firebase.firestore.CollectionReference {
-        return this.getRepository().getReferenceByModel(this);
+        return this.getRepository().getCollectionReferenceByModel(this);
+      }
+      
+      getDocReference(): firebase.firestore.DocumentReference {
+        return this.getReference().doc(this.getId());
       }
 
       setModelType(model:any):this {
@@ -85,7 +89,7 @@ export function Model(options: ModelOptions) {
       async getOne() {
         if (!this.currentQuery) {
           var that : any = this;
-          this.currentQuery = this.getRepository().getReferenceByModel(that);
+          this.currentQuery = this.getRepository().getCollectionReferenceByModel(that);
         }
         return await this.currentQuery.get();
       }
@@ -106,6 +110,16 @@ export function Model(options: ModelOptions) {
           console.error("No repository!");
         }
         return null;
+      }
+      
+      async remove(): Promise<boolean> {
+        try {
+           await this.getDocReference().delete();
+           return true;
+        } catch (error) {
+          console.error(error);
+          return false;
+        }
       }
 
 

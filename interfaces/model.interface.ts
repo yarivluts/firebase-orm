@@ -47,6 +47,11 @@ export interface ModelInterface {
   ): Promise<ModelInterface | null>;
 
   /**
+   * Remove the current doc
+   */
+  remove() : Promise<boolean>;
+
+  /**
    * Creates and returns a new Query with the additional filter that documents
    * must contain the specified field and the value should satisfy the
    * relation constraint provided.
@@ -103,12 +108,14 @@ export interface ModelInterface {
   /**
    * Run sql query on model collection in real time updates
    * @param sql 
+   * @param callback 
    * @param asObject 
+   * @param isInsideQuery 
    */
   onSql(sql: string,
     callback: CallableFunction,
-    asObject: boolean,
-    isInsideQuery:boolean): void;
+    asObject?: boolean,
+    isInsideQuery?:boolean): void;
 
   /**
    * Create model from firestore doc object
@@ -141,6 +148,12 @@ export interface ModelInterface {
    * @return reference path - CollectionReference
    */
   getReference(): firebase.firestore.CollectionReference;
+
+  /**
+   * Get model document reference
+   * @return reference path - CollectionReference
+   */
+  getDocReference(): firebase.firestore.DocumentReference
 
   /**
    * Get path list params

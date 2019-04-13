@@ -12,10 +12,9 @@ export class FirestoreOrmRepository{
 
     }
 
-    getReferenceByModel(object : ModelInterface){
+    getCollectionReferenceByModel(object : ModelInterface){
         var current:any = this.firestore;
         var pathList:any = object.getPathList();
-        console.log('pathList ************* ',pathList);
         if(!pathList || pathList.length < 1){
             return false;
         }
@@ -29,7 +28,7 @@ export class FirestoreOrmRepository{
         }
         return current;
     }
-
+    
     getModel<T>(model:{new(): T; }) : T & ModelInterface {
         var m : any | T = model;
         var object:any = new m(); 
@@ -77,7 +76,7 @@ export class FirestoreOrmRepository{
                 let value = params[key];
                 object[key] = value;
             }
-        var ref = this.getReferenceByModel(object);
+        var ref = this.getCollectionReferenceByModel(object);
         if(!ref){
             console.error("Can't load the model, please set all values");
             return null;
@@ -109,7 +108,7 @@ export class FirestoreOrmRepository{
      */
     async save(model : any ){
         var object : ModelInterface = model;
-       var ref = this.getReferenceByModel(object);
+       var ref = this.getCollectionReferenceByModel(object);
        if(!ref){
            console.error("Can't save the model, please set all values");
            return false;
