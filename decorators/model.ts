@@ -1,20 +1,12 @@
 import { ModelInterface } from "../interfaces/model.interface"; 
+import { ModelOptions } from "../interfaces/model.options.interface"; 
 import { FirestoreOrmRepository } from "../repository";
 import * as firebase from "firebase";
 import { FireSQL } from "firesql";
 import { Query } from "../query";
 import "firesql/rx";
 
-interface ModelOptions {
-  /**
-   * Reference path - for example accounts/:account_id/websites
-   */
-  reference_path: string;
-  /**
-   * Path Id - unique code for model id inside the refernce path - for example account_id
-   */
-  path_id : string
-}
+
 
 export function Model(options: ModelOptions) {
   return function<T extends { new (...args: any[]): {} }>(constructor: T) {

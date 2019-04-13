@@ -1,13 +1,4 @@
-interface FieldOptions {
-  /**
-   * Field name alias
-   */
-  field_name?: string;
-  /**
-   * If the field is required
-   */
-  is_required?: boolean;
-}
+import { FieldOptions } from "../interfaces/field.options.interface"; 
 
 export function Field(options?: FieldOptions): any {
   return (target: any, key: string) => {
