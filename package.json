@@ -1,15 +1,15 @@
 {
-  "name": "firebase-orm",
+  "name": "@arbel/firebase-orm",
   "version": "1.0.0",
   "description": "Firestore Orm",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "build:full": "rimraf dist && npm run build",
+    "build:full": "rm -rf dist && npm run build",
     "test": "echo \"Running Tests\""
   },
   "dependencies": {
-    "firebase": "^5.9.2",
+    "firebase": "^5.9.4",
     "firesql": "^1.0.2",
     "rxfire": "^3.3.10",
     "rxjs": "^6.4.0",

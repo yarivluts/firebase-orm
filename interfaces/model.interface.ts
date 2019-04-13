@@ -84,7 +84,7 @@ export interface ModelInterface {
    * Get relation one
    * @param model 
    */
-  getOneRel<T>(model: { new (): T }): Promise<T & ModelInterface>;
+  getOneRel<T>(model: { new (): T }): Promise<T & ModelInterface> ;
 
   /**
    * Get relation many
@@ -105,21 +105,24 @@ export interface ModelInterface {
    * @param sql 
    * @param asObject 
    */
-  onSql(sql: string, asObject?: boolean): void;
+  onSql(sql: string,
+    callback: CallableFunction,
+    asObject: boolean,
+    isInsideQuery:boolean): void;
 
   /**
    * Create model from firestore doc object
    * @param doc 
    * @return Current model
    */
-  createFromDoc(doc: firebase.firestore.DocumentReference): this;
+  createFromDoc(doc: firebase.firestore.DocumentSnapshot): this;
 
   /**
    * Init the current model by firestore object
    * @param doc 
    * @return Current model
    */
-  initFromDoc(doc: firebase.firestore.DocumentReference): this;
+  initFromDoc(doc: firebase.firestore.DocumentSnapshot): this;
 
   /**
    * Get document data from the current model

@@ -22,10 +22,11 @@ export function Field(options?: FieldOptions): any {
 
     return {
       set: function(value: any) {
+        var that : any = this;
         let field_name =
           options && options.field_name ? options.field_name : key;
         val = value;
-        this.documentData[field_name] = value;
+        that.documentData[field_name] = value;
       },
       get: function() {
         return val;

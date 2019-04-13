@@ -1,4 +1,4 @@
-import { ModelInterface } from "../interfaces/model.interface";
+import { ModelInterface } from "../interfaces/model.interface"; 
 import { FirestoreOrmRepository } from "../repository";
 import * as firebase from "firebase";
 import { FireSQL } from "firesql";
@@ -19,14 +19,14 @@ interface ModelOptions {
 export function Model(options: ModelOptions) {
   return function<T extends { new (...args: any[]): {} }>(constructor: T) {
     return class extends constructor implements ModelInterface {
-      protected id!: string;
-      protected referencePath: string = options.reference_path;
-      protected pathId: string = options.path_id;
-      protected documentData: any = {};
+       id!: string;
+       referencePath: string = options.reference_path;
+       pathId: string = options.path_id;
+       documentData: any = {};
       static requiredFields: Array<string> = [];
-      protected repository!: FirestoreOrmRepository;
-      protected currentQuery!: any;
-      protected modelType!: any;
+       repository!: FirestoreOrmRepository;
+       currentQuery!: any;
+       modelType!: any;
 
       getId() {
         return this.id;
@@ -36,26 +36,18 @@ export function Model(options: ModelOptions) {
         return this.pathId;
       }
 
-      async getOneRel<T>(model: { new (): T }): Promise<T & ModelInterface> {
-        var object = this.getModel(model);
-        if(this[object.getPathId()]){
-          return await object.load(this[object.getPathId()]);
-        }else{
-          return null;
-        }
+      async getOneRel<T>(model: { new (): T }): Promise<T & ModelInterface>   {
+        var object : any = this.getModel(model);
+        return await object.load(this[object.getPathId()]);
       }
       
       async getManyRel<T>(model: { new (): T }): Promise<Array<T & ModelInterface>> {
-        var object = this.getModel(model);
-        if(this[object.getPathId()]){
-          return await object.where(object.getPathId(),'==',this[object.getPathId()]).get();
-        }else{
-          return null;
-        }
+        var object : any = this.getModel(model);
+        return await object.where(object.getPathId(),'==',this[object.getPathId()]).get();
       }
 
       getModel<T>(model: { new (): T }): T & ModelInterface {
-        var object = this.getRepository().getModel(this.getModelType());
+        var object:any = this.getRepository().getModel(this.getModelType());
         var keys = object.getPathListKeys();
         for(var i = 0; i < keys.length;i++){
           var key = keys[i];
@@ -70,8 +62,9 @@ export function Model(options: ModelOptions) {
         return this.getRepository().getReferenceByModel(this);
       }
 
-      setModelType(model) {
+      setModelType(model:any):this {
         this.modelType = model;
+        return this;
       }
 
       getModelType() {
@@ -91,7 +84,8 @@ export function Model(options: ModelOptions) {
 
       async getOne() {
         if (!this.currentQuery) {
-          this.currentQuery = this.getRepository().getReferenceByModel(this);
+          var that : any = this;
+          this.currentQuery = this.getRepository().getReferenceByModel(that);
         }
         return await this.currentQuery.get();
       }
@@ -114,12 +108,10 @@ export function Model(options: ModelOptions) {
         return null;
       }
 
-      query(): firebase.firestore.Query {
-        return new firebase.firestore.Query();
-      }
 
       getQuery(): Query {
-        return new Query(this);
+        var that : any = this;
+        return new Query(that);
       }
 
       getAll(
@@ -134,7 +126,7 @@ export function Model(options: ModelOptions) {
         },
         limit?: number,
         params?: { [key: string]: string }
-      ): Array<ModelInterface> {
+      ): Array<this> {
         return [this];
       }
 
@@ -180,15 +172,15 @@ export function Model(options: ModelOptions) {
 
       async sql(
         sql: string,
-        asObject?: boolean = false,
+        asObject: boolean = false,
         isInsideQuery = false
       ): Promise<Array<this>> {
-        var result = [];
+        var result:any = [];
         if (isInsideQuery && !this.getId()) {
           console.log("Can't search inside a model without id!");
           return result;
         }
-        var ref = !isInsideQuery
+        var ref:any = !isInsideQuery
           ? this.getReference().parent
           : this.getReference().doc(this.getId());
         const fireSQL = new FireSQL(ref, { includeId: "id" });
@@ -212,20 +204,20 @@ export function Model(options: ModelOptions) {
        onSql(
         sql: string,
         callback: CallableFunction,
-        asObject?: boolean = false,
-        isInsideQuery = false
+        asObject: boolean = false,
+        isInsideQuery: boolean = false
       ): void {
-        var result = [];
+        var result:any = [];
         if (isInsideQuery && !this.getId()) {
           console.log("Can't search inside a model without id!");
         } else {
-          var ref = !isInsideQuery
+          var ref:any = !isInsideQuery
             ? this.getReference().parent
             : this.getReference().doc(this.getId());
           const fireSQL = new FireSQL(ref, { includeId: "id" });
           try {
             const res = fireSQL.rxQuery(sql);
-            res.subscribe(sqlResult => {
+            res.subscribe((sqlResult:any) => {
               for (var i = 0; i < sqlResult.length; i++) {
                 let data = sqlResult[i];
                 if (asObject) {
@@ -242,8 +234,8 @@ export function Model(options: ModelOptions) {
         }
       }
 
-      createFromDoc(doc: firebase.firestore.DocumentReference): this {
-        var object = this.getModel(this.getModelType());
+      createFromDoc(doc: firebase.firestore.DocumentSnapshot): this {
+        var object:this = this.getModel(this.getModelType());
         var data = doc.data();
         var pathParams = this.getPathListParams();
 
@@ -260,7 +252,7 @@ export function Model(options: ModelOptions) {
       }
 
       createFromData(data: Object): this {
-        var object = this.getModel(this.getModelType());
+        var object:this = this.getModel(this.getModelType());
         var pathParams = this.getPathListParams();
 
         for (let key in pathParams) {
@@ -275,7 +267,7 @@ export function Model(options: ModelOptions) {
         return object;
       }
 
-      initFromDoc(doc: firebase.firestore.DocumentReference) {
+      initFromDoc(doc: firebase.firestore.DocumentSnapshot) {
         var data = doc.data();
         for (let key in data) {
           let value = data[key];
@@ -299,10 +291,7 @@ export function Model(options: ModelOptions) {
        */
       onList(callback: CallableFunction) {
         var that = this;
-        this.getQuery().onSnapshot(function(querySnapshot) {
-          var result = that.getQuery().parse(querySnapshot);
-          callback(result);
-        });
+        this.getQuery().on(callback);
       }
 
       async save(): Promise<this> {
@@ -322,7 +311,7 @@ export function Model(options: ModelOptions) {
       }
 
       getRequiredFields(): Array<string> {
-        return this.requiredFields;
+        return this.getModelType().requiredFields;
       }
       
       verifyRequiredFields(): boolean {
@@ -369,9 +358,9 @@ export function Model(options: ModelOptions) {
         return result;
       }
 
-      getPathListParams(): Array<{ type: string; value: string }> | boolean {
+      getPathListParams(): any {
         var that: any = this;
-        var result = {};
+        var result:any= {};
         var keys = this.getPathListKeys();
         for(var i = 0; i < keys.length;i++){
           var subPath = keys[i];

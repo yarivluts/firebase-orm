@@ -1,15 +1,19 @@
 {
   "compilerOptions": {
+    "target": "es5",
     "module": "commonjs",
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "target": "es6",
+    "lib": ["dom", "dom.iterable", "esnext","es2015"],
+    "skipLibCheck": true,
+    "declaration" : true,
+    "strict": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./" 
+    "baseUrl": "./",
+    "experimentalDecorators": true,
+    "suppressImplicitAnyIndexErrors" : true,
+    "emitDecoratorMetadata": true,
+    "noStrictGenericChecks" : true
   },
+  "include": ["index.ts"],
   "exclude": ["node_modules"]
 }
-        
