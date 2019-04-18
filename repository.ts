@@ -28,12 +28,19 @@ export class FirestoreOrmRepository{
         }
         return current;
     }
+
+    getFirestore() : firebase.firestore.Firestore{
+        return this.firestore;
+    }
     
     getModel<T>(model:{new(): T; }) : T & ModelInterface {
         var m : any | T = model;
         var object:any = new m(); 
         object.setRepository(this);
         object.setModelType(model);
+        object.currentModel = object;
+        //object.initFields();
+
         return <T & ModelInterface>object;
     }
     
@@ -42,7 +49,7 @@ export class FirestoreOrmRepository{
         try {
            return await fireSQL.query(sql,{ includeId: 'id'});
         } catch (error) {
-            console.log('SQL GENERAL ERROR - ',error);
+            console.error('SQL GENERAL ERROR - ',error);
             return [];
         }
     }
@@ -60,7 +67,7 @@ export class FirestoreOrmRepository{
             callback(results);
            })
         } catch (error) {
-            console.log('SQL GENERAL ERROR - ',error);
+            console.error('SQL GENERAL ERROR - ',error);
         }
     }
      
@@ -71,28 +78,33 @@ export class FirestoreOrmRepository{
      * @param params - path params
      * @return model object
      */
-    async load(object : any,id : string,params :{ [key:string]:string;} = {} ) : Promise<ModelInterface | null>{
+    async load(object : any,id : string,params :{ [key:string]:string;} = {} ) : Promise<ModelInterface>{
             for(let key in params){
                 let value = params[key];
                 object[key] = value;
             }
         var ref = this.getCollectionReferenceByModel(object);
         if(!ref){
-            console.error("Can't load the model, please set all values");
-            return null;
+            console.error("Can't load the model " + object.getReferencePath() + " , please set all values");
+            return object;
         } else{
             if(!id){
-                console.error("Can't load the model, please set id");
+                console.error("Can't load the model " + object.getReferencePath() + " , please set id");
             }else{
                 var doc = await ref.doc(id).get();
                 if(!doc.exists){
-                    console.log(doc.exists,doc.data());
-                    return null;
+                    object.is_exist = false;
+                    return object;
                 }else{
-                    console.log(doc.exists,doc.data());
+                    object.is_exist = true;
                     for(let key in  doc.data()){
                         let value =  doc.data()[key];
-                        object[key] = value;
+                        if(object.aliasFieldsMapper[key]){
+                            object[object.aliasFieldsMapper[key]] = value;
+                        }else{
+                            object[key] = value;
+                        }
+                        
                     }
                     return object;
                 }
@@ -110,7 +122,7 @@ export class FirestoreOrmRepository{
         var object : ModelInterface = model;
        var ref = this.getCollectionReferenceByModel(object);
        if(!ref){
-           console.error("Can't save the model, please set all values");
+           console.error("Can't save the model " + object.getReferencePath() + " , please set all values");
            return false;
        } 
        if(object.getId()){

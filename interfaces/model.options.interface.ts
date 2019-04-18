@@ -7,4 +7,8 @@ export interface ModelOptions {
      * Path Id - unique code for model id inside the refernce path - for example account_id
      */
     path_id : string
+    /**
+     * 
+     */
+    auto_time? : boolean
   }

@@ -1,12 +1,15 @@
 import * as firebase from "firebase";
 import { FirestoreOrmRepository } from "../repository";
-import { Query } from "../query";
+import { Query,LIST_EVENTS } from "../query";
+import {Moment} from 'moment';
+import { ModelAllListOptions } from "./model.alllist.options.interface";
 
 /**
  * Firestore Orm
  * Model interface 
  */
 export interface ModelInterface {
+  
   /**
    * Get Id
    * @return string
@@ -24,12 +27,38 @@ export interface ModelInterface {
    * @param model - Model class
    */
   setModelType(model: any): this;
+  
+  /**
+   * Check if object exist inside the db
+   */
+  isExist(): boolean;
 
   /**
    * Verfiy required fields 
    * @return boolean
    */
   verifyRequiredFields() : boolean;
+
+  
+  /**
+   * Get Id
+   * @return string
+   */
+  getCreatedAt(): Moment | null;
+  
+  /**
+   * Get Id
+   * @return string
+   */
+  getUpdatedAt(): Moment | null;
+
+  
+  /**
+   * Get Id
+   * @return string
+   */
+  getId(): string;
+
   /**
    * Get model type
    * @return - Model class type
@@ -44,7 +73,31 @@ export interface ModelInterface {
   load(
     id: string,
     params?: { [key: string]: string }
+  ): Promise<this>;
+  
+  /**
+   * Init new model by id
+   * @param id - string
+   * @param params - path paremeters
+   */
+  init(
+    id: string,
+    params?: { [key: string]: string }
   ): Promise<ModelInterface | null>;
+
+  /**
+   * Set document data directly
+   * @param key 
+   * @param value 
+   */
+  setParam(key : string,value : any) : this;
+  
+  /**
+   * Set document data directly
+   * @param key 
+   * @param value 
+   */
+  getParam(key : string,defaultValue : any) : any;
 
   /**
    * Remove the current doc
@@ -77,13 +130,37 @@ export interface ModelInterface {
    * Object real time changes listener
    * @param callback 
    */
-  on(callback: CallableFunction): void;
+  on(callback: CallableFunction,eventType? : LIST_EVENTS): CallableFunction;
   
   /**
    * List real time listener
    * @param callback 
    */
-  onList(callback: CallableFunction): void;
+  onList(callback: CallableFunction,eventType? : LIST_EVENTS): CallableFunction;
+  
+  /**
+   * List real time listener
+   * @param callback 
+   */
+  onModeList(options : ModelAllListOptions) : CallableFunction;
+
+  /**
+   * List all list real time listener
+   * @param callback 
+   */
+  onAllList(callback: CallableFunction,eventType? : LIST_EVENTS): CallableFunction;
+  
+  /**
+   * List real time listener
+   * @param callback 
+   */
+  onCreatedList(callback: CallableFunction,eventType? : LIST_EVENTS): CallableFunction;
+  
+  /**
+   * List real time listener
+   * @param callback 
+   */
+  onUpdatedList(callback: CallableFunction): CallableFunction;
 
   /**
    * Get relation one
@@ -96,6 +173,23 @@ export interface ModelInterface {
    * @param model 
    */
   getManyRel<T>(model: { new (): T }): Promise<Array<T & ModelInterface>>;
+
+  /**
+   * Get all collection list
+   * @param whereArr example ['name','==','test_name']
+   * @param orderBy example 'name'
+   * @param limit example 3
+   * @param params 
+   */
+   getAll(
+    whereArr?: Array<any>,
+    orderBy?: {
+      fieldPath: string | firebase.firestore.FieldPath;
+      directionStr?: firebase.firestore.OrderByDirection;
+    },
+    limit?: number,
+    params?: { [key: string]: string }
+  ): Promise<Array<this>>;
 
   /**
    * Run sql query on model collection
@@ -173,6 +267,24 @@ export interface ModelInterface {
    * @return fields array 
    */
   getRequiredFields(): Array<string>;
+  
+  /**
+   * Get data in json string
+   * @return string
+   */
+  toString(): string;
+  
+  /**
+   * load from string
+   * @return this
+   */
+  loadFromString(jsonString : string): this;
+  
+  /**
+   * Init object from string
+   * @return new model
+   */
+  initFromString(jsonString : string): this;
 
   /**
    * Get path list

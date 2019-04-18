@@ -1,24 +1,45 @@
-import { ModelInterface } from "../interfaces/model.interface"; 
-import { ModelOptions } from "../interfaces/model.options.interface"; 
+import { ModelInterface } from "../interfaces/model.interface";
+import { ModelOptions } from "../interfaces/model.options.interface";
 import { FirestoreOrmRepository } from "../repository";
 import * as firebase from "firebase";
 import { FireSQL } from "firesql";
-import { Query } from "../query";
+import { Query, LIST_EVENTS } from "../query";
+import { Moment } from "moment";
+import { FieldOptions } from "../interfaces/field.options.interface";
+import { ObserveLoadModelInterface } from "../interfaces/observe.load.model.interface";
+import { ObserveRemoveModelInterface } from "../interfaces/observe.remove.model.interface";
+import { ObserveSaveModelInterface } from "../interfaces/observe.save.model.interface";
+
+import * as moment_ from "moment";
+
+const moment = moment_;
+
 import "firesql/rx";
-
-
+import { ModelAllListOptions } from "../interfaces/model.alllist.options.interface";
 
 export function Model(options: ModelOptions) {
   return function<T extends { new (...args: any[]): {} }>(constructor: T) {
     return class extends constructor implements ModelInterface {
-       id!: string;
-       referencePath: string = options.reference_path;
-       pathId: string = options.path_id;
-       documentData: any = {};
+      readonly CREATED_AT_FLAG: string = "created_at";
+      readonly UPDATED_AT_FLAG: string = "updated_at";
+
+      id!: string;
+      referencePath: string = options.reference_path;
+      isAutoTime: boolean =
+        typeof options.auto_time === "undefined" ? true : options.auto_time;
+      created_at!: number;
+      updated_at!: number;
+      is_exist: boolean = false;
+      pathId: string = options.path_id;
+      currentModel: this & ModelInterface;
+      documentData: any = {};
+      static aliasFieldsMapper: any = {};
+      static fields: any = {};
       static requiredFields: Array<string> = [];
-       repository!: FirestoreOrmRepository;
-       currentQuery!: any;
-       modelType!: any;
+      repository!: FirestoreOrmRepository;
+      currentQuery!: any;
+      currentQueryListener!: any;
+      modelType!: any;
 
       getId() {
         return this.id;
@@ -28,37 +49,82 @@ export function Model(options: ModelOptions) {
         return this.pathId;
       }
 
-      async getOneRel<T>(model: { new (): T }): Promise<T & ModelInterface>   {
-        var object : any = this.getModel(model);
-        return await object.load(this[object.getPathId()]);
+      initFields(): void {}
+
+      isExist(): boolean {
+        return this.is_exist;
       }
-      
-      async getManyRel<T>(model: { new (): T }): Promise<Array<T & ModelInterface>> {
-        var object : any = this.getModel(model);
-        return await object.where(object.getPathId(),'==',this[object.getPathId()]).get();
+
+      async getOneRel<T>(model: { new (): T }): Promise<T & ModelInterface> {
+        var object: any = this.getModel(model);
+        var that: any = this;
+        return await object.load(that[object.getPathId()]);
+      }
+
+      async getManyRel<T>(model: {
+        new (): T;
+      }): Promise<Array<T & ModelInterface>> {
+        var object: any = this.getModel(model);
+        var that: any = this;
+        return await object
+          .where(object.getPathId(), "==", that[object.getPathId()])
+          .get();
       }
 
       getModel<T>(model: { new (): T }): T & ModelInterface {
-        var object:any = this.getRepository().getModel(this.getModelType());
+        var object: any = this.getRepository().getModel(model);
         var keys = object.getPathListKeys();
-        for(var i = 0; i < keys.length;i++){
+        var that: any = this;
+        for (var i = 0; i < keys.length; i++) {
           var key = keys[i];
-          if(this[key]){
-            object[key] = this[key];
+          if (that[key]) {
+            object[key] = that[key];
+          } else if (key == that.pathId && that.getId()) {
+            object[key] = that.getId();
           }
         }
         return object;
       }
 
+      toString(): string {
+        var res = Object.assign({}, this.documentData);
+        if (this.getId()) {
+          res.id = this.getId();
+        }
+        return JSON.stringify(res);
+      }
+
+      /**
+       * load from string
+       * @return fields array
+       */
+      loadFromString(jsonString: string): this {
+        var model: any = this;
+        var params = JSON.parse(jsonString);
+        this.createFromData(params, model);
+        return model;
+      }
+
+      /**
+       * Init object from string
+       * @return fields array
+       */
+      initFromString(jsonString: string): this {
+        var model: any = this.getModel(this.getModelType());
+        var params = JSON.parse(jsonString);
+        this.createFromData(params, model);
+        return model;
+      }
+
       getReference(): firebase.firestore.CollectionReference {
         return this.getRepository().getCollectionReferenceByModel(this);
       }
-      
+
       getDocReference(): firebase.firestore.DocumentReference {
         return this.getReference().doc(this.getId());
       }
 
-      setModelType(model:any):this {
+      setModelType(model: any): this {
         this.modelType = model;
         return this;
       }
@@ -66,7 +132,6 @@ export function Model(options: ModelOptions) {
       getModelType() {
         return this.modelType;
       }
-
 
       where(
         fieldPath: string,
@@ -80,8 +145,10 @@ export function Model(options: ModelOptions) {
 
       async getOne() {
         if (!this.currentQuery) {
-          var that : any = this;
-          this.currentQuery = this.getRepository().getCollectionReferenceByModel(that);
+          var that: any = this;
+          this.currentQuery = this.getRepository().getCollectionReferenceByModel(
+            that
+          );
         }
         return await this.currentQuery.get();
       }
@@ -94,46 +161,89 @@ export function Model(options: ModelOptions) {
       async load(
         id: string,
         params: { [key: string]: string } = {}
-      ): Promise<ModelInterface | null> {
+      ): Promise<this> {
+        var that: any = this;
+        if (that.observeLoadBefore) {
+          that.observeLoadBefore();
+        }
+        var res: any = null;
         this.setId(id);
         if (this.getRepository()) {
-          return await this.getRepository().load(this, id, params);
+          res = await this.getRepository().load(this, id, params);
+        } else {
+          console.error("No repository!");
+        }
+        if (res && res.observeLoadAfter) {
+          res.observeLoadAfter();
+        }
+        return this;
+      }
+
+      async init(
+        id: string,
+        params: { [key: string]: string } = {}
+      ): Promise<ModelInterface | null> {
+        var object = this.getModel(this.getModelType());
+        object.setId(id);
+        if (object.getRepository()) {
+          return await this.getRepository().load(object, id, params);
         } else {
           console.error("No repository!");
         }
         return null;
       }
-      
+
       async remove(): Promise<boolean> {
         try {
-           await this.getDocReference().delete();
-           return true;
+          var that: any = this;
+          if (that.observeRemoveBefore) {
+            that.observeRemoveBefore();
+          }
+          await this.getDocReference().delete();
+          if (that.observeRemoveAfter) {
+            that.observeRemoveAfter();
+          }
+          return true;
         } catch (error) {
           console.error(error);
           return false;
         }
       }
 
-
       getQuery(): Query {
-        var that : any = this;
-        return new Query(that);
+        var that: any = this;
+        var query = new Query();
+        query.init(that);
+        return query;
       }
 
-      getAll(
-        whereArr: Array<{
-          fieldPath: string;
-          opStr: firebase.firestore.WhereFilterOp;
-          value: any;
-        }>,
+      getQueryListener(): Query {
+        if (!this.currentQueryListener) {
+          this.currentQueryListener = this.getQuery();
+        }
+        return this.currentQueryListener;
+      }
+
+      async getAll(
+        whereArr?: Array<any>,
         orderBy?: {
           fieldPath: string | firebase.firestore.FieldPath;
           directionStr?: firebase.firestore.OrderByDirection;
         },
         limit?: number,
         params?: { [key: string]: string }
-      ): Array<this> {
-        return [this];
+      ): Promise<Array<this>> {
+        var query = this.getQuery();
+        if (whereArr && whereArr[0] && whereArr[0].length == 3) {
+          for (var i = 0; i < whereArr.length; i++) {
+            query.where(whereArr[i][0], whereArr[i][1], whereArr[i][2]);
+          }
+        }
+        if (limit) {
+          query.limit(limit);
+        }
+        var res: any = await query.get();
+        return res;
       }
 
       getRepository() {
@@ -158,20 +268,31 @@ export function Model(options: ModelOptions) {
        * @return An unsubscribe function that can be called to cancel
        * the snapshot listener.
        */
-      on(callback: CallableFunction): void {
-        var that = this;
-        if (!this.getId()) {
-          console.error("The model not stored yet");
+      on(callback: CallableFunction): CallableFunction {
+        var that: any = this;
+        if (!that.getId()) {
+          console.error(
+            this.referencePath +
+              "/:" +
+              this.pathId +
+              " - " +
+              "The model not stored yet"
+          );
+        } else if (!that.getReference()) {
+          console.error(
+            "The model path params is not set and can't run on() function "
+          );
         } else {
-          var doc = this.getReference()
-            .doc(this.getId())
-            .onSnapshot(documentSnapshot => {
+          return that
+            .getReference()
+            .doc(that.getId())
+            .onSnapshot((documentSnapshot: any) => {
               var data = documentSnapshot.data();
               for (let key in data) {
                 let value = data[key];
-                this[key] = value;
+                that[key] = value;
               }
-              callback(this);
+              callback(that);
             });
         }
       }
@@ -181,12 +302,23 @@ export function Model(options: ModelOptions) {
         asObject: boolean = false,
         isInsideQuery = false
       ): Promise<Array<this>> {
-        var result:any = [];
+        var result: any = [];
         if (isInsideQuery && !this.getId()) {
-          console.log("Can't search inside a model without id!");
+          console.error(
+            this.referencePath +
+              "/:" +
+              this.pathId +
+              " - " +
+              "Can't search inside a model without id!"
+          );
           return result;
+        } else if (!this.getReference()) {
+          console.error(
+            "The model path params is not set and can't run sql() function "
+          );
+          return;
         }
-        var ref:any = !isInsideQuery
+        var ref: any = !isInsideQuery
           ? this.getReference().parent
           : this.getReference().doc(this.getId());
         const fireSQL = new FireSQL(ref, { includeId: "id" });
@@ -202,28 +334,47 @@ export function Model(options: ModelOptions) {
           }
           return result;
         } catch (error) {
-          console.log("SQL GENERAL ERROR - ", error);
+          console.error(
+            this.referencePath +
+              "/:" +
+              this.pathId +
+              " - " +
+              "SQL GENERAL ERROR - ",
+            error
+          );
           return result;
         }
       }
 
-       onSql(
+      onSql(
         sql: string,
         callback: CallableFunction,
         asObject: boolean = false,
         isInsideQuery: boolean = false
       ): void {
-        var result:any = [];
+        var result: any = [];
         if (isInsideQuery && !this.getId()) {
-          console.log("Can't search inside a model without id!");
+          console.error(
+            this.referencePath +
+              "/:" +
+              this.pathId +
+              " - " +
+              "Can't search inside a model without id!"
+          );
+        } else if (!this.getReference()) {
+          console.error(
+            "The model path params is not set and can't run onSql() function "
+          );
         } else {
-          var ref:any = !isInsideQuery
+          var ref: any = !isInsideQuery
             ? this.getReference().parent
+              ? this.getReference().parent
+              : this.getRepository().getFirestore()
             : this.getReference().doc(this.getId());
           const fireSQL = new FireSQL(ref, { includeId: "id" });
           try {
             const res = fireSQL.rxQuery(sql);
-            res.subscribe((sqlResult:any) => {
+            res.subscribe((sqlResult: any) => {
               for (var i = 0; i < sqlResult.length; i++) {
                 let data = sqlResult[i];
                 if (asObject) {
@@ -235,13 +386,20 @@ export function Model(options: ModelOptions) {
               callback(result);
             });
           } catch (error) {
-            console.log("SQL GENERAL ERROR - ", error);
+            console.error(
+              this.referencePath +
+                "/:" +
+                this.pathId +
+                " - " +
+                "SQL GENERAL ERROR - ",
+              error
+            );
           }
         }
       }
 
       createFromDoc(doc: firebase.firestore.DocumentSnapshot): this {
-        var object:this = this.getModel(this.getModelType());
+        var object: any = this.getModel(this.getModelType());
         var data = doc.data();
         var pathParams = this.getPathListParams();
 
@@ -257,29 +415,58 @@ export function Model(options: ModelOptions) {
         return object;
       }
 
-      createFromData(data: Object): this {
-        var object:this = this.getModel(this.getModelType());
+      createFromData(data: Object, targetObject?: this): this {
+        var params: any = data;
+        var object: any = !targetObject
+          ? this.getModel(this.getModelType())
+          : targetObject;
         var pathParams = this.getPathListParams();
-
         for (let key in pathParams) {
           let value = pathParams[key];
           object[key] = value;
         }
-
-        for (let key in data) {
-          let value = data[key];
-          object[key] = value;
+        for (let key in params) {
+          let value = params[key];
+          if (object.aliasFieldsMapper[key]) {
+            object[object.aliasFieldsMapper[key]] = value;
+          } else {
+            object[key] = value;
+          }
         }
         return object;
+      }
+
+      initFromData(data: Object, targetObject?: this): this {
+        return this.createFromData(data, this);
       }
 
       initFromDoc(doc: firebase.firestore.DocumentSnapshot) {
+        var that: any = this;
         var data = doc.data();
         for (let key in data) {
           let value = data[key];
-          this[key] = value;
+          that[key] = value;
         }
         return this;
+      }
+
+      /**
+       * Set document data directly
+       * @param key
+       * @param value
+       */
+      setParam(key: string, value: any): this {
+        this.documentData[key] = value;
+        return this;
+      }
+
+      /**
+       * Get document data directly
+       * @param key
+       * @param value
+       */
+      getParam(key: string, defaultValue: any): any{
+        return typeof this.documentData[key] !== 'undefined' ? this.documentData[key] : defaultValue
       }
 
       /**
@@ -295,20 +482,174 @@ export function Model(options: ModelOptions) {
        * @return An unsubscribe function that can be called to cancel
        * the snapshot listener.
        */
-      onList(callback: CallableFunction) {
+      onAllList(
+        callback: CallableFunction,
+        eventType?: LIST_EVENTS
+      ): CallableFunction {
+        switch (eventType) {
+          case LIST_EVENTS.ADDEDD:
+            return this.onCreatedList(callback, LIST_EVENTS.ADDEDD);
+            break;
+          case LIST_EVENTS.REMOVED:
+            return this.onAllList(callback, LIST_EVENTS.REMOVED);
+            break;
+          case LIST_EVENTS.MODIFIED:
+            return this.onUpdatedList(callback, LIST_EVENTS.MODIFIED);
+            break;
+          default:
+            return this.onAllList(callback);
+            break;
+        }
+      }
+
+      /**
+       * Attaches a listener for QuerySnapshot events. You may either pass
+       * individual `onNext` and `onError` callbacks or pass a single observer
+       * object with `next` and `error` callbacks. The listener can be cancelled by
+       * calling the function that is returned when `onSnapshot` is called.
+       *
+       * NOTE: Although an `onCompletion` callback can be provided, it will
+       * never be called because the snapshot stream is never-ending.
+       *
+       * @param callback A single object containing `next` and `error` callbacks.
+       * @return An unsubscribe function that can be called to cancel
+       * the snapshot listener.
+       */
+      onModeList(options: ModelAllListOptions) {
+        return this.getQuery()
+          .orderBy(this.CREATED_AT_FLAG)
+          .onMode(options);
+      }
+
+      /**
+       * Attaches a listener for QuerySnapshot events. You may either pass
+       * individual `onNext` and `onError` callbacks or pass a single observer
+       * object with `next` and `error` callbacks. The listener can be cancelled by
+       * calling the function that is returned when `onSnapshot` is called.
+       *
+       * NOTE: Although an `onCompletion` callback can be provided, it will
+       * never be called because the snapshot stream is never-ending.
+       *
+       * @param callback A single object containing `next` and `error` callbacks.
+       * @return An unsubscribe function that can be called to cancel
+       * the snapshot listener.
+       */
+      onList(
+        callback: CallableFunction,
+        eventType?: LIST_EVENTS
+      ): CallableFunction {
         var that = this;
-        this.getQuery().on(callback);
+        if (!this.getReference()) {
+          console.error(
+            "The model path params is not set and can't run onList() function "
+          );
+        } else {
+          return this.getQueryListener()
+            .orderBy(this.CREATED_AT_FLAG)
+            .on(callback, eventType);
+        }
+      }
+
+      /**
+       * Get New element in collectio
+       * Attaches a listener for QuerySnapshot events. You may either pass
+       * individual `onNext` and `onError` callbacks or pass a single observer
+       * object with `next` and `error` callbacks. The listener can be cancelled by
+       * calling the function that is returned when `onSnapshot` is called.
+       *
+       * NOTE: Although an `onCompletion` callback can be provided, it will
+       * never be called because the snapshot stream is never-ending.
+       *
+       * @param callback A single object containing `next` and `error` callbacks.
+       * @return An unsubscribe function that can be called to cancel
+       * the snapshot listener.
+       */
+      onCreatedList(
+        callback: CallableFunction,
+        eventType?: LIST_EVENTS
+      ): CallableFunction {
+        if (!this.getReference()) {
+          console.error(
+            "The model path params is not set and can't run onAddList() function "
+          );
+          return;
+        }
+
+        var timestamp = new Date().getTime();
+        return this.getQuery()
+          .orderBy(this.CREATED_AT_FLAG)
+          .startAt(timestamp)
+          .on(callback, eventType);
+      }
+
+      /**
+       * Get Updated element in collectio
+       * Attaches a listener for QuerySnapshot events. You may either pass
+       * individual `onNext` and `onError` callbacks or pass a single observer
+       * object with `next` and `error` callbacks. The listener can be cancelled by
+       * calling the function that is returned when `onSnapshot` is called.
+       *
+       * NOTE: Although an `onCompletion` callback can be provided, it will
+       * never be called because the snapshot stream is never-ending.
+       *
+       * @param callback A single object containing `next` and `error` callbacks.
+       * @return An unsubscribe function that can be called to cancel
+       * the snapshot listener.
+       */
+      onUpdatedList(
+        callback: CallableFunction,
+        eventType?: LIST_EVENTS
+      ): CallableFunction {
+        if (!this.getReference()) {
+          console.error(
+            "The model path params is not set and can't run onUpdatedList() function "
+          );
+          return;
+        }
+        var that = this;
+        var timestamp = new Date().getTime();
+        return this.getQuery()
+          .orderBy(this.UPDATED_AT_FLAG)
+          .startAt(timestamp)
+          .on(callback, eventType);
+      }
+
+      initAutoTime(): void {
+        if (this.isAutoTime) {
+          if (!this.created_at) {
+            this.documentData[this.CREATED_AT_FLAG] = new Date().getTime();
+            this.created_at = new Date().getTime();
+          }
+          this.documentData[this.UPDATED_AT_FLAG] = new Date().getTime();
+          this.updated_at = new Date().getTime();
+        }
+      }
+
+      getCreatedAt(): Moment | null {
+        return this.created_at ? moment.unix(this.created_at / 1000) : null;
+      }
+
+      getUpdatedAt(): Moment | null {
+        return this.updated_at ? moment.unix(this.updated_at / 1000) : null;
       }
 
       async save(): Promise<this> {
-        if(!this.verifyRequiredFields()){
+        var that: any = this;
+        if (that.observeSaveBefore) {
+          that.observeSaveBefore();
+        }
+        if (!this.verifyRequiredFields()) {
           return this;
         }
+        this.initAutoTime();
         if (this.getRepository()) {
-          this.getRepository().save(this);
+          await this.getRepository().save(this);
         } else {
           console.error("No repository!");
-        } 
+        }
+        if (that.observeSaveAfter) {
+          that.observeSaveAfter();
+        }
         return this;
       }
 
@@ -317,17 +658,27 @@ export function Model(options: ModelOptions) {
       }
 
       getRequiredFields(): Array<string> {
-        return this.getModelType().requiredFields;
+        var that: any = this;
+        return that.requiredFields;
       }
-      
+
       verifyRequiredFields(): boolean {
+        var that: any = this;
         var fields = this.getRequiredFields();
         var result = true;
-        for(var i = 0; fields.length> i;i++){
-            if(this[fields[i]] == null || typeof this[fields[i]] == undefined){
-              result = false;
-              console.error("Can't save " + fields[i] + " with null!");
-            }
+        for (var i = 0; fields.length > i; i++) {
+          if (that[fields[i]] == null || typeof that[fields[i]] == undefined) {
+            result = false;
+            console.error(
+              this.referencePath +
+                "/:" +
+                this.pathId +
+                " - " +
+                "Can't save " +
+                fields[i] +
+                " with null!"
+            );
+          }
         }
         return result;
       }
@@ -346,7 +697,14 @@ export function Model(options: ModelOptions) {
           if (subPath.search(":") != -1) {
             subPath = subPath.replace(":", "");
             if (!that[subPath]) {
-              console.error(subPath + " is missing!");
+              console.error(
+                this.referencePath +
+                  "/:" +
+                  this.pathId +
+                  " - " +
+                  subPath +
+                  " is missing!"
+              );
               return false;
             } else {
               result.push({
@@ -366,22 +724,28 @@ export function Model(options: ModelOptions) {
 
       getPathListParams(): any {
         var that: any = this;
-        var result:any= {};
+        var result: any = {};
         var keys = this.getPathListKeys();
-        for(var i = 0; i < keys.length;i++){
+        for (var i = 0; i < keys.length; i++) {
           var subPath = keys[i];
           if (!that[subPath]) {
-            console.error(subPath + " is missing!");
+            console.error(
+              this.referencePath +
+                "/:" +
+                this.pathId +
+                " - " +
+                subPath +
+                " is missing!"
+            );
             return false;
           } else {
             result[subPath] = that[subPath];
           }
-        } 
+        }
         return result;
       }
 
-      
-      getPathListKeys(): Array<string>{
+      getPathListKeys(): Array<string> {
         var that: any = this;
         var result = [];
         var path = this.getReferencePath();
