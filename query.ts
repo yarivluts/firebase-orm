@@ -85,21 +85,17 @@ export class Query {
       var result = that.parse(querySnapshot);
       if (event_type) {
         querySnapshot.docChanges().forEach(function(change) {
-           //console.log('change.doc.data() == ',change,change.doc.data(),change.doc.id);
           if (change.type === LIST_EVENTS.ADDEDD) {
             var result = that.parseFromData(change.doc.data(), change.doc.id);
             callback(result);
-          //  console.log("New model: ",that.model.getModel(that.model.getModelType()).getReferencePath(),change.doc.data(), result);
             // This is equivalent to child_added
           } else if (change.type === LIST_EVENTS.MODIFIED) {
             var result = that.parseFromData(change.doc.data(), change.doc.id);
             callback(result);
-          //  console.log("Modified model: ",that.model.getModel(that.model.getModelType()).getReferencePath(),change.doc.data(), result);
             // This is equivalent to child_changed
           } else if (change.type === LIST_EVENTS.REMOVED) {
             var result = that.parseFromData(change.doc.data(), change.doc.id);
             callback(result);
-         //       console.log("Removed model: ",that.model.getModel(that.model.getModelType()).getReferencePath(),change.doc.data(), result);
             // This is equivalent to child_removed
           } else {
           }
@@ -133,9 +129,9 @@ export class Query {
         var change = querySnapshot.docChanges()[i];
         if (change.type === LIST_EVENTS.ADDEDD && (options.added || options.init)) {
             let result = that.parseFromData(change.doc.data(), change.doc.id);
-            if(result.created_at && result.created_at > now){
+            if(result.created_at && result.created_at > now && options.added){
                 options.added(result); 
-            }else{
+            }else if(options.init){
                 options.init(result); 
             }
             

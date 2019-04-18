@@ -31,7 +31,7 @@ export function Model(options: ModelOptions) {
       updated_at!: number;
       is_exist: boolean = false;
       pathId: string = options.path_id;
-      currentModel: this & ModelInterface;
+      currentModel!: this & ModelInterface;
       documentData: any = {};
       static aliasFieldsMapper: any = {};
       static fields: any = {};
@@ -270,6 +270,7 @@ export function Model(options: ModelOptions) {
        */
       on(callback: CallableFunction): CallableFunction {
         var that: any = this;
+        var res = () => {};
         if (!that.getId()) {
           console.error(
             this.referencePath +
@@ -278,10 +279,12 @@ export function Model(options: ModelOptions) {
               " - " +
               "The model not stored yet"
           );
+          return res;
         } else if (!that.getReference()) {
           console.error(
             "The model path params is not set and can't run on() function "
           );
+          return res;
         } else {
           return that
             .getReference()
@@ -316,7 +319,7 @@ export function Model(options: ModelOptions) {
           console.error(
             "The model path params is not set and can't run sql() function "
           );
-          return;
+          return result;
         }
         var ref: any = !isInsideQuery
           ? this.getReference().parent
@@ -539,10 +542,12 @@ export function Model(options: ModelOptions) {
         eventType?: LIST_EVENTS
       ): CallableFunction {
         var that = this;
+        var res = () => {};
         if (!this.getReference()) {
           console.error(
             "The model path params is not set and can't run onList() function "
           );
+          return res;
         } else {
           return this.getQueryListener()
             .orderBy(this.CREATED_AT_FLAG)
@@ -568,11 +573,12 @@ export function Model(options: ModelOptions) {
         callback: CallableFunction,
         eventType?: LIST_EVENTS
       ): CallableFunction {
+        var res = () => {};
         if (!this.getReference()) {
           console.error(
             "The model path params is not set and can't run onAddList() function "
           );
-          return;
+          return res;
         }
 
         var timestamp = new Date().getTime();
@@ -600,11 +606,12 @@ export function Model(options: ModelOptions) {
         callback: CallableFunction,
         eventType?: LIST_EVENTS
       ): CallableFunction {
+        var res = () => {};
         if (!this.getReference()) {
           console.error(
             "The model path params is not set and can't run onUpdatedList() function "
           );
-          return;
+          return res;
         }
         var that = this;
         var timestamp = new Date().getTime();
