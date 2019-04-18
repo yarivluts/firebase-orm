@@ -1,6 +1,6 @@
 {
   "name": "@arbel/firebase-orm",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Firestore Orm",
   "main": "dist/index.js",
   "scripts": {
@@ -8,15 +8,16 @@
     "build:full": "rm -rf dist && npm run build",
     "test": "echo \"Running Tests\""
   },
-  "dependencies": {
+  "peerDependencies": {
     "firebase": "^5.9.4",
     "firesql": "^1.0.2",
     "rxfire": "^3.3.10",
     "rxjs": "^6.4.0",
-    "tslint": "^5.15.0",
+    "tslint": "^5.15.0"
+  },
+  "devDependencies": {
     "typescript": "^3.4.3"
   },
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "https://gitlab.com/yariv.luts/firestore-orm.git"
