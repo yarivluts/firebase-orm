@@ -1,8 +1,9 @@
 import { ModelInterface } from "../interfaces/model.interface";
 import { ModelOptions } from "../interfaces/model.options.interface";
 import { FirestoreOrmRepository } from "../repository";
-import * as firebase from "firebase";
-import { FireSQL } from "firesql";
+import * as firebase from "firebase/app";
+import 'firebase/firestore';
+import { FireSQL } from "@arbel/firesql";
 import { Query, LIST_EVENTS } from "../query";
 import { Moment } from "moment";
 import { FieldOptions } from "../interfaces/field.options.interface";

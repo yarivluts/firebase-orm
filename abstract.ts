@@ -1,7 +1,8 @@
 
  
 
-import * as firebase from "firebase";
+import * as firebase from "firebase/app";
+import 'firebase/firestore';
 import { FirestoreOrmRepository } from "./repository";
 import { ModelInterface } from "./interfaces/model.interface";
 

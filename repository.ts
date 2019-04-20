@@ -1,7 +1,8 @@
-import * as firebase from "firebase";
+import * as firebase from "firebase/app";
+import 'firebase/firestore';
 import { ModelAbstract } from "./abstract";
 import { ModelInterface } from "./interfaces/model.interface";
-import { FireSQL } from "firesql";
+import { FireSQL } from "@arbel/firesql";
 import 'firesql/rx'; 
 
 export class FirestoreOrmRepository{
@@ -63,7 +64,7 @@ export class FirestoreOrmRepository{
         const fireSQL = new FireSQL(this.firestore);
         try {
            const res = fireSQL.rxQuery(sql,{ includeId: 'id'});
-           res.subscribe(results => {
+           res.subscribe((results:any) => {
             callback(results);
            })
         } catch (error) {
