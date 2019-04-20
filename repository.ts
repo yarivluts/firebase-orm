@@ -3,8 +3,7 @@ import 'firebase/firestore';
 import { ModelAbstract } from "./abstract";
 import { ModelInterface } from "./interfaces/model.interface";
 import { FireSQL } from "@arbel/firesql";
-import 'firesql/rx'; 
-
+ 
 export class FirestoreOrmRepository{
 
     static documentsRequiredFields = {};

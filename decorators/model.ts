@@ -15,7 +15,6 @@ import * as moment_ from "moment";
 
 const moment = moment_;
 
-import "firesql/rx";
 import { ModelAllListOptions } from "../interfaces/model.alllist.options.interface";
 
 export function Model(options: ModelOptions) {
