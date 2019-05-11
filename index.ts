@@ -1,5 +1,6 @@
 export * from './repository';
 export * from './query';
+export * from './base.model';
 export * from './decorators/model';
 export * from './decorators/field';
 

@@ -45,7 +45,7 @@ export function Field(options?: FieldOptions): any {
             var value = this.documentData[field_name] ? this.documentData[field_name] : 
             (options && options.default_value ? options.default_value : null);
 
-            if(value instanceof firebase.firestore.DocumentReference && options.init_as_object){
+            if(value instanceof firebase.firestore.DocumentReference && options && options.init_as_object){
               var className:any = options.init_as_object;
               var object = className.createFromDocRef(value);
               //console.log(typeof this.documentData[field_name],field_name + ' value instanceof DocumentReference = ',object);

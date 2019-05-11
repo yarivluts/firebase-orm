@@ -21,7 +21,8 @@ import { BaseModel } from "../base.model";
 function applyMixins(derivedCtor: any, baseCtors: any[]) {
   baseCtors.forEach(baseCtor => {
     Object.getOwnPropertyNames(baseCtor.prototype).forEach(name => {
-      Object.defineProperty(derivedCtor.prototype, name, Object.getOwnPropertyDescriptor(baseCtor.prototype, name));
+      var t : any = Object.getOwnPropertyDescriptor(baseCtor.prototype, name);
+      Object.defineProperty(derivedCtor.prototype, name, t);
     });
   });
 }

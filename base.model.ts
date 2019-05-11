@@ -26,13 +26,13 @@ export class BaseModel implements ModelInterface {
     protected static UPDATED_AT_FLAG: string = "updated_at";
 
     id!: string;
-    referencePath: string;
-    protected _referencePath: string;
-    protected isAutoTime: boolean;
+    referencePath!: string;
+    protected _referencePath!: string;
+    protected isAutoTime!: boolean;
     created_at!: number;
     updated_at!: number;
     protected is_exist: boolean = false;
-    pathId: string;
+    pathId!: string;
     protected currentModel!: this & ModelInterface;
     protected documentData: any = {};
     protected static aliasFieldsMapper: any = {};
