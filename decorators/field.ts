@@ -1,4 +1,5 @@
 import { FieldOptions } from "../interfaces/field.options.interface"; 
+import * as firebase from "firebase/app";
 
 export function Field(options?: FieldOptions): any {
   return (target: any, key: string) => {
@@ -41,8 +42,16 @@ export function Field(options?: FieldOptions): any {
           get: function() {
             let field_name =
             options && options.field_name ? options.field_name : key;
-            return this.documentData[field_name] ? this.documentData[field_name] : 
+            var value = this.documentData[field_name] ? this.documentData[field_name] : 
             (options && options.default_value ? options.default_value : null);
+
+            if(value instanceof firebase.firestore.DocumentReference && options.init_as_object){
+              var className:any = options.init_as_object;
+              var object = className.createFromDocRef(value);
+              //console.log(typeof this.documentData[field_name],field_name + ' value instanceof DocumentReference = ',object);
+              return object;
+            }
+            return value;
           }
       },
   );

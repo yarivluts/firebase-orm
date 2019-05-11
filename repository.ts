@@ -1,18 +1,46 @@
 import * as firebase from "firebase/app";
 import 'firebase/firestore';
-import { ModelAbstract } from "./abstract";
+import { BaseModel } from "./base.model";
 import { ModelInterface } from "./interfaces/model.interface";
 import { FireSQL } from "@arbel/firesql";
  
 export class FirestoreOrmRepository{
 
+    static globalFirestores = {};
+    static globalPaths = {};
     static documentsRequiredFields = {};
+    static DEFAULT_KEY_NAME = 'default';
 
     constructor(protected firestore : firebase.firestore.Firestore){
 
     }
 
-    getCollectionReferenceByModel(object : ModelInterface){
+    static initGlobalConnection(firestore : firebase.firestore.Firestore,key:string = FirestoreOrmRepository.DEFAULT_KEY_NAME){
+        this.globalFirestores[key] = new FirestoreOrmRepository(firestore);
+    }
+
+    static getGlobalConnection(key : string = FirestoreOrmRepository.DEFAULT_KEY_NAME){
+        if(this.globalFirestores[key]){
+            return this.globalFirestores[key];
+        }else{
+            throw "the global firestore "+key+' is undefined!';
+        }
+    }
+
+    
+    static initGlobalPath(pathIdKey : string,pathIdValue : string){
+        this.globalPaths[pathIdKey] = pathIdValue;
+    }
+
+    static getGlobalPath(pathIdKey : string){
+        if(this.globalPaths[pathIdKey] && this.globalPaths[pathIdKey].trim() !== ''){
+            return this.globalPaths[pathIdKey];
+        }else{
+            return null;
+        }
+    }
+
+    getCollectionReferenceByModel(object : any){
         var current:any = this.firestore;
         var pathList:any = object.getPathList();
         if(!pathList || pathList.length < 1){

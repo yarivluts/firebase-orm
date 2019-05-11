@@ -3,6 +3,7 @@ import { FirestoreOrmRepository } from "../repository";
 import { Query,LIST_EVENTS } from "../query";
 import {Moment} from 'moment';
 import { ModelAllListOptions } from "./model.alllist.options.interface";
+import { BaseModel } from "../base.model";
 
 /**
  * Firestore Orm
@@ -22,11 +23,6 @@ export interface ModelInterface {
    */
   setId(id: string): this;
 
-  /**
-   * Set the model type
-   * @param model - Model class
-   */
-  setModelType(model: any): this;
   
   /**
    * Check if object exist inside the db
@@ -60,10 +56,10 @@ export interface ModelInterface {
   getId(): string;
 
   /**
-   * Get model type
-   * @return - Model class type
+   * Get current model
    */
-  getModelType(): any;
+  getCurrentModel() : this;
+
 
   /**
    * Load model by id
@@ -83,7 +79,7 @@ export interface ModelInterface {
   init(
     id: string,
     params?: { [key: string]: string }
-  ): Promise<ModelInterface | null>;
+  ): Promise<this | null>;
 
   /**
    * Set document data directly
@@ -105,63 +101,11 @@ export interface ModelInterface {
   remove() : Promise<boolean>;
 
   /**
-   * Creates and returns a new Query with the additional filter that documents
-   * must contain the specified field and the value should satisfy the
-   * relation constraint provided.
-   *
-   * @param fieldPath The path to compare
-   * @param opStr The operation string (e.g "<", "<=", "==", ">", ">=").
-   * @param value The value for comparison
-   * @return Orm Query
-   */
-  where(
-    fieldPath: string,
-    opStr: firebase.firestore.WhereFilterOp,
-    value: any
-  ): Query;
-
-  /**
-   * Get Orm Query
-   * @return Query
-   */
-  getQuery(): Query;
-
-  /**
    * Object real time changes listener
    * @param callback 
    */
-  on(callback: CallableFunction,eventType? : LIST_EVENTS): CallableFunction;
-  
-  /**
-   * List real time listener
-   * @param callback 
-   */
-  onList(callback: CallableFunction,eventType? : LIST_EVENTS): CallableFunction;
-  
-  /**
-   * List real time listener
-   * @param callback 
-   */
-  onModeList(options : ModelAllListOptions) : CallableFunction;
-
-  /**
-   * List all list real time listener
-   * @param callback 
-   */
-  onAllList(callback: CallableFunction,eventType? : LIST_EVENTS): CallableFunction;
-  
-  /**
-   * List real time listener
-   * @param callback 
-   */
-  onCreatedList(callback: CallableFunction,eventType? : LIST_EVENTS): CallableFunction;
-  
-  /**
-   * List real time listener
-   * @param callback 
-   */
-  onUpdatedList(callback: CallableFunction): CallableFunction;
-
+  on(callback: CallableFunction,eventType? : LIST_EVENTS): CallableFunction; 
+    
   /**
    * Get relation one
    * @param model 
@@ -173,51 +117,7 @@ export interface ModelInterface {
    * @param model 
    */
   getManyRel<T>(model: { new (): T }): Promise<Array<T & ModelInterface>>;
-
-  /**
-   * Get all collection list
-   * @param whereArr example ['name','==','test_name']
-   * @param orderBy example 'name'
-   * @param limit example 3
-   * @param params 
-   */
-   getAll(
-    whereArr?: Array<any>,
-    orderBy?: {
-      fieldPath: string | firebase.firestore.FieldPath;
-      directionStr?: firebase.firestore.OrderByDirection;
-    },
-    limit?: number,
-    params?: { [key: string]: string }
-  ): Promise<Array<this>>;
-
-  /**
-   * Run sql query on model collection
-   * @param sql 
-   * @param asObject 
-   * @return Current model array
-   */
-  sql(sql: string, asObject?: boolean): Promise<Array<this>>;
-
-  /**
-   * Run sql query on model collection in real time updates
-   * @param sql 
-   * @param callback 
-   * @param asObject 
-   * @param isInsideQuery 
-   */
-  onSql(sql: string,
-    callback: CallableFunction,
-    asObject?: boolean,
-    isInsideQuery?:boolean): void;
-
-  /**
-   * Create model from firestore doc object
-   * @param doc 
-   * @return Current model
-   */
-  createFromDoc(doc: firebase.firestore.DocumentSnapshot): this;
-
+ 
   /**
    * Init the current model by firestore object
    * @param doc 

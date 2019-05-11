@@ -143,7 +143,7 @@ export class Query {
             // This is equivalent to child_changed
           } else if (change.type === LIST_EVENTS.REMOVED && options.removed) {
             let result = that.parseFromData(change.doc.data(), change.doc.id);
-            console.log("Removed model: ",that.model.getModel(that.model.getModelType()).getReferencePath(),change.doc.data(), result);
+            console.log("Removed model: ",that.model.getCurrentModel().getReferencePath(),change.doc.data(), result);
             options.removed(result); 
             // This is equivalent to child_removed
           }
@@ -225,10 +225,36 @@ export class Query {
     return this.parse(list);
   }
 
+  
+  /**
+   * Executes the query and returns the results as a `QuerySnapshot`.
+   *
+   * Note: By default, get() attempts to provide up-to-date data when possible
+   * by waiting for data from the server, but it may return cached data or fail
+   * if you are offline and the server cannot be reached. This behavior can be
+   * altered via the `GetOptions` parameter.
+   *
+   * @param options An object to configure the get behavior.
+   * @return A Promise that will be resolved with the results of the Query.
+   */
+  async getOne(
+    options?: firebase.firestore.GetOptions
+  ): Promise<ModelInterface | null>{
+    this.limit(1);
+    var list = await this.current.get(options);
+    var res = this.parse(list);
+    if(res.length > 0){
+      return res[0];
+    }else{
+      return null;
+    }
+
+  }
+
   public parse(list: firebase.firestore.QuerySnapshot) {
     var result = [];
     for (var i = 0; i < list.docs.length; i++) {
-      let object: any = this.model.getModel(this.model.getModelType());
+      let object: any = this.model.getCurrentModel();
       let data = list.docs[i].data();
       let id = list.docs[i].id;
       object.setId(id);
@@ -240,7 +266,7 @@ export class Query {
 
   public parseFromData(data: any, id?: string) {
     var result = [];
-    let object: any = this.model.getModel(this.model.getModelType());
+    let object: any = this.model.getCurrentModel();
     if (id) {
       object.setId(id);
     }
