@@ -5,7 +5,7 @@ and can be used with TypeScript and JavaScript (ES5, ES6, ES7, ES8).
 
 Firebase ORM supports only Active Record pattern for now.
 
-Some TypeORM features:
+Some Arbel Firebase Orm features:
 
 * supports ActiveRecord
 * allow to specify the Firestore database sturcture as Orm 
@@ -55,6 +55,8 @@ member.save()
 const google = await Website.findOne('domain','==','www.google.com');
 //Get the linkes under google website
 const links = google.getModel(Link).getAll();
+//Using sql to find links inside google model
+const list = await google.sql("select * from links where name = 'some link'");
 
 
 //Get all members
@@ -98,6 +100,8 @@ Member.onModeList({
      */
     init? : CallableFunction
   })
+
+
  
 ```
 
