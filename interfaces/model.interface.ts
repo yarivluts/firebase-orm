@@ -110,13 +110,13 @@ export interface ModelInterface {
    * Get relation one
    * @param model 
    */
-  getOneRel<T>(model: { new (): T }): Promise<T & ModelInterface> ;
+  getOneRel<T>(model: { new (): T }): Promise<T & BaseModel> ;
 
   /**
    * Get relation many
    * @param model 
    */
-  getManyRel<T>(model: { new (): T }): Promise<Array<T & ModelInterface>>;
+  getManyRel<T>(model: { new (): T }): Promise<Array<T & BaseModel>>;
  
   /**
    * Init the current model by firestore object
@@ -160,7 +160,7 @@ export interface ModelInterface {
    * @param model - The class reference
    * @return initialize model object
    */
-  getModel<T>(model: { new (): T }): T & ModelInterface;
+  getModel<T>(model: { new (): T }): T & BaseModel;
 
   /**
    * Get required fields

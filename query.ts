@@ -143,7 +143,7 @@ export class Query {
             // This is equivalent to child_changed
           } else if (change.type === LIST_EVENTS.REMOVED && options.removed) {
             let result = that.parseFromData(change.doc.data(), change.doc.id);
-            console.log("Removed model: ",that.model.getCurrentModel().getReferencePath(),change.doc.data(), result);
+            //console.log("Removed model: ",that.model.getCurrentModel().getReferencePath(),change.doc.data(), result);
             options.removed(result); 
             // This is equivalent to child_removed
           }

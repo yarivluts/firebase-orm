@@ -33,7 +33,7 @@ export class BaseModel implements ModelInterface {
     updated_at!: number;
     protected is_exist: boolean = false;
     pathId!: string;
-    protected currentModel!: this & ModelInterface;
+    protected currentModel!: this & BaseModel;
     protected documentData: any = {};
     protected static aliasFieldsMapper: any = {};
     protected static fields: any = {};
@@ -67,7 +67,7 @@ export class BaseModel implements ModelInterface {
       return this.is_exist;
     }
 
-    async getOneRel<T>(model: { new (): T }): Promise<T & ModelInterface> {
+    async getOneRel<T>(model: { new (): T }): Promise<T & BaseModel> {
       var object: any = this.getModel(model);
       var that: any = this;
       return await object.load(that[object.getPathId()]);
@@ -75,7 +75,7 @@ export class BaseModel implements ModelInterface {
 
     async getManyRel<T>(model: {
       new (): T;
-    }): Promise<Array<T & ModelInterface>> {
+    }): Promise<Array<T & BaseModel>> {
       var object: any = this.getModel(model);
       var that: any = this;
       return await object
@@ -83,7 +83,7 @@ export class BaseModel implements ModelInterface {
         .get();
     }
 
-    getModel<T>(model: { new (): T }): T & ModelInterface {
+    getModel<T>(model: { new (): T }): T & BaseModel {
         var object: any = this.getRepository().getModel(model);
         var keys = object.getPathListKeys();
         var that: any = this;
@@ -152,16 +152,26 @@ export class BaseModel implements ModelInterface {
       return this.getReference().doc(this.getId());
     }
 
-   /*  setModelType(model: any): this {
+    setModelType(model: any): this {
       this.modelType = model;
       return this;
     }
 
     getModelType() {
       return this.modelType;
-    } */
+    }
 
     static where(
+      fieldPath: string,
+      opStr: firebase.firestore.WhereFilterOp,
+      value: any
+    ): Query {
+      var that = this;
+      var query = this.query().where(fieldPath, opStr, value);
+      return query;
+    }
+
+     where(
       fieldPath: string,
       opStr: firebase.firestore.WhereFilterOp,
       value: any
@@ -243,6 +253,16 @@ export class BaseModel implements ModelInterface {
       var that: any = this;
       var query = new Query();
       var object:any = new this();
+      object.setModelType(this);
+      query.init(object);
+      return query;
+    } 
+
+    
+     query(): Query {
+      var that: any = this.getModelType();
+      var query = new Query();
+      var object:any = new that();
       query.init(object);
       return query;
     } 
@@ -257,6 +277,31 @@ export class BaseModel implements ModelInterface {
       params?: { [key: string]: string }
     ): Promise<Array<T>> {
       var object:any = new this();
+      object.setModelType(this);
+      var query = object.getQuery();
+      if (whereArr && whereArr[0] && whereArr[0].length == 3) {
+        for (var i = 0; i < whereArr.length; i++) {
+          query.where(whereArr[i][0], whereArr[i][1], whereArr[i][2]);
+        }
+      }
+      if (limit) {
+        query.limit(limit);
+      }
+      var res: any = await query.get();
+      return res;
+    }
+
+    
+     async getAll(whereArr?: Array<any>,
+      orderBy?: {
+        fieldPath: string | firebase.firestore.FieldPath;
+        directionStr?: firebase.firestore.OrderByDirection;
+      },
+      limit?: number,
+      params?: { [key: string]: string }
+    ): Promise<Array<this>> {
+      var that:any = this.getModelType();
+      var object:any = new that();
       var query = object.getQuery();
       if (whereArr && whereArr[0] && whereArr[0].length == 3) {
         for (var i = 0; i < whereArr.length; i++) {
@@ -425,8 +470,9 @@ export class BaseModel implements ModelInterface {
       }
     }
 
-    static async createFromDoc<T = BaseModel>(this: { new(): T },doc: firebase.firestore.DocumentSnapshot): Promise<T> {
-      var object:any = new this();
+     async createFromDoc(doc: firebase.firestore.DocumentSnapshot): Promise<this> {
+       var that:any = this.getModelType();
+      var object:any = new that();
       var d:any = doc;
       var data = await doc.data();
       var pathParams = object.getPathListParams();
@@ -444,28 +490,75 @@ export class BaseModel implements ModelInterface {
     }
 
     
-    static async createFromDocRef<T = BaseModel>(this: { new(): T },doc: firebase.firestore.DocumentReference): Promise<T | null> {
-        var object:any = new this();
-        var d:any = doc;
-        var data = (await doc.get()).data();
-        if(data){
-            var pathParams = object.getPathListParams();
-  
-            for (let key in pathParams) {
-              let value = pathParams[key];
-              object[key] = value;
-            }
-      
-            for (let key in data) {
-              let value = data[key];
-              object[key] = value;
-            }
-            return object;
-        }else{
-            return null;
-        }
-       
+    static async createFromDoc<T = BaseModel>(this: { new(): T },doc: firebase.firestore.DocumentSnapshot): Promise<T> {
+      var object:any = new this();
+      object.setModelType(this);
+      var d:any = doc;
+      var data = await doc.data();
+      var pathParams = object.getPathListParams();
+
+      for (let key in pathParams) {
+        let value = pathParams[key];
+        object[key] = value;
       }
+
+      for (let key in data) {
+        let value = data[key];
+        object[key] = value;
+      }
+      return object;
+    }
+
+
+    
+    static async createFromDocRef<T = BaseModel>(this: { new(): T },doc: firebase.firestore.DocumentReference): Promise<T | null> {
+      var object:any = new this();
+      object.setModelType(this);
+      var d:any = doc;
+      var data = (await doc.get()).data();
+      if(data){
+          var pathParams = object.getPathListParams();
+
+          for (let key in pathParams) {
+            let value = pathParams[key];
+            object[key] = value;
+          }
+    
+          for (let key in data) {
+            let value = data[key];
+            object[key] = value;
+          }
+          return object;
+      }else{
+          return null;
+      }
+     
+    }
+    
+    
+     async createFromDocRef<T = BaseModel>(this: { new(): T },doc: firebase.firestore.DocumentReference): Promise<T | null> {
+      var object:any = new this();
+      object.setModelType(this);
+      var d:any = doc;
+      var data = (await doc.get()).data();
+      if(data){
+          var pathParams = object.getPathListParams();
+
+          for (let key in pathParams) {
+            let value = pathParams[key];
+            object[key] = value;
+          }
+    
+          for (let key in data) {
+            let value = data[key];
+            object[key] = value;
+          }
+          return object;
+      }else{
+          return null;
+      }
+     
+    }
 
     createFromData(data: Object, targetObject?: this): this {
       var params: any = data;
@@ -554,6 +647,60 @@ export class BaseModel implements ModelInterface {
       }
     }
 
+    
+    /**
+     * Attaches a listener for QuerySnapshot events. You may either pass
+     * individual `onNext` and `onError` callbacks or pass a single observer
+     * object with `next` and `error` callbacks. The listener can be cancelled by
+     * calling the function that is returned when `onSnapshot` is called.
+     *
+     * NOTE: Although an `onCompletion` callback can be provided, it will
+     * never be called because the snapshot stream is never-ending.
+     *
+     * @param callback A single object containing `next` and `error` callbacks.
+     * @return An unsubscribe function that can be called to cancel
+     * the snapshot listener.
+     */
+     onAllList(
+      callback: CallableFunction,
+      eventType?: LIST_EVENTS
+    ): CallableFunction {
+      switch (eventType) {
+        case LIST_EVENTS.ADDEDD:
+          return this.onCreatedList(callback, LIST_EVENTS.ADDEDD);
+          break;
+        case LIST_EVENTS.REMOVED:
+          return this.onAllList(callback, LIST_EVENTS.REMOVED);
+          break;
+        case LIST_EVENTS.MODIFIED:
+          return this.onUpdatedList(callback, LIST_EVENTS.MODIFIED);
+          break;
+        default:
+          return this.onAllList(callback);
+          break;
+      }
+    }
+
+    /**
+     * Attaches a listener for QuerySnapshot events. You may either pass
+     * individual `onNext` and `onError` callbacks or pass a single observer
+     * object with `next` and `error` callbacks. The listener can be cancelled by
+     * calling the function that is returned when `onSnapshot` is called.
+     *
+     * NOTE: Although an `onCompletion` callback can be provided, it will
+     * never be called because the snapshot stream is never-ending.
+     *
+     * @param callback A single object containing `next` and `error` callbacks.
+     * @return An unsubscribe function that can be called to cancel
+     * the snapshot listener.
+     */
+     onModeList(options: ModelAllListOptions) {
+      return this.query()
+        .orderBy(BaseModel.CREATED_AT_FLAG)
+        .onMode(options);
+    }
+
+    
     /**
      * Attaches a listener for QuerySnapshot events. You may either pass
      * individual `onNext` and `onError` callbacks or pass a single observer
@@ -593,6 +740,7 @@ export class BaseModel implements ModelInterface {
       var that = this;
       var res = () => {};
       var object:any = new this();
+      object.setModelType(this);
       if (!object.getReference()) {
         console.error(
           "The model path params is not set and can't run onList() function "
@@ -601,6 +749,39 @@ export class BaseModel implements ModelInterface {
       } else {
         return this.query()
           .orderBy(this.CREATED_AT_FLAG)
+          .on(callback, eventType);
+      }
+    }
+
+    
+    /**
+     * Attaches a listener for QuerySnapshot events. You may either pass
+     * individual `onNext` and `onError` callbacks or pass a single observer
+     * object with `next` and `error` callbacks. The listener can be cancelled by
+     * calling the function that is returned when `onSnapshot` is called.
+     *
+     * NOTE: Although an `onCompletion` callback can be provided, it will
+     * never be called because the snapshot stream is never-ending.
+     *
+     * @param callback A single object containing `next` and `error` callbacks.
+     * @return An unsubscribe function that can be called to cancel
+     * the snapshot listener.
+     */
+     onList(
+      callback: CallableFunction,
+      eventType?: LIST_EVENTS
+    ): CallableFunction {
+      var that:any = this.getModelType();
+      var res = () => {};
+      var object:any = new that();
+      if (!object.getReference()) {
+        console.error(
+          "The model path params is not set and can't run onList() function "
+        );
+        return res;
+      } else {
+        return this.query()
+          .orderBy(BaseModel.CREATED_AT_FLAG)
           .on(callback, eventType);
       }
     }
@@ -625,6 +806,7 @@ export class BaseModel implements ModelInterface {
     ): CallableFunction {
       var res = () => {};
       var object:any = new this();
+      object.setModelType(this);
       if (!object.getReference()) {
         console.error(
           "The model path params is not set and can't run onAddList() function "
@@ -635,6 +817,42 @@ export class BaseModel implements ModelInterface {
       var timestamp = new Date().getTime();
       return this.query()
         .orderBy(this.CREATED_AT_FLAG)
+        .startAt(timestamp)
+        .on(callback, eventType);
+    }
+
+    
+    /**
+     * Get New element in collectio
+     * Attaches a listener for QuerySnapshot events. You may either pass
+     * individual `onNext` and `onError` callbacks or pass a single observer
+     * object with `next` and `error` callbacks. The listener can be cancelled by
+     * calling the function that is returned when `onSnapshot` is called.
+     *
+     * NOTE: Although an `onCompletion` callback can be provided, it will
+     * never be called because the snapshot stream is never-ending.
+     *
+     * @param callback A single object containing `next` and `error` callbacks.
+     * @return An unsubscribe function that can be called to cancel
+     * the snapshot listener.
+     */
+     onCreatedList(
+      callback: CallableFunction,
+      eventType?: LIST_EVENTS
+    ): CallableFunction {
+      var res = () => {};
+      var that:any = this.getModelType();
+      var object:any = new that();
+      if (!object.getReference()) {
+        console.error(
+          "The model path params is not set and can't run onAddList() function "
+        );
+        return res;
+      }
+
+      var timestamp = new Date().getTime();
+      return this.query()
+        .orderBy(BaseModel.CREATED_AT_FLAG)
         .startAt(timestamp)
         .on(callback, eventType);
     }
@@ -653,22 +871,57 @@ export class BaseModel implements ModelInterface {
      * @return An unsubscribe function that can be called to cancel
      * the snapshot listener.
      */
-    static onUpdatedList(
+    onUpdatedList(
       callback: CallableFunction,
       eventType?: LIST_EVENTS
     ): CallableFunction {
       var res = () => {};
-      var object:any = new this();
+      var that:any = this.getModelType();
+      var object:any = new that();
       if (!object.getReference()) {
         console.error(
           "The model path params is not set and can't run onUpdatedList() function "
         );
         return res;
       }
-      var that = this;
       var timestamp = new Date().getTime();
       return this.query()
-        .orderBy(this.UPDATED_AT_FLAG)
+        .orderBy(BaseModel.UPDATED_AT_FLAG)
+        .startAt(timestamp)
+        .on(callback, eventType);
+    }
+
+    
+    /**
+     * Get Updated element in collectio
+     * Attaches a listener for QuerySnapshot events. You may either pass
+     * individual `onNext` and `onError` callbacks or pass a single observer
+     * object with `next` and `error` callbacks. The listener can be cancelled by
+     * calling the function that is returned when `onSnapshot` is called.
+     *
+     * NOTE: Although an `onCompletion` callback can be provided, it will
+     * never be called because the snapshot stream is never-ending.
+     *
+     * @param callback A single object containing `next` and `error` callbacks.
+     * @return An unsubscribe function that can be called to cancel
+     * the snapshot listener.
+     */
+    static onUpdatedList(
+      callback: CallableFunction,
+      eventType?: LIST_EVENTS
+    ): CallableFunction {
+      var res = () => {}; 
+      var object:any = new this();
+      object.setModelType(this);
+      if (!object.getReference()) {
+        console.error(
+          "The model path params is not set and can't run onUpdatedList() function "
+        );
+        return res;
+      }
+      var timestamp = new Date().getTime();
+      return this.query()
+        .orderBy(BaseModel.UPDATED_AT_FLAG)
         .startAt(timestamp)
         .on(callback, eventType);
     }
@@ -730,6 +983,21 @@ export class BaseModel implements ModelInterface {
         return await that.where(fieldPath,opStr,value).getOne();
     }
 
+    
+     async find(fieldPath: string,
+    opStr: firebase.firestore.WhereFilterOp,
+    value: any) : Promise<Array<this>>{
+        var that : any = this;
+        return await that.where(fieldPath,opStr,value).get();
+    }
+    
+     async findOne(fieldPath: string,
+    opStr: firebase.firestore.WhereFilterOp,
+    value: any) : Promise<this | null>{
+        var that : any = this;
+        return await that.where(fieldPath,opStr,value).getOne();
+    }
+
     getRequiredFields(): Array<string> {
       var that: any = this;
       return that.requiredFields;
@@ -765,7 +1033,7 @@ export class BaseModel implements ModelInterface {
                 data[key] = this.documentData[key];
             }
         }
-        console.log('this.documentData ---------> ',data);
+        //console.log('this.documentData ---------> ',data);
       return data;
     }
 
