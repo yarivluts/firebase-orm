@@ -54,7 +54,7 @@ member.save()
 //Get the website google from the database
 const google = await Website.findOne('domain','==','www.google.com');
 //Get the linkes under google website
-const links = google.getModel(Link).getAll();
+const links = await google.getModel(Link).getAll();
 //Using sql to find links inside google model
 const list = await google.sql("select * from links where name = 'some link'");
 
