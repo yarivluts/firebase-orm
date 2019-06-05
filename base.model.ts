@@ -278,7 +278,7 @@ export class BaseModel implements ModelInterface {
     ): Promise<Array<T>> {
       var object:any = new this();
       object.setModelType(this);
-      var query = object.getQuery();
+      var query = object.query();
       if (whereArr && whereArr[0] && whereArr[0].length == 3) {
         for (var i = 0; i < whereArr.length; i++) {
           query.where(whereArr[i][0], whereArr[i][1], whereArr[i][2]);
@@ -302,7 +302,7 @@ export class BaseModel implements ModelInterface {
     ): Promise<Array<this>> {
       var that:any = this.getModelType();
       var object:any = new that();
-      var query = object.getQuery();
+      var query = object.query();
       if (whereArr && whereArr[0] && whereArr[0].length == 3) {
         for (var i = 0; i < whereArr.length; i++) {
           query.where(whereArr[i][0], whereArr[i][1], whereArr[i][2]);
