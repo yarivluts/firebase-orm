@@ -10,6 +10,7 @@ export class FirestoreOrmRepository{
     static globalPaths = {};
     static documentsRequiredFields = {};
     static DEFAULT_KEY_NAME = 'default';
+    static ormFieldsStructure = {};
 
     constructor(protected firestore : firebase.firestore.Firestore){
 

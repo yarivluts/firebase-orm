@@ -33,8 +33,7 @@ export class BaseModel implements ModelInterface {
     updated_at!: number;
     protected is_exist: boolean = false;
     pathId!: string;
-    protected currentModel!: this & BaseModel;
-    protected documentData: any = {};
+    protected currentModel!: this & BaseModel; 
     protected static aliasFieldsMapper: any = {};
     protected static fields: any = {};
     protected static requiredFields: Array<string> = [];
@@ -115,7 +114,7 @@ export class BaseModel implements ModelInterface {
       }
 
     toString(): string {
-      var res = Object.assign({}, this.documentData);
+      var res:any = Object.assign({}, this.getDocumentData());
       if (this.getId()) {
         res.id = this.getId();
       }
@@ -226,6 +225,21 @@ export class BaseModel implements ModelInterface {
       object.setId(id);
       if (object.getRepository()) {
         res = await this.getRepository().load(object, id, params);
+      } else {
+        console.error("No repository!");
+      }
+      return res;
+    }
+
+    static async init<T = BaseModel>(this: { new(): T },
+      id: string,
+      params: { [key: string]: string } = {}
+    ): Promise<T | null> {
+      var object:any = new this();
+      var res:any;
+      object.setId(id);
+      if (object.getRepository()) {
+        res = await object.getRepository().load(object, id, params);
       } else {
         console.error("No repository!");
       }
@@ -601,7 +615,8 @@ export class BaseModel implements ModelInterface {
      * @param value
      */
     setParam(key: string, value: any): this {
-      this.documentData[key] = value;
+      this[key] = value;
+      this['storedFields'].push(key);
       return this;
     }
 
@@ -611,7 +626,7 @@ export class BaseModel implements ModelInterface {
      * @param value
      */
     getParam(key: string, defaultValue: any): any{
-      return typeof this.documentData[key] !== 'undefined' ? this.documentData[key] : defaultValue
+      return typeof this[key] !== 'undefined' ? this[key] : defaultValue
     }
 
     /**
@@ -929,10 +944,12 @@ export class BaseModel implements ModelInterface {
     initAutoTime(): void {
       if (this.isAutoTime) {
         if (!this.created_at) {
-          this.documentData[BaseModel.CREATED_AT_FLAG] = new Date().getTime();
+          this[BaseModel.CREATED_AT_FLAG] = new Date().getTime();
+          this['storedFields'].push(BaseModel.CREATED_AT_FLAG);
           this.created_at = new Date().getTime();
         }
-        this.documentData[BaseModel.UPDATED_AT_FLAG] = new Date().getTime();
+        this[BaseModel.UPDATED_AT_FLAG] = new Date().getTime();
+        this['storedFields'].push(BaseModel.UPDATED_AT_FLAG);
         this.updated_at = new Date().getTime();
       }
     }
@@ -1008,7 +1025,7 @@ export class BaseModel implements ModelInterface {
       var fields = this.getRequiredFields();
       var result = true;
       for (var i = 0; fields.length > i; i++) {
-        if (that[fields[i]] == null || typeof that[fields[i]] == undefined) {
+        if (that[fields[i]] == null || typeof that[fields[i]] === undefined) {
           result = false;
           console.error(
             this.referencePath +
@@ -1026,14 +1043,18 @@ export class BaseModel implements ModelInterface {
 
     getDocumentData(): Object {
         var data = {};
-        for(var key in this.documentData){
-            if(this.documentData[key] instanceof BaseModel){
-                data[key] = this.documentData[key].getDocReference();
-            }else{
-                data[key] = this.documentData[key];
-            }
+        
+        this['storedFields'].forEach((fieldName:string) => {
+          if(typeof this[fieldName] === 'undefined'){
+            return;
+          }
+          var val = this[fieldName];
+          if(val instanceof BaseModel){
+            data[fieldName] = val.getDocReference();
+        }else{
+            data[fieldName] = val;
         }
-        //console.log('this.documentData ---------> ',data);
+        }); 
       return data;
     }
 
