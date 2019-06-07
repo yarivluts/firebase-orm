@@ -1045,6 +1045,7 @@ export class BaseModel implements ModelInterface {
         var data = {};
         
         this['storedFields'].forEach((fieldName:string) => {
+          fieldName = this['aliasFieldsMapper'] && this['aliasFieldsMapper'][fieldName] ? this['aliasFieldsMapper'][fieldName] : fieldName;
           if(typeof this[fieldName] === 'undefined'){
             return;
           }
