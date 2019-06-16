@@ -66,19 +66,20 @@ const list = await Member.query().where('age','>','3').where('weight','>','30').
 //Get the member tom
 const tom = await Member.findOne('firstName','==','Tom');
 //Listen to changes in tom data in real time
-tom.on(()=>{
+var unsubscribe = tom.on(()=>{
     //Do something
 });
+ 
 //Get all the list in real time
-Member.onList((member) => {
+var unsubscribe = Member.onList((member) => {
     //Do someting with the meber
 })
 //Get all the list in real time when new meber is addedd
-Member.onList((member) => {
+var unsubscribe = Member.onList((member) => {
     //Do someting with the meber
 },LIST_EVENTS.ADDEDD)
 //Or
-Member.onModeList({
+var unsubscribe = Member.onModeList({
 
     /**
      * Listen to add new objects from now
@@ -100,8 +101,9 @@ Member.onModeList({
      */
     init? : CallableFunction
   })
-
-
+ 
+//Kill the listen process 
+unsubscribe();
  
 ```
 
