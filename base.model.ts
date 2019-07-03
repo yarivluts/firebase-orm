@@ -945,10 +945,10 @@ export class BaseModel implements ModelInterface {
       if (this.isAutoTime) {
         if (!this.created_at) {
           this[BaseModel.CREATED_AT_FLAG] = new Date().getTime();
-          this['storedFields'].push(BaseModel.CREATED_AT_FLAG);
           this.created_at = new Date().getTime();
         }
         this[BaseModel.UPDATED_AT_FLAG] = new Date().getTime();
+        this['storedFields'].push(BaseModel.CREATED_AT_FLAG);
         this['storedFields'].push(BaseModel.UPDATED_AT_FLAG);
         this.updated_at = new Date().getTime();
       }

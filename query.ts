@@ -9,10 +9,16 @@ export enum LIST_EVENTS {
   ADDEDD = "added",
   INITIALIZE = "initialize"
 }
+export enum WHERE_FILTER_OP {
+  NOT_EQUAL = "!="
+}
 
 export class Query {
   protected current!: firebase.firestore.Query;
   protected model!: ModelInterface;
+  protected orWhereList:any[] = [];
+  protected orderByList:any[] = [];
+  protected queryLimit! : number;
 
   init(model: ModelInterface) {
     this.model = model;
@@ -25,16 +31,48 @@ export class Query {
    * relation constraint provided.
    *
    * @param fieldPath The path to compare
-   * @param opStr The operation string (e.g "<", "<=", "==", ">", ">=").
+   * @param opStr The operation string (e.g "<", "<=", "==", ">", ">=", "!=").
    * @param value The value for comparison
    * @return The created Query.
    */
   where(
     fieldPath: string | firebase.firestore.FieldPath,
-    opStr: firebase.firestore.WhereFilterOp,
+    opStr: firebase.firestore.WhereFilterOp | WHERE_FILTER_OP,
     value: any
   ): Query {
-    this.current = this.current.where(fieldPath, opStr, value);
+    if(opStr == WHERE_FILTER_OP.NOT_EQUAL){
+      this.current = this.current.where(fieldPath, '<', value).where(fieldPath, '>', value);
+    }else{
+      var nativeOp : any = opStr;
+      this.current = this.current.where(fieldPath, nativeOp, value);
+    }
+    
+    return this;
+  }
+
+  
+  /**
+   * Test Mode - Or operation for additional filter that documents
+   * must contain the specified field and the value should satisfy the
+   * relation constraint provided.
+   *
+   * @param fieldPath The path to compare
+   * @param opStr The operation string (e.g "<", "<=", "==", ">", ">=", "!=").
+   * @param value The value for comparison
+   * @return The created Query.
+   */
+   orWhere(
+    fieldPath: string | firebase.firestore.FieldPath,
+    opStr: firebase.firestore.WhereFilterOp | WHERE_FILTER_OP,
+    value: any
+  ): Query {
+
+    this.orWhereList.push({
+      fieldPath : fieldPath,
+      opStr : opStr,
+      value : value
+    })
+    
     return this;
   }
 
@@ -51,6 +89,10 @@ export class Query {
     fieldPath: string | firebase.firestore.FieldPath,
     directionStr?: firebase.firestore.OrderByDirection
   ): Query {
+    this.orderByList.push({
+      fieldPath : fieldPath,
+      directionStr : directionStr
+    })
     this.current = this.current.orderBy(fieldPath, directionStr);
     return this;
   }
@@ -63,6 +105,7 @@ export class Query {
    * @return The created Query.
    */
   limit(limit: number): Query {
+    this.queryLimit = limit;
     this.current = this.current.limit(limit);
     return this;
   }
@@ -221,9 +264,65 @@ export class Query {
   async get(
     options?: firebase.firestore.GetOptions
   ): Promise<Array<ModelInterface>> {
-    var list = await this.current.get(options);
-    return this.parse(list);
+    if(this.orWhereList.length > 0){
+      return await this.getWithAdvancedFilter(options);
+    }else{
+      var list = await this.current.get(options);
+      return this.parse(list);
+    }
   }
+   
+  /**
+   * Executes the query and returns the results as a `QuerySnapshot`.
+   *
+   * Note: By default, get() attempts to provide up-to-date data when possible
+   * by waiting for data from the server, but it may return cached data or fail
+   * if you are offline and the server cannot be reached. This behavior can be
+   * altered via the `GetOptions` parameter.
+   *
+   * @param options An object to configure the get behavior.
+   * @return A Promise that will be resolved with the results of the Query.
+   */
+  async getWithAdvancedFilter(
+    options?: firebase.firestore.GetOptions
+  ): Promise<Array<ModelInterface>> {
+    var resultList : any[] = [];
+    var result : any[] = [];
+    var promiseAllList:any[] = []
+    var currentQuery : any;
+    this.orWhereList.forEach((row) => {
+      currentQuery = Object.assign({},this.current);
+      currentQuery.where(row.fieldPath,row.opStr,row.value);
+      promiseAllList.push((async () => {
+        var queryResult = await currentQuery.get(options);
+        resultList.push(this.parse(queryResult));
+        return queryResult;
+      })())
+    });
+
+    await Promise.all(promiseAllList);
+
+    this.orderByList.forEach(order => {
+      resultList.sort((a,b) => {
+          if(typeof a[order.fieldPath] !== 'undefined' && typeof b[order.fieldPath] !== 'undefined'){
+            if(order.directionStr == 'asc' || !order.directionStr){
+             return a[order.fieldPath] - b[order.fieldPath];
+            }else{
+              return b[order.fieldPath] - a[order.fieldPath];
+            }
+          }else{
+            return 1;
+          }
+      })
+    })
+    if(this.queryLimit){
+      result = resultList.slice(0,this.queryLimit);
+    }else{
+      result = resultList;
+    }
+   return result;
+  }
+  
 
   
   /**
