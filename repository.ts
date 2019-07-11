@@ -128,7 +128,7 @@ export class FirestoreOrmRepository{
                     object.is_exist = true;
                     for(let key in  doc.data()){
                         let value =  doc.data()[key];
-                        if(object.aliasFieldsMapper[key]){
+                        if(object.aliasFieldsMapper && object.aliasFieldsMapper[key]){
                             object[object.aliasFieldsMapper[key]] = value;
                         }else{
                             object[key] = value;

@@ -30,7 +30,10 @@ function applyMixins(derivedCtor: any, baseCtors: any[]) {
 export function Model(options: ModelOptions) {
   return function <T extends { new(...args: any[]): {} }>(constructor: T) {
 
-    applyMixins(constructor, [BaseModel]);
+    if(Object.getPrototypeOf(constructor) !== BaseModel){
+      applyMixins(constructor, [BaseModel]);
+    }
+    
 
     Object.defineProperty(constructor.prototype, 'referencePath', {
       get: function () {

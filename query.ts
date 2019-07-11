@@ -14,15 +14,28 @@ export enum WHERE_FILTER_OP {
 }
 
 export class Query {
-  protected current!: firebase.firestore.Query;
+  protected _current!: firebase.firestore.Query;
   protected model!: ModelInterface;
   protected orWhereList:any[] = [];
   protected orderByList:any[] = [];
   protected queryLimit! : number;
-
+  protected currentRef! : firebase.firestore.CollectionReference;
   init(model: ModelInterface) {
     this.model = model;
-    this.current = this.model.getReference();
+    this.currentRef = this.model.getReference();
+  }
+
+  get current(){
+    if(!this._current){
+      return this.currentRef;
+    }
+    return this._current;
+  }
+
+  set current(value){
+    if(!this._current){
+      this._current = value;
+    }
   }
 
   /**

@@ -33,15 +33,17 @@ export function Field(options?: FieldOptions): any {
     target.storedFields.push(field_name);
 
 
-    const update = Object.defineProperty(
-      target,
-      key,
-      {
-          configurable: true,
-          enumerable: true,
-          writable : true
-      },
-  ); 
+      var update = Object.defineProperty(target, key, {
+        configurable: true,
+        enumerable: true,
+      /*  writable: true, */
+        set : function (value){
+            this['_'+key] = value;
+        },
+        get : function () {
+            return this['_'+key];
+        },  
+    });
      // If the update failed, something went wrong
      if (!update) {
      //Kill everything

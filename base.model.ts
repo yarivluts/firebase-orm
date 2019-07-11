@@ -586,7 +586,7 @@ export class BaseModel implements ModelInterface {
       }
       for (let key in params) {
         let value = params[key];
-        if (object.aliasFieldsMapper[key]) {
+        if (object.aliasFieldsMapper && object.aliasFieldsMapper[key]) {
           object[object.aliasFieldsMapper[key]] = value;
         } else {
           object[key] = value;
