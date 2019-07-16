@@ -45,6 +45,7 @@ export class FirestoreOrmRepository{
         var current:any = this.firestore;
         var pathList:any = object.getPathList();
         if(!pathList || pathList.length < 1){
+            console.error("Can't get collection path - ",object);
             return false;
         }
         for(var i = 0;i < pathList.length;i++){
@@ -62,7 +63,7 @@ export class FirestoreOrmRepository{
         return this.firestore;
     }
     
-    getModel<T>(model:{new(): T; }) : T & ModelInterface {
+    getModel<T>(model:{new(): T; }) : T & BaseModel {
         var m : any | T = model;
         var object:any = new m(); 
         object.setRepository(this);
@@ -70,7 +71,7 @@ export class FirestoreOrmRepository{
         object.currentModel = object;
         //object.initFields();
 
-        return <T & ModelInterface>object;
+        return <T & BaseModel>object;
     }
     
     async sql(sql: string) : Promise<Array<Object>> {

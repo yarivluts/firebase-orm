@@ -12,12 +12,17 @@ export function Field(options?: FieldOptions): any {
       target.aliasFieldsMapper = {};
     }
     
+    if (!target.textIndexingFields) {
+      target.textIndexingFields = {};
+    }
+    
     if (!target.fields) {
-      target.fields = {};
+      target.fields = {}; 
     }
     if(options && options.field_name){
       target.aliasFieldsMapper[options.field_name] = key;
     }
+    
     
     target.fields[key] = options;
 
@@ -32,16 +37,23 @@ export function Field(options?: FieldOptions): any {
     }
     target.storedFields.push(field_name);
 
+    if(options && options.is_text_indexing){
+      target.textIndexingFields[key] = key;
+      target['storedFields'].push('text_index_' + field_name );
+    }
 
       var update = Object.defineProperty(target, key, {
         configurable: true,
         enumerable: true,
       /*  writable: true, */
         set : function (value){
-            this['_'+key] = value;
+          this['data'][key] = value;
+          if(this.textIndexingFields[key]){
+            this['data']['text_index_' + this.getFieldName(key) ] = this.parseTextIndexingFields(value + '');
+          }
         },
         get : function () {
-            return this['_'+key];
+            return typeof this['data'][key] === undefined ? undefined : this['data'][key];
         },  
     });
      // If the update failed, something went wrong

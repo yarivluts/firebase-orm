@@ -122,6 +122,7 @@ and you have enabled the following settings in `tsconfig.json`:
 ```json
 "emitDecoratorMetadata": true,
 "experimentalDecorators": true,
+"strictPropertyInitialization" : false,
 ```
 
 You may also need to enable `es6` in the `lib` section of compiler options, or install `es6-shim` from `@types`.
@@ -132,7 +133,7 @@ You may also need to enable `es6` in the `lib` section of compiler options, or i
 
 ```typescript
 
-import app, { firestore } from "firebase/app";
+import * as app from "firebase";
 import { FirestoreOrmRepository } from "@arbel/firebase-orm";
 
     var firebaseApp = app.initializeApp(config); 

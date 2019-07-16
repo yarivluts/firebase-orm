@@ -12,6 +12,11 @@ export interface FieldOptions {
   is_required?: boolean;
 
   /**
+   * If the field need to be search in LIKE operator
+   */
+  is_text_indexing?: boolean;
+
+  /** 
    * Init as object
    */
   init_as_object?: Object;

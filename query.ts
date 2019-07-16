@@ -2,6 +2,7 @@ import * as firebase from "firebase/app";
 import 'firebase/firestore';
 import { ModelInterface } from "./interfaces/model.interface";
 import { ModelAllListOptions } from "./interfaces/model.alllist.options.interface";
+import { BaseModel } from "base.model";
 
 export enum LIST_EVENTS {
   REMOVED = "removed",
@@ -13,30 +14,29 @@ export enum WHERE_FILTER_OP {
   NOT_EQUAL = "!="
 }
 
-export class Query {
-  protected _current!: firebase.firestore.Query;
-  protected model!: ModelInterface;
-  protected orWhereList:any[] = [];
-  protected orderByList:any[] = [];
-  protected queryLimit! : number;
-  protected currentRef! : firebase.firestore.CollectionReference;
-  init(model: ModelInterface) {
+export class Query<T> {
+  protected current!: firebase.firestore.Query;
+  protected model!: BaseModel;
+  protected queryList: any[] = [];
+  protected orWhereList: any[] = [];
+  protected orderByList: any[] = [];
+  protected queryLimit!: number;
+  protected currentRef!: firebase.firestore.CollectionReference;
+  init(model: BaseModel) {
     this.model = model;
-    this.currentRef = this.model.getReference();
+    this.current = this.model.getReference();
   }
 
-  get current(){
-    if(!this._current){
-      return this.currentRef;
-    }
-    return this._current;
-  }
-
-  set current(value){
-    if(!this._current){
-      this._current = value;
-    }
-  }
+  /*  get current(){
+     if(!this._current){
+       return this.currentRef;
+     }
+     return this._current;
+   }
+ 
+   set current(value){
+     this._current = value;
+   } */
 
   /**
    * Creates and returns a new Query with the additional filter that documents
@@ -52,18 +52,19 @@ export class Query {
     fieldPath: string | firebase.firestore.FieldPath,
     opStr: firebase.firestore.WhereFilterOp | WHERE_FILTER_OP,
     value: any
-  ): Query {
-    if(opStr == WHERE_FILTER_OP.NOT_EQUAL){
+  ): Query<T> {
+    this.queryList.push(this.current);
+    if (opStr == WHERE_FILTER_OP.NOT_EQUAL) {
       this.current = this.current.where(fieldPath, '<', value).where(fieldPath, '>', value);
-    }else{
-      var nativeOp : any = opStr;
+    } else {
+      var nativeOp: any = opStr;
       this.current = this.current.where(fieldPath, nativeOp, value);
     }
-    
+
     return this;
   }
 
-  
+
   /**
    * Test Mode - Or operation for additional filter that documents
    * must contain the specified field and the value should satisfy the
@@ -74,18 +75,19 @@ export class Query {
    * @param value The value for comparison
    * @return The created Query.
    */
-   orWhere(
+  orWhere(
     fieldPath: string | firebase.firestore.FieldPath,
     opStr: firebase.firestore.WhereFilterOp | WHERE_FILTER_OP,
     value: any
-  ): Query {
+  ): Query<T> {
 
     this.orWhereList.push({
-      fieldPath : fieldPath,
-      opStr : opStr,
-      value : value
+      fieldPath: fieldPath,
+      opStr: opStr,
+      value: value,
+      queryObject: this.queryList.length > 0 ? this.queryList[this.queryList.length - 1] : this.current
     })
-    
+
     return this;
   }
 
@@ -101,12 +103,17 @@ export class Query {
   orderBy(
     fieldPath: string | firebase.firestore.FieldPath,
     directionStr?: firebase.firestore.OrderByDirection
-  ): Query {
+  ): Query<T> {
     this.orderByList.push({
-      fieldPath : fieldPath,
-      directionStr : directionStr
+      fieldPath: fieldPath,
+      directionStr: directionStr
     })
     this.current = this.current.orderBy(fieldPath, directionStr);
+
+    for (var i = 0; this.orWhereList.length > i; i++) {
+      this.orWhereList[i].queryObject = this.orWhereList[i].queryObject.orderBy(fieldPath, directionStr);
+    }
+
     return this;
   }
 
@@ -117,9 +124,33 @@ export class Query {
    * @param limit The maximum number of items to return.
    * @return The created Query.
    */
-  limit(limit: number): Query {
+  limit(limit: number): Query<T> {
     this.queryLimit = limit;
     this.current = this.current.limit(limit);
+
+    for (var i = 0; this.orWhereList.length > i; i++) {
+      this.orWhereList[i].queryObject = this.orWhereList[i].queryObject.limit(limit);
+    }
+    return this;
+  }
+
+  like(fieldName : string,find : string): Query<T>{
+    var likePrefix = '~~~';
+    if(this.model['textIndexingFields'] && this.model['textIndexingFields'][this.model.getFieldName(fieldName)]){
+      if(!find.startsWith('%')){
+        find = likePrefix + find;
+      }
+      if(!find.endsWith('%')){
+        find =  find + likePrefix;
+      }
+      find = find.replace(/%/g, '');
+      this.current = this.current.where('text_index_' +this.model.getFieldName(fieldName)+`.${find}`,'==',true);
+console.log('like field ----- ','text_index_' +this.model.getFieldName(fieldName)+`.${find}`);
+    for (var i = 0; this.orWhereList.length > i; i++) {
+      this.orWhereList[i].queryObject = this.orWhereList[i].queryObject.where('text_index_' +this.model.getFieldName(fieldName)+`.${find}`,'==',true);
+    }
+    }
+
     return this;
   }
 
@@ -138,10 +169,10 @@ export class Query {
    */
   on(callback: CallableFunction, event_type?: LIST_EVENTS) {
     var that = this;
-    return this.current.onSnapshot(function(querySnapshot) {
+    return this.current.onSnapshot(function (querySnapshot) {
       var result = that.parse(querySnapshot);
       if (event_type) {
-        querySnapshot.docChanges().forEach(function(change) {
+        querySnapshot.docChanges().forEach(function (change) {
           if (change.type === LIST_EVENTS.ADDEDD) {
             var result = that.parseFromData(change.doc.data(), change.doc.id);
             callback(result);
@@ -164,7 +195,7 @@ export class Query {
     });
   }
 
-  
+
   /**
    * Attaches a listener for QuerySnapshot events. You may either pass
    * individual `onNext` and `onError` callbacks or pass a single observer
@@ -178,32 +209,32 @@ export class Query {
    * @return An unsubscribe function that can be called to cancel
    * the snapshot listener.
    */
-  onMode(options : ModelAllListOptions) {
+  onMode(options: ModelAllListOptions) {
     var that = this;
     var now = new Date().getTime();
-    return this.current.onSnapshot(async function(querySnapshot) {
-      for(var i = 0;i < querySnapshot.docChanges().length;i++){
+    return this.current.onSnapshot(async function (querySnapshot) {
+      for (var i = 0; i < querySnapshot.docChanges().length; i++) {
         var change = querySnapshot.docChanges()[i];
         if (change.type === LIST_EVENTS.ADDEDD && (options.added || options.init)) {
-            let result = that.parseFromData(change.doc.data(), change.doc.id);
-            if(result.created_at && result.created_at > now && options.added){
-                options.added(result); 
-            }else if(options.init){
-                options.init(result); 
-            }
-            
-            // This is equivalent to child_added
-          } else if (change.type === LIST_EVENTS.MODIFIED && options.modified) {
-            let result = that.parseFromData(change.doc.data(), change.doc.id);
-            options.modified(result); 
-            // This is equivalent to child_changed
-          } else if (change.type === LIST_EVENTS.REMOVED && options.removed) {
-            let result = that.parseFromData(change.doc.data(), change.doc.id);
-            //console.log("Removed model: ",that.model.getCurrentModel().getReferencePath(),change.doc.data(), result);
-            options.removed(result); 
-            // This is equivalent to child_removed
+          let result = that.parseFromData(change.doc.data(), change.doc.id);
+          if (result.created_at && result.created_at > now && options.added) {
+            options.added(result);
+          } else if (options.init) {
+            options.init(result);
           }
-      }  
+
+          // This is equivalent to child_added
+        } else if (change.type === LIST_EVENTS.MODIFIED && options.modified) {
+          let result = that.parseFromData(change.doc.data(), change.doc.id);
+          options.modified(result);
+          // This is equivalent to child_changed
+        } else if (change.type === LIST_EVENTS.REMOVED && options.removed) {
+          let result = that.parseFromData(change.doc.data(), change.doc.id);
+          //console.log("Removed model: ",that.model.getCurrentModel().getReferencePath(),change.doc.data(), result);
+          options.removed(result);
+          // This is equivalent to child_removed
+        }
+      }
     });
   }
 
@@ -216,8 +247,13 @@ export class Query {
    * of the query's order by.
    * @return The created Query.
    */
-  startAt(...fieldValues: any[]): Query {
-    this.current = this.current.startAt(fieldValues);
+  startAt(...fieldValues: any[]): Query<T> {
+    this.current = this.current.startAt(...fieldValues);
+    
+    for (var i = 0; this.orWhereList.length > i; i++) {
+      this.orWhere[i].queryObject = this.orWhere[i].queryObject.startAt(...fieldValues);
+    }
+
     return this;
   }
 
@@ -230,9 +266,16 @@ export class Query {
    * @param snapshot The snapshot of the document to start after.
    * @return The created Query.
    */
-  startAfter(snapshot: firebase.firestore.DocumentSnapshot): Query {
-    this.current = this.current.startAfter(snapshot);
-    return this;
+  startAfter(ormObject: BaseModel): Promise<Query<T>> {
+    return new Promise((resolve, reject) => {
+      ormObject.getDocReference().onSnapshot((doc) => {
+        this.current = this.current.startAfter(doc);
+        for (var i = 0; this.orWhereList.length > i; i++) {
+          this.orWhere[i].queryObject = this.orWhere[i].queryObject.startAfter(doc);
+        }
+        resolve(this);
+      })
+    })
   }
 
   /**
@@ -244,8 +287,12 @@ export class Query {
    * of the query's order by.
    * @return The created Query.
    */
-  endBefore(...fieldValues: any[]): Query {
-    this.current = this.current.endBefore(fieldValues);
+  endBefore(...fieldValues: any[]): Query<T> {
+    this.current = this.current.endBefore(...fieldValues);
+
+    for (var i = 0; this.orWhereList.length > i; i++) {
+      this.orWhereList[i].queryObject = this.orWhereList[i].queryObject.endBefore(...fieldValues);
+    }
     return this;
   }
 
@@ -258,8 +305,12 @@ export class Query {
    * of the query's order by.
    * @return The created Query.
    */
-  endAt(...fieldValues: any[]): Query {
-    this.current = this.current.endAt(fieldValues);
+  endAt(...fieldValues: any[]): Query<T> {
+    this.current = this.current.endAt(...fieldValues);
+
+    for (var i = 0; this.orWhereList.length > i; i++) {
+      this.orWhereList[i].queryObject = this.orWhereList[i].queryObject.endAt(...fieldValues);
+    }
     return this;
   }
 
@@ -276,15 +327,15 @@ export class Query {
    */
   async get(
     options?: firebase.firestore.GetOptions
-  ): Promise<Array<ModelInterface>> {
-    if(this.orWhereList.length > 0){
+  ): Promise<Array<BaseModel & T>> {
+    if (this.orWhereList.length > 0) {
       return await this.getWithAdvancedFilter(options);
-    }else{
+    } else {
       var list = await this.current.get(options);
       return this.parse(list);
     }
   }
-   
+
   /**
    * Executes the query and returns the results as a `QuerySnapshot`.
    *
@@ -298,46 +349,63 @@ export class Query {
    */
   async getWithAdvancedFilter(
     options?: firebase.firestore.GetOptions
-  ): Promise<Array<ModelInterface>> {
-    var resultList : any[] = [];
-    var result : any[] = [];
-    var promiseAllList:any[] = []
-    var currentQuery : any;
+  ): Promise<Array<BaseModel & T>> {
+    var resultList: any[] = [];
+    var resultMap: any = {};
+    var result: any[] = [];
+    var promiseAllList: any[] = []
+    var currentQuery: any;
+    promiseAllList.push((async () => {
+      var queryResult = await this.current.get(options);
+      var res = this.parse(queryResult);
+      res.forEach((row) => {
+        resultMap[row.id] = row;
+      });
+      return queryResult;
+    })())
     this.orWhereList.forEach((row) => {
-      currentQuery = Object.assign({},this.current);
-      currentQuery.where(row.fieldPath,row.opStr,row.value);
+      currentQuery = row.queryObject.where(row.fieldPath, row.opStr, row.value);
+      console.log('row ', row);
       promiseAllList.push((async () => {
         var queryResult = await currentQuery.get(options);
-        resultList.push(this.parse(queryResult));
+        var res = this.parse(queryResult);
+        res.forEach((row) => {
+          resultMap[row.id] = row;
+        });
         return queryResult;
       })())
     });
 
     await Promise.all(promiseAllList);
 
+    for (var key in resultMap) {
+      resultList.push(resultMap[key]);
+    }
+    //console.log('queryResult', resultList);
+
     this.orderByList.forEach(order => {
-      resultList.sort((a,b) => {
-          if(typeof a[order.fieldPath] !== 'undefined' && typeof b[order.fieldPath] !== 'undefined'){
-            if(order.directionStr == 'asc' || !order.directionStr){
-             return a[order.fieldPath] - b[order.fieldPath];
-            }else{
-              return b[order.fieldPath] - a[order.fieldPath];
-            }
-          }else{
-            return 1;
+      resultList.sort((a, b) => {
+        if (typeof a[order.fieldPath] !== 'undefined' && typeof b[order.fieldPath] !== 'undefined') {
+          if (order.directionStr == 'asc' || !order.directionStr) {
+            return a[order.fieldPath] - b[order.fieldPath];
+          } else {
+            return b[order.fieldPath] - a[order.fieldPath];
           }
+        } else {
+          return 1;
+        }
       })
     })
-    if(this.queryLimit){
-      result = resultList.slice(0,this.queryLimit);
-    }else{
+    if (this.queryLimit) {
+      result = resultList.slice(0, this.queryLimit);
+    } else {
       result = resultList;
     }
-   return result;
+    return result;
   }
-  
 
-  
+
+
   /**
    * Executes the query and returns the results as a `QuerySnapshot`.
    *
@@ -351,13 +419,13 @@ export class Query {
    */
   async getOne(
     options?: firebase.firestore.GetOptions
-  ): Promise<ModelInterface | null>{
+  ): Promise<BaseModel | null> {
     this.limit(1);
     var list = await this.current.get(options);
     var res = this.parse(list);
-    if(res.length > 0){
+    if (res.length > 0) {
       return res[0];
-    }else{
+    } else {
       return null;
     }
 

@@ -35,11 +35,13 @@ export class BaseModel implements ModelInterface {
     pathId!: string;
     protected currentModel!: this & BaseModel; 
     protected static aliasFieldsMapper: any = {};
+    protected static textIndexingFields: any = {};
     protected static fields: any = {};
     protected static requiredFields: Array<string> = [];
     protected repository!: FirestoreOrmRepository;
     protected globalModel!: this;
     protected currentQuery!: any;
+    protected data: any = {};
     protected currentQueryListener!: any;
     protected modelType!: any;
 
@@ -50,7 +52,43 @@ export class BaseModel implements ModelInterface {
             connectionName = this['connectionName'];
         }
         this.repository = FirestoreOrmRepository.getGlobalConnection(connectionName);
+        this.initProp();
     }
+
+    initProp(){
+      if(!this['storedFields']){
+        this['storedFields'] = [];
+      }
+      if(!this['fields']){
+        this['fields'] = {};
+      }
+      if(!this['requiredFields']){
+        this['requiredFields'] = [];
+      }
+      if(!this['aliasFieldsMapper']){
+        this['aliasFieldsMapper'] = [];
+      }
+    }
+
+    parseTextIndexingFields(text:string){
+      var result = {};
+      var edgeSymbol = '~~~';
+      for(var i = 0;text.length > i;i++){
+        for(var x = 1;x < text.length;x++){
+          var subString = text.substr(i,text.length-x);
+          if(i == 0){
+            subString = edgeSymbol + subString;
+          }else if(i + 1 == text.length){
+            subString =  subString + edgeSymbol;
+          }
+          result[subString] = true;
+        }
+       
+      }
+      return result;
+    }
+
+
 
     getId() {
       return this.id;
@@ -100,6 +138,7 @@ export class BaseModel implements ModelInterface {
       
     getCurrentModel(): this {
         var object: any = Object.create(this);
+        object.setModelType(this.getModelType());
         var keys = object.getPathListKeys();
         var that: any = this;
         for (var i = 0; i < keys.length; i++) {
@@ -160,23 +199,25 @@ export class BaseModel implements ModelInterface {
       return this.modelType;
     }
 
-    static where(
+    static where<T>(
+      this: { new(): T },
       fieldPath: string,
       opStr: firebase.firestore.WhereFilterOp,
       value: any
-    ): Query {
-      var that = this;
-      var query = this.query().where(fieldPath, opStr, value);
+    ): Query<T>{
+      var that:any = this;
+      var query = that.query().where(fieldPath, opStr, value); 
       return query;
     }
 
-     where(
+     where<T>(
+      this: { new(): T },
       fieldPath: string,
       opStr: firebase.firestore.WhereFilterOp,
       value: any
-    ): Query {
-      var that = this;
-      var query = this.query().where(fieldPath, opStr, value);
+    ): Query<T>{
+      var that:any = this;
+      var query = that.query().where(fieldPath, opStr, value);
       return query;
     }
 
@@ -231,7 +272,7 @@ export class BaseModel implements ModelInterface {
       return res;
     }
 
-    static async init<T = BaseModel>(this: { new(): T },
+    static async init<T>(this: { new(): T },
       id: string,
       params: { [key: string]: string } = {}
     ): Promise<T | null> {
@@ -263,9 +304,8 @@ export class BaseModel implements ModelInterface {
       }
     }
 
-    static query(): Query {
-      var that: any = this;
-      var query = new Query();
+    static query<T>(this: { new(): T }): Query<T> {
+      var query = new Query<T>();
       var object:any = new this();
       object.setModelType(this);
       query.init(object);
@@ -273,15 +313,15 @@ export class BaseModel implements ModelInterface {
     } 
 
     
-     query(): Query {
-      var that: any = this.getModelType();
-      var query = new Query();
-      var object:any = new that();
+     query<T>(this: { new(): T }): Query<T> {
+      var query = new Query<T>();
+      var that:any = this;
+      var object:any = that.getCurrentModel();
       query.init(object);
       return query;
     } 
 
-    static async getAll<T = BaseModel>(this: { new(): T },
+    static async getAll<T>(this: { new(): T },
       whereArr?: Array<any>,
       orderBy?: {
         fieldPath: string | firebase.firestore.FieldPath;
@@ -315,7 +355,7 @@ export class BaseModel implements ModelInterface {
       params?: { [key: string]: string }
     ): Promise<Array<this>> {
       var that:any = this.getModelType();
-      var object:any = new that();
+      var object:any = this.getCurrentModel();
       var query = object.query();
       if (whereArr && whereArr[0] && whereArr[0].length == 3) {
         for (var i = 0; i < whereArr.length; i++) {
@@ -485,8 +525,7 @@ export class BaseModel implements ModelInterface {
     }
 
      async createFromDoc(doc: firebase.firestore.DocumentSnapshot): Promise<this> {
-       var that:any = this.getModelType();
-      var object:any = new that();
+      var object:any = this.getCurrentModel();
       var d:any = doc;
       var data = await doc.data();
       var pathParams = object.getPathListParams();
@@ -504,7 +543,7 @@ export class BaseModel implements ModelInterface {
     }
 
     
-    static async createFromDoc<T = BaseModel>(this: { new(): T },doc: firebase.firestore.DocumentSnapshot): Promise<T> {
+    static async createFromDoc<T>(this: { new(): T },doc: firebase.firestore.DocumentSnapshot): Promise<T> {
       var object:any = new this();
       object.setModelType(this);
       var d:any = doc;
@@ -525,7 +564,7 @@ export class BaseModel implements ModelInterface {
 
 
     
-    static async createFromDocRef<T = BaseModel>(this: { new(): T },doc: firebase.firestore.DocumentReference): Promise<T | null> {
+    static async createFromDocRef<T>(this: { new(): T },doc: firebase.firestore.DocumentReference): Promise<T | null> {
       var object:any = new this();
       object.setModelType(this);
       var d:any = doc;
@@ -550,7 +589,7 @@ export class BaseModel implements ModelInterface {
     }
     
     
-     async createFromDocRef<T = BaseModel>(this: { new(): T },doc: firebase.firestore.DocumentReference): Promise<T | null> {
+     async createFromDocRef<T>(this: { new(): T },doc: firebase.firestore.DocumentReference): Promise<T | null> {
       var object:any = new this();
       object.setModelType(this);
       var d:any = doc;
@@ -710,7 +749,8 @@ export class BaseModel implements ModelInterface {
      * the snapshot listener.
      */
      onModeList(options: ModelAllListOptions) {
-      return this.query()
+       var that:any = this;
+      return that.query()
         .orderBy(BaseModel.CREATED_AT_FLAG)
         .onMode(options);
     }
@@ -727,10 +767,11 @@ export class BaseModel implements ModelInterface {
      *
      * @param callback A single object containing `next` and `error` callbacks.
      * @return An unsubscribe function that can be called to cancel
-     * the snapshot listener.
+     * the snapshot listener. 
      */
     static onModeList(options: ModelAllListOptions) {
-      return this.query()
+      var that:any = this;
+      return that.query()
         .orderBy(this.CREATED_AT_FLAG)
         .onMode(options);
     }
@@ -788,14 +829,15 @@ export class BaseModel implements ModelInterface {
     ): CallableFunction {
       var that:any = this.getModelType();
       var res = () => {};
-      var object:any = new that();
+      var object:any = this.getCurrentModel();
       if (!object.getReference()) {
         console.error(
           "The model path params is not set and can't run onList() function "
         );
         return res;
       } else {
-        return this.query()
+        var that:any = this;
+        return that.query()
           .orderBy(BaseModel.CREATED_AT_FLAG)
           .on(callback, eventType);
       }
@@ -857,7 +899,7 @@ export class BaseModel implements ModelInterface {
     ): CallableFunction {
       var res = () => {};
       var that:any = this.getModelType();
-      var object:any = new that();
+      var object:any = this.getCurrentModel();
       if (!object.getReference()) {
         console.error(
           "The model path params is not set and can't run onAddList() function "
@@ -866,7 +908,8 @@ export class BaseModel implements ModelInterface {
       }
 
       var timestamp = new Date().getTime();
-      return this.query()
+      var that:any = this;
+      return that.query()
         .orderBy(BaseModel.CREATED_AT_FLAG)
         .startAt(timestamp)
         .on(callback, eventType);
@@ -892,7 +935,7 @@ export class BaseModel implements ModelInterface {
     ): CallableFunction {
       var res = () => {};
       var that:any = this.getModelType();
-      var object:any = new that();
+      var object:any = this.getCurrentModel();
       if (!object.getReference()) {
         console.error(
           "The model path params is not set and can't run onUpdatedList() function "
@@ -900,7 +943,8 @@ export class BaseModel implements ModelInterface {
         return res;
       }
       var timestamp = new Date().getTime();
-      return this.query()
+      var that:any = this;
+      return that.query()
         .orderBy(BaseModel.UPDATED_AT_FLAG)
         .startAt(timestamp)
         .on(callback, eventType);
@@ -986,14 +1030,14 @@ export class BaseModel implements ModelInterface {
       return this.referencePath;
     }
 
-    static async find<T = BaseModel>(this: { new(): T },fieldPath: string,
+    static async find<T>(this: { new(): T },fieldPath: string,
     opStr: firebase.firestore.WhereFilterOp,
     value: any) : Promise<Array<T>>{
         var that : any = this;
         return await that.where(fieldPath,opStr,value).get();
     }
     
-    static async findOne<T = BaseModel>(this: { new(): T },fieldPath: string,
+    static async findOne<T>(this: { new(): T },fieldPath: string,
     opStr: firebase.firestore.WhereFilterOp,
     value: any) : Promise<T | null>{
         var that : any = this;
@@ -1017,7 +1061,7 @@ export class BaseModel implements ModelInterface {
 
     getRequiredFields(): Array<string> {
       var that: any = this;
-      return that.requiredFields;
+      return that.requiredFields ? that.requiredFields : [];
     }
 
     verifyRequiredFields(): boolean {
@@ -1041,15 +1085,20 @@ export class BaseModel implements ModelInterface {
       return result;
     }
 
+    getFieldName(key : string) : string {
+      return this['aliasFieldsMapper'] && this['aliasFieldsMapper'][key] ? this['aliasFieldsMapper'][key] : key;
+    }
+
     getDocumentData(): Object {
         var data = {};
-        
         this['storedFields'].forEach((fieldName:string) => {
-          fieldName = this['aliasFieldsMapper'] && this['aliasFieldsMapper'][fieldName] ? this['aliasFieldsMapper'][fieldName] : fieldName;
-          if(typeof this[fieldName] === 'undefined'){
-            return;
+          fieldName = this.getFieldName(fieldName);
+          var val;
+          if(typeof this[fieldName] !== 'undefined'){
+            val = this[fieldName];
+          }else if(this['data'] && typeof this['data'][fieldName] !== 'undefined'){
+            val = this['data'][fieldName];
           }
-          var val = this[fieldName];
           if(val instanceof BaseModel){
             data[fieldName] = val.getDocReference();
         }else{
@@ -1057,6 +1106,13 @@ export class BaseModel implements ModelInterface {
         }
         }); 
       return data;
+    }
+
+    /**
+     * Alias of getDocumentData
+     */
+    getData() : Object {
+      return this.getDocumentData();
     }
 
     getPathList(): Array<{ type: string; value: string }> | boolean {
