@@ -53,18 +53,23 @@ member.save()
 //To access the data in hierarchy
 //Get the website google from the database
 const google = await Website.findOne('domain','==','www.google.com');
+
 //Get the linkes under google website
 const links = await google.getModel(Link).getAll();
+
 //Using sql to find links inside google model
 const list = await google.sql("select * from links where name = 'some link'");
 
 
 //Get all members
 const allMembers = await Member.getAll();
+
 //Get all members with age > 3 and weight > 30
 const list = await Member.query().where('age','>','3').where('weight','>','30').get();
+
 //Get the member tom
 const tom = await Member.findOne('firstName','==','Tom');
+
 //Listen to changes in tom data in real time
 var unsubscribe = tom.on(()=>{
     //Do something
@@ -171,3 +176,47 @@ member.save()
 - only varibales with the decorator @Field will save in the database
 - every model must to include path_id attribute that need to be unique
 - reference_path is the path of the model data inside the dataabse
+ 
+## Text indexing / LIKE Search
+
+1.Add the flag `is_text_indexing` to @Field decorator 
+
+```typescript
+import { Field, BaseModel,Model} from "@arbel/firebase-orm";
+
+@Model({
+    reference_path : 'websites/:website_id/members',
+    path_id : 'member_id'
+})
+export class Member extends BaseModel{
+ 
+    @Field({
+        is_text_indexing : true
+    })
+    public name!: string;
+
+    @Field({
+        is_required : true,
+    })
+    public age! : number;
+    
+    @Field({
+        is_required : true,
+    })
+    public weight! : number;
+ 
+}
+```
+
+2. save new value inside the variable.
+3. use like operator as you need
+
+```typescript
+
+//Get all members with age > 3 and weight > 30 and name conatin `Dav`
+const list = await Member.query()
+    .where('age','>','3')
+    .where('weight','>','30')
+    .like('name','%Dav%').get();
+ 
+```

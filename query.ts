@@ -2,7 +2,7 @@ import * as firebase from "firebase/app";
 import 'firebase/firestore';
 import { ModelInterface } from "./interfaces/model.interface";
 import { ModelAllListOptions } from "./interfaces/model.alllist.options.interface";
-import { BaseModel } from "base.model";
+import { BaseModel } from "./base.model";
 
 export enum LIST_EVENTS {
   REMOVED = "removed",
@@ -20,6 +20,7 @@ export class Query<T> {
   protected queryList: any[] = [];
   protected orWhereList: any[] = [];
   protected orderByList: any[] = [];
+  protected startAfterArr: BaseModel[] = [];
   protected queryLimit!: number;
   protected currentRef!: firebase.firestore.CollectionReference;
   init(model: BaseModel) {
@@ -134,21 +135,21 @@ export class Query<T> {
     return this;
   }
 
-  like(fieldName : string,find : string): Query<T>{
+  like(fieldName: string, find: string): Query<T> {
     var likePrefix = '~~~';
-    if(this.model['textIndexingFields'] && this.model['textIndexingFields'][this.model.getFieldName(fieldName)]){
-      if(!find.startsWith('%')){
+    if (this.model['textIndexingFields'] && this.model['textIndexingFields'][this.model.getFieldName(fieldName)]) {
+      if (!find.startsWith('%')) {
         find = likePrefix + find;
       }
-      if(!find.endsWith('%')){
-        find =  find + likePrefix;
+      if (!find.endsWith('%')) {
+        find = find + likePrefix;
       }
-      find = find.replace(/%/g, '');
-      this.current = this.current.where('text_index_' +this.model.getFieldName(fieldName)+`.${find}`,'==',true);
-console.log('like field ----- ','text_index_' +this.model.getFieldName(fieldName)+`.${find}`);
-    for (var i = 0; this.orWhereList.length > i; i++) {
-      this.orWhereList[i].queryObject = this.orWhereList[i].queryObject.where('text_index_' +this.model.getFieldName(fieldName)+`.${find}`,'==',true);
-    }
+      find = btoa(find.replace(/%/g, ''));
+      this.current = this.current.where('text_index_' + this.model.getFieldName(fieldName) + `.${find}`, '==', true);
+      //console.log('like field ----- ', 'text_index_' + this.model.getFieldName(fieldName) + `.${find}`);
+      for (var i = 0; this.orWhereList.length > i; i++) {
+        this.orWhereList[i].queryObject = this.orWhereList[i].queryObject.where('text_index_' + this.model.getFieldName(fieldName) + `.${find}`, '==', true);
+      }
     }
 
     return this;
@@ -167,33 +168,52 @@ console.log('like field ----- ','text_index_' +this.model.getFieldName(fieldName
    * @return An unsubscribe function that can be called to cancel
    * the snapshot listener.
    */
-  on(callback: CallableFunction, event_type?: LIST_EVENTS) {
-    var that = this;
-    return this.current.onSnapshot(function (querySnapshot) {
-      var result = that.parse(querySnapshot);
-      if (event_type) {
-        querySnapshot.docChanges().forEach(function (change) {
-          if (change.type === LIST_EVENTS.ADDEDD) {
-            var result = that.parseFromData(change.doc.data(), change.doc.id);
-            callback(result);
-            // This is equivalent to child_added
-          } else if (change.type === LIST_EVENTS.MODIFIED) {
-            var result = that.parseFromData(change.doc.data(), change.doc.id);
-            callback(result);
-            // This is equivalent to child_changed
-          } else if (change.type === LIST_EVENTS.REMOVED) {
-            var result = that.parseFromData(change.doc.data(), change.doc.id);
-            callback(result);
-            // This is equivalent to child_removed
-          } else {
-          }
-        });
-      } else {
+   on(callback: CallableFunction, event_type?: LIST_EVENTS) : CallableFunction {
+     var that = this;
+     
+     var response:any = { 
+      callback : null
+    };
+
+     this.initBeforeFetch().then(() => {
+      response.callback = this.current.onSnapshot(function (querySnapshot) {
         var result = that.parse(querySnapshot);
-        callback(result);
-      }
-    });
-  }
+        if (event_type) {
+          querySnapshot.docChanges().forEach(function (change) {
+            if (change.type === LIST_EVENTS.ADDEDD) {
+              var result = that.parseFromData(change.doc.data(), change.doc.id);
+              callback(result);
+              // This is equivalent to child_added
+            } else if (change.type === LIST_EVENTS.MODIFIED) {
+              var result = that.parseFromData(change.doc.data(), change.doc.id);
+              callback(result);
+              // This is equivalent to child_changed
+            } else if (change.type === LIST_EVENTS.REMOVED) {
+              var result = that.parseFromData(change.doc.data(), change.doc.id);
+              callback(result);
+              // This is equivalent to child_removed
+            } else {
+            }
+          });
+        } else {
+          var result = that.parse(querySnapshot);
+          callback(result);
+        }
+      });
+     })
+     
+    
+     var res = () => {
+       if(response.callback){
+        response.callback(); 
+       }else{
+        setTimeout(function () {
+          res();
+      }, 1000);
+       }
+     }
+     return res;
+  } 
 
 
   /**
@@ -209,33 +229,48 @@ console.log('like field ----- ','text_index_' +this.model.getFieldName(fieldName
    * @return An unsubscribe function that can be called to cancel
    * the snapshot listener.
    */
-  onMode(options: ModelAllListOptions) {
-    var that = this;
-    var now = new Date().getTime();
-    return this.current.onSnapshot(async function (querySnapshot) {
-      for (var i = 0; i < querySnapshot.docChanges().length; i++) {
-        var change = querySnapshot.docChanges()[i];
-        if (change.type === LIST_EVENTS.ADDEDD && (options.added || options.init)) {
-          let result = that.parseFromData(change.doc.data(), change.doc.id);
-          if (result.created_at && result.created_at > now && options.added) {
-            options.added(result);
-          } else if (options.init) {
-            options.init(result);
+  onMode(options: ModelAllListOptions) : CallableFunction {
+    
+    var response:any = { 
+      callback : null
+    };
+    this.initBeforeFetch().then(() => {
+      var that = this;
+      var now = new Date().getTime();
+      response.callback = this.current.onSnapshot(async function (querySnapshot) {
+        for (var i = 0; i < querySnapshot.docChanges().length; i++) {
+          var change = querySnapshot.docChanges()[i];
+          if (change.type === LIST_EVENTS.ADDEDD && (options.added || options.init)) {
+            let result = that.parseFromData(change.doc.data(), change.doc.id);
+            if (result.created_at && result.created_at > now && options.added) {
+              options.added(result);
+            } else if (options.init) {
+              options.init(result);
+            }
+            // This is equivalent to child_added
+          } else if (change.type === LIST_EVENTS.MODIFIED && options.modified) {
+            let result = that.parseFromData(change.doc.data(), change.doc.id);
+            options.modified(result);
+            // This is equivalent to child_changed
+          } else if (change.type === LIST_EVENTS.REMOVED && options.removed) {
+            let result = that.parseFromData(change.doc.data(), change.doc.id);
+            //console.log("Removed model: ",that.model.getCurrentModel().getReferencePath(),change.doc.data(), result);
+            options.removed(result);
+            // This is equivalent to child_removed
           }
-
-          // This is equivalent to child_added
-        } else if (change.type === LIST_EVENTS.MODIFIED && options.modified) {
-          let result = that.parseFromData(change.doc.data(), change.doc.id);
-          options.modified(result);
-          // This is equivalent to child_changed
-        } else if (change.type === LIST_EVENTS.REMOVED && options.removed) {
-          let result = that.parseFromData(change.doc.data(), change.doc.id);
-          //console.log("Removed model: ",that.model.getCurrentModel().getReferencePath(),change.doc.data(), result);
-          options.removed(result);
-          // This is equivalent to child_removed
         }
+      });
+    })
+    var res = () => {
+      if(response.callback){
+       response.callback(); 
+      }else{
+       setTimeout(function () {
+         res();
+     }, 1000);
       }
-    });
+    }
+    return res;
   }
 
   /**
@@ -249,7 +284,7 @@ console.log('like field ----- ','text_index_' +this.model.getFieldName(fieldName
    */
   startAt(...fieldValues: any[]): Query<T> {
     this.current = this.current.startAt(...fieldValues);
-    
+
     for (var i = 0; this.orWhereList.length > i; i++) {
       this.orWhere[i].queryObject = this.orWhere[i].queryObject.startAt(...fieldValues);
     }
@@ -266,16 +301,20 @@ console.log('like field ----- ','text_index_' +this.model.getFieldName(fieldName
    * @param snapshot The snapshot of the document to start after.
    * @return The created Query.
    */
-  startAfter(ormObject: BaseModel): Promise<Query<T>> {
-    return new Promise((resolve, reject) => {
-      ormObject.getDocReference().onSnapshot((doc) => {
-        this.current = this.current.startAfter(doc);
-        for (var i = 0; this.orWhereList.length > i; i++) {
-          this.orWhere[i].queryObject = this.orWhere[i].queryObject.startAfter(doc);
-        }
-        resolve(this);
-      })
-    })
+  startAfter(ormObject: BaseModel): Query<T> {
+    this.startAfterArr.push(ormObject);
+    return this;
+  }
+
+  async initStartAfter() {
+    for (var i = 0; i < this.startAfterArr.length; i++) {
+      var ormObject = this.startAfterArr[i];
+      var doc = await ormObject.getSnapshot();
+      this.current = this.current.startAfter(doc);
+      for (var i = 0; this.orWhereList.length > i; i++) {
+        this.orWhere[i].queryObject = this.orWhere[i].queryObject.startAfter(doc);
+      }
+    }
   }
 
   /**
@@ -328,12 +367,18 @@ console.log('like field ----- ','text_index_' +this.model.getFieldName(fieldName
   async get(
     options?: firebase.firestore.GetOptions
   ): Promise<Array<BaseModel & T>> {
+    await this.initBeforeFetch();
     if (this.orWhereList.length > 0) {
       return await this.getWithAdvancedFilter(options);
     } else {
       var list = await this.current.get(options);
       return this.parse(list);
     }
+  }
+
+  async initBeforeFetch(){
+    await this.initStartAfter();
+    return this;
   }
 
   /**
@@ -365,7 +410,7 @@ console.log('like field ----- ','text_index_' +this.model.getFieldName(fieldName
     })())
     this.orWhereList.forEach((row) => {
       currentQuery = row.queryObject.where(row.fieldPath, row.opStr, row.value);
-      console.log('row ', row);
+     // console.log('row ', row);
       promiseAllList.push((async () => {
         var queryResult = await currentQuery.get(options);
         var res = this.parse(queryResult);
@@ -420,6 +465,7 @@ console.log('like field ----- ','text_index_' +this.model.getFieldName(fieldName
   async getOne(
     options?: firebase.firestore.GetOptions
   ): Promise<BaseModel | null> {
+    await this.initBeforeFetch();
     this.limit(1);
     var list = await this.current.get(options);
     var res = this.parse(list);

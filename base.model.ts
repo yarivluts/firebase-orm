@@ -81,7 +81,7 @@ export class BaseModel implements ModelInterface {
           }else if(i + 1 == text.length){
             subString =  subString + edgeSymbol;
           }
-          result[subString] = true;
+          result[btoa(subString)] = true;
         }
        
       }
@@ -1050,6 +1050,18 @@ export class BaseModel implements ModelInterface {
     value: any) : Promise<Array<this>>{
         var that : any = this;
         return await that.where(fieldPath,opStr,value).get();
+    }
+
+     getSnapshot() : Promise<firebase.firestore.DocumentSnapshot>{
+      return new Promise((resolve, reject) => {
+        this.getDocReference().onSnapshot((doc) => {
+          if(doc){
+            resolve(doc);
+          }else{
+            reject(doc); 
+          }
+        });
+      })
     }
     
      async findOne(fieldPath: string,
