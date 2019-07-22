@@ -13,14 +13,14 @@ import { Member } from "../model/member";
       var members = await Member.getAll();
       for(var i = 0;members.length > i ;i++){
         var member = members[i];
-        console.log('members testt --- ',member.getData());
+       // console.log('members testt --- ',member);
         await member.remove();
       }
       var otherMembers = await Member.getAll();
       expect(otherMembers.length).toBe(0);
     });
 
-
+ 
     test('create new members', async () => { 
       var member = new Member();
       member.photoUrl = 'url1';

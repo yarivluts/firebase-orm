@@ -629,7 +629,9 @@ export class BaseModel implements ModelInterface {
         if (object.aliasFieldsMapper && object.aliasFieldsMapper[key]) {
           object[object.aliasFieldsMapper[key]] = value;
         } else {
-          object[key] = value;
+          if(!(this['ignoredFields'] && this['ignoredFields'][key])){
+            object[key] = value;
+          }
         }
       }
       return object;
@@ -1114,7 +1116,7 @@ export class BaseModel implements ModelInterface {
           }
           if(val instanceof BaseModel){
             data[fieldName] = val.getDocReference();
-        }else{
+        }else if(typeof val !== 'undefined'){
             data[fieldName] = val;
         }
         }); 

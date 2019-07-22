@@ -45,7 +45,8 @@ export function Field(options?: FieldOptions): any {
 
     if(options && options.is_text_indexing){
       target.textIndexingFields[key] = key;
-      target['storedFields'].push('text_index_' + field_name ); 
+      target['storedFields'].push('text_index_' + field_name );
+      target['ignoredFields'].push('text_index_' + field_name );
     }
 
       var update = Object.defineProperty(target, key, {
