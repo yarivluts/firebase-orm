@@ -19,6 +19,12 @@ export function Field(options?: FieldOptions): any {
     if (!target.fields) {
       target.fields = {}; 
     }
+    if (!target.ignoredFields) {
+      target.ignoredFields = []; 
+    }
+    if (!target.internalFields) {
+      target.internalFields = []; 
+    }
     if(options && options.field_name){
       target.aliasFieldsMapper[options.field_name] = key;
     }
@@ -39,7 +45,7 @@ export function Field(options?: FieldOptions): any {
 
     if(options && options.is_text_indexing){
       target.textIndexingFields[key] = key;
-      target['storedFields'].push('text_index_' + field_name );
+      target['storedFields'].push('text_index_' + field_name ); 
     }
 
       var update = Object.defineProperty(target, key, {

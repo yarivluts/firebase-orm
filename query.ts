@@ -486,7 +486,7 @@ export class Query<T> {
       object.setId(id);
       object.initFromData(data);
       result.push(object);
-    }
+    } 
     return result;
   }
 

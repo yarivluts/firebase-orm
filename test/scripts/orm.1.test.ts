@@ -13,6 +13,7 @@ import { Member } from "../model/member";
       var members = await Member.getAll();
       for(var i = 0;members.length > i ;i++){
         var member = members[i];
+        console.log('members testt --- ',member.getData());
         await member.remove();
       }
       var otherMembers = await Member.getAll();

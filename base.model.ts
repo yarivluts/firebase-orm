@@ -36,8 +36,10 @@ export class BaseModel implements ModelInterface {
     protected currentModel!: this & BaseModel; 
     protected static aliasFieldsMapper: any = {};
     protected static textIndexingFields: any = {};
+    protected static ignoreFields: any = [];
     protected static fields: any = {};
     protected static requiredFields: Array<string> = [];
+    protected static internalFields: Array<string> = [];
     protected repository!: FirestoreOrmRepository;
     protected globalModel!: this;
     protected currentQuery!: any;
@@ -137,8 +139,7 @@ export class BaseModel implements ModelInterface {
 
       
     getCurrentModel(): this {
-        var object: any = Object.create(this);
-        object.setModelType(this.getModelType());
+        var object: any = this.getRepository().getModel(this.getModelType());
         var keys = object.getPathListKeys();
         var that: any = this;
         for (var i = 0; i < keys.length; i++) {
@@ -1124,7 +1125,14 @@ export class BaseModel implements ModelInterface {
      * Alias of getDocumentData
      */
     getData() : Object {
-      return this.getDocumentData();
+      var result = {};
+      var data = this.getDocumentData();
+      for(var key in data){
+        if(!(this['ignoredFields'] && this['ignoredFields'].includes(key))){
+          result[key] = data[key];
+        }
+      }
+      return result;
     }
 
     getPathList(): Array<{ type: string; value: string }> | boolean {
