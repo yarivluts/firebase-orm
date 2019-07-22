@@ -66,6 +66,9 @@ const allMembers = await Member.getAll();
 
 //Get all members with age > 3 and weight > 30
 const list = await Member.query().where('age','>','3').where('weight','>','30').get();
+ 
+//Get all members with age > 3 or age < 3 limit 10
+const list = await Member.query().where('age','>','3').orWhere('age','<','3').limit(10).get();
 
 //Get the member tom
 const tom = await Member.findOne('firstName','==','Tom');
