@@ -136,6 +136,7 @@ export class Query<T> {
   }
 
   like(fieldName: string, find: string): Query<T> {
+    find = (find + '').toLowerCase();
     var likePrefix = '~~~';
     if (this.model['textIndexingFields'] && this.model['textIndexingFields'][this.model.getFieldName(fieldName)]) {
       if (!find.startsWith('%')) {

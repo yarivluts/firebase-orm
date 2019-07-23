@@ -73,6 +73,7 @@ export class BaseModel implements ModelInterface {
     }
 
     parseTextIndexingFields(text:string){
+      text = (text + '').toLowerCase();
       var result = {};
       var edgeSymbol = '~~~';
       for(var i = 0;text.length > i;i++){

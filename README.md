@@ -223,3 +223,5 @@ const list = await Member.query()
     .like('name','%Dav%').get();
  
 ```
+
+4. for nodeJs you need to install btoa (Base64 support )
