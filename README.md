@@ -224,4 +224,99 @@ const list = await Member.query()
  
 ```
 
-4. for nodeJs you need to install btoa (Base64 support )
+## Elasticsearch support
+
+1.Add firebase function with onWrite trigger 
+
+```typescript
+
+import * as functions from 'firebase-functions';
+import {
+    Client
+} from '@elastic/elasticsearch';
+ 
+
+const client = new Client({
+    cloud: {
+        id: 'xxxxxxx',
+        username: 'xxxxx',
+        password: 'xxxxxxx'
+    }
+});
+
+export const elasticsearchProductsSync = functions.firestore
+    .document('products/{productId}')
+    .onWrite((snap, context) => {
+
+        const productId = context.params.productId;
+        const newData = snap.after.data();
+        // ...or the previous value before this update
+        const previousData = snap.before.data();
+
+        if (newData) {
+            newData.id = productId;
+
+            if (!previousData) {
+                console.log('create new product - ', productId);
+                client.create({
+                    index: 'products',
+                    type: '_doc',
+                    id: productId,
+                    body: newData
+                }).catch((e) => {
+                    var error = e.meta && e.meta.body && e.meta.body.error ? e.meta.body : e;
+                    console.error('Elasticsearch error - ', error);
+                });
+            } else {
+                console.log('update product - ', productId);
+                client.transport.request({
+                    method: "POST",
+                    path: "/products/_doc/" + productId,
+                    body: newData
+                }).catch((e) => {
+                    var error = e.meta && e.meta.body && e.meta.body.error ? e.meta.body : e;
+                    console.error('Elasticsearch error - ', error);
+                });
+            }
+
+        } else {
+            console.log('delete product - ', productId);
+            client.delete({
+                index: 'products',
+                type: '_doc',
+                id: productId
+            }).catch((e) => {
+                var error = e.meta && e.meta.body && e.meta.body.error ? e.meta.body : e;
+                console.error('Elasticsearch error - ', error);
+            });
+        }
+
+        return true;
+    });
+
+```
+
+2. set global elasticsearch url
+
+```typescript
+
+    FirestoreOrmRepository.initGlobalElasticsearchConnection('https://elasticsearch.com');
+ 
+```
+
+3. fetch the data as sql
+
+```typescript
+
+var result:any = await Member.elasticWhereSql('qty > 0',3);
+//Total rows
+var totalCount = await result.count()
+      var current = 0;
+      //Pagination
+        while(result.next){
+          index++;
+          var result = await result.next();
+        }
+ 
+```
+ 

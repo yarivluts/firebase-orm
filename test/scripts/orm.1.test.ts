@@ -2,13 +2,15 @@ import * as app from "firebase";
 import { FirestoreOrmRepository } from "../../index";
 import { config } from "../config";
 import { Member } from "../model/member";
+import { Product } from "../model/product";
 
     var firebaseApp = app.initializeApp(config.api.firebase); 
     var connection = firebaseApp.firestore();
 
     FirestoreOrmRepository.initGlobalConnection(connection);
     FirestoreOrmRepository.initGlobalPath('website_id','50');
- 
+    FirestoreOrmRepository.initGlobalElasticsearchConnection(config.api.elasticsearch.url);
+
     test('remove all memebers', async () => {
       var members = await Member.getAll();
       for(var i = 0;members.length > i ;i++){
@@ -19,10 +21,10 @@ import { Member } from "../model/member";
       var otherMembers = await Member.getAll();
       expect(otherMembers.length).toBe(0);
     });
-
+ 
  
     test('create new members', async () => { 
-      var member = new Member();
+      var member = new Member(); 
       member.photoUrl = 'url1';
       member.name = 'name1 name2 name3';
      // console.log(member);
@@ -100,6 +102,27 @@ import { Member } from "../model/member";
       });
       callback();
     }); 
-      
-
+ 
+    
+    test('Check elasticsearch sql', async () => { 
+      //var result = await Product.elasticSql('select * from products',3);
+      var result:any = await Product.elasticWhereSql('qty > 0',3);
+      var index = 1;
+      console.log(' fetch '+index,result.data);
+      console.log(' count ',index, await result.count());
+      var current = 0;
+        while(result.next){
+          index++;
+          var result = await result.next();
+            console.log(' fetch '+index,result.data);
+          current++;
+          if(current > 50){
+            console.error('endless loop');
+            break;
+          }
+        }
+      expect(1).toBe(1);
+    }); 
+       
+ 
    

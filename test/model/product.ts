@@ -1,11 +1,10 @@
 import { Field, BaseModel,Model} from "../../index";
 
 @Model({
-    //reference_path : 'websites/:website_id/members',
-    reference_path : 'websites/:website_id/members',
-    path_id : 'member_id'
+    reference_path : 'products',
+    path_id : 'product_id'
 })
-export class Member extends BaseModel{
+export class Product extends BaseModel{
  
     @Field({
         is_required : true,

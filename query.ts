@@ -145,11 +145,11 @@ export class Query<T> {
       if (!find.endsWith('%')) {
         find = find + likePrefix;
       }
-      find = btoa(find.replace(/%/g, ''));
-      this.current = this.current.where('text_index_' + this.model.getFieldName(fieldName) + `.${find}`, '==', true);
+      find = find.replace(/%/g, '');
+      this.current = this.current.where('text_index_' + this.model.getFieldName(fieldName), 'array-contains', find);
       //console.log('like field ----- ', 'text_index_' + this.model.getFieldName(fieldName) + `.${find}`);
       for (var i = 0; this.orWhereList.length > i; i++) {
-        this.orWhereList[i].queryObject = this.orWhereList[i].queryObject.where('text_index_' + this.model.getFieldName(fieldName) + `.${find}`, '==', true);
+        this.orWhereList[i].queryObject = this.orWhereList[i].queryObject.where('text_index_' + this.model.getFieldName(fieldName), 'array-contains', find);
       }
     }
 
