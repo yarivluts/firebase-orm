@@ -3,7 +3,7 @@ import 'firebase/firestore';
 import { BaseModel } from "./base.model";
 import { ModelInterface } from "./interfaces/model.interface";
 import { FireSQL } from "@arbel/firesql";
-import { ElasticSqlResponse } from "interfaces/elastic.sql.response.interface";
+import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface";
 import * as axios_ from 'axios';
 import * as qs from 'qs';
 
