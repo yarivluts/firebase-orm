@@ -11,7 +11,7 @@ import { Product } from "../model/product";
     FirestoreOrmRepository.initGlobalPath('website_id','50');
     FirestoreOrmRepository.initGlobalElasticsearchConnection(config.api.elasticsearch.url);
 
-    test('remove all memebers', async () => {
+   /*  test('remove all memebers', async () => {
       var members = await Member.getAll();
       for(var i = 0;members.length > i ;i++){
         var member = members[i];
@@ -102,11 +102,11 @@ import { Product } from "../model/product";
       });
       callback();
     }); 
- 
+  */
     
     test('Check elasticsearch sql', async () => { 
       //var result = await Product.elasticSql('select * from products',3);
-      var result:any = await Product.elasticWhereSql('qty > 0',3);
+      var result:any = await Product.elasticSql('SELECT * from products WHERE qty > 0',10);
       var index = 1;
       console.log(' fetch '+index,result.data);
       console.log(' count ',index, await result.count());

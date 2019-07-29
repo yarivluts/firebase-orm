@@ -16,6 +16,11 @@ export interface FieldOptions {
    */
   is_text_indexing?: boolean;
 
+  /**
+   * If the field is file - if so then it use firebase storage
+   */
+  is_file?: boolean;
+
   /** 
    * Init as object
    */

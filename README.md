@@ -308,7 +308,7 @@ export const elasticsearchProductsSync = functions.firestore
 
 ```typescript
 
-var result:any = await Member.elasticWhereSql('qty > 0',3);
+var result:any = await Member.elasticSql('WHERE qty > 0',3);
 //Total rows
 var totalCount = await result.count()
       var current = 0;

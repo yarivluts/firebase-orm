@@ -326,7 +326,7 @@ export class BaseModel implements ModelInterface {
     return query;
   }
 
-  static async elasticSql<T>(this: { new(): T },
+  static async elasticFullSql<T>(this: { new(): T },
     sql?: string,
     limit?: number,
     filters?: any,
@@ -386,7 +386,8 @@ export class BaseModel implements ModelInterface {
         if (asObject) {
           var newObject: any = new this();
           newObject.setModelType(this);
-          newObject.createFromData(data);
+        //  console.log('data --- ',data);
+          newObject.initFromData(data);
         } else {
           var newObject: any = data;
         }
@@ -399,7 +400,7 @@ export class BaseModel implements ModelInterface {
       if (response.data.cursor) {
         result.next = async function () {
           if(!this['_next']){
-            this['_next'] = await that.elasticSql(null, null, null, response.data.cursor, columns);
+            this['_next'] = await that.elasticFullSql(null, null, null, response.data.cursor, columns);
           }
           return this['_next'];
         }
@@ -416,7 +417,7 @@ export class BaseModel implements ModelInterface {
   }
 
   
-  static async elasticWhereSql<T>(this: { new(): T },
+  static async elasticSql<T>(this: { new(): T },
     whereSql?: string,
     limit?: number,
     filters?: any,
@@ -445,10 +446,27 @@ export class BaseModel implements ModelInterface {
     }
     var params: any = {};
     var table = object.getReference().path.replace(new RegExp('/', 'g'), '_');
+    var hasSelect = (whereSql + '').toLowerCase().trim().startsWith('select ');
     if(!asCount){
-      var sql = 'select * from '+table+' WHERE '+whereSql;
+      /* var whereString = ((whereSql + '').toLowerCase().trim().startsWith('where ') ? ' ' : ' WHERE '); */
+      /* var whereString = ((whereSql + '').toLowerCase().trim().startsWith('select ') ? ' ' : ' SELECT *  '); */
+      var sql:any = '';
+      if(hasSelect){
+         sql = whereSql;
+      }else{
+         sql = 'select * from '+ table  + ' '
+        + whereSql;
+      }
+      
     }else{
-      var sql = 'select count(*) as count from '+table+' WHERE '+whereSql;
+      if(!hasSelect){
+        sql = 'SELECT count(*) as count from '+ table + ' '
+        + whereSql;
+      }else{
+        sql = 'SELECT count(*) as count from ('
+        + whereSql + ') as t';
+      }
+      
     }
     
     if (sql) {
@@ -465,7 +483,7 @@ export class BaseModel implements ModelInterface {
     }
 
     try {
-      var result = await that.elasticSql(sql,limit,filters,null,null,!asCount && asObject);
+      var result = await that.elasticFullSql(sql,limit,filters,null,null,!asCount && asObject);
     //
     
     
@@ -473,7 +491,7 @@ export class BaseModel implements ModelInterface {
 
       result.count = async function () {
         if(!this['_count']){
-        var res = await that.elasticWhereSql(whereSql,null,filters,null,null,null,true);
+        var res = await that.elasticSql(whereSql,null,filters,null,null,null,true);
         this['_count'] = res && res.data && res && res.data[0] && res.data[0].count ? res.data[0].count : 0;
         }
         return this['_count'];
@@ -787,6 +805,7 @@ export class BaseModel implements ModelInterface {
       ? this.getCurrentModel()
       : targetObject;
       if(data['id']){
+        this.is_exist = true;
         this.setId(data['id']);
       }
     var pathParams = this.getPathListParams();
