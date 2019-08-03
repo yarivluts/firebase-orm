@@ -8,7 +8,7 @@ export class Product extends BaseModel{
  
     @Field({
         is_required : true,
-        is_text_indexing : true
+       is_text_indexing : true
     })
     public name!: string;
 

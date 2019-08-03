@@ -17,6 +17,7 @@ export class FirestoreOrmRepository {
     static DEFAULT_KEY_NAME = 'default';
     static ormFieldsStructure = {};
     static elasticSearchConnections = {};
+    static globalFirebaseStoages = {};
 
     constructor(protected firestore: firebase.firestore.Firestore) {
 
@@ -25,11 +26,23 @@ export class FirestoreOrmRepository {
     static initGlobalConnection(firestore: firebase.firestore.Firestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         this.globalFirestores[key] = new FirestoreOrmRepository(firestore);
     }
+    
+    static initGlobalStorage(storage: firebase.storage.Storage, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+        this.globalFirebaseStoages[key] = storage;
+    }
 
     static initGlobalElasticsearchConnection(url: string, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         this.elasticSearchConnections[key] = {
             url: url
         };
+    }
+
+    static getGlobalStorage(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) : firebase.storage.Storage {
+        if (this.globalFirebaseStoages[key]) {
+            return this.globalFirebaseStoages[key];
+        } else {
+            throw "the global firebase storage  " + key + ' is undefined!';
+        }
     }
 
     static getGlobalElasticsearchConnection(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
@@ -76,7 +89,7 @@ export class FirestoreOrmRepository {
             } else if (stage.type == 'document') {
                 current = current.doc(stage.value);
             }
-        }
+        } 
         return current;
     }
 
@@ -148,15 +161,7 @@ export class FirestoreOrmRepository {
                     return object;
                 } else {
                     object.is_exist = true;
-                    for (let key in doc.data()) {
-                        let value = doc.data()[key];
-                        if (object.aliasFieldsMapper && object.aliasFieldsMapper[key]) {
-                            object[object.aliasFieldsMapper[key]] = value;
-                        } else {
-                            object[key] = value;
-                        }
-
-                    }
+                    object.initFromData(doc.data());
                     return object;
                 }
             }

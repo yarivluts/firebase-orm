@@ -1,17 +1,31 @@
-import * as app from "firebase";
+import * as firebase from "firebase";
+import 'firebase/storage';
 import { FirestoreOrmRepository } from "../../index";
 import { config } from "../config";
 import { Member } from "../model/member";
 import { Product } from "../model/product";
 
-    var firebaseApp = app.initializeApp(config.api.firebase); 
+/* if (typeof window === 'undefined') {
+  var admin = require("firebase-admin");
+  var firebaseApp:any = admin.initializeApp(config.api['firebase-admin']); 
+  var storage = firebaseApp.storage().bucket('fir-orm-4311d.appspot.com');
+
+}else{
+  var firebaseApp:any = firebase.initializeApp(config.api.firebase); 
+  var storage = firebaseApp.storage();
+
+} */
+
+var firebaseApp:any = firebase.initializeApp(config.api.firebase); 
+var storage = firebaseApp.storage();
     var connection = firebaseApp.firestore();
 
     FirestoreOrmRepository.initGlobalConnection(connection);
+    FirestoreOrmRepository.initGlobalStorage(storage);
     FirestoreOrmRepository.initGlobalPath('website_id','50');
     FirestoreOrmRepository.initGlobalElasticsearchConnection(config.api.elasticsearch.url);
 
-   /*  test('remove all memebers', async () => {
+    test('remove all memebers', async () => {
       var members = await Member.getAll();
       for(var i = 0;members.length > i ;i++){
         var member = members[i];
@@ -20,7 +34,7 @@ import { Product } from "../model/product";
       }
       var otherMembers = await Member.getAll();
       expect(otherMembers.length).toBe(0);
-    });
+    }); 
  
  
     test('create new members', async () => { 
@@ -86,7 +100,7 @@ import { Product } from "../model/product";
       
 
     
-    test('fetch members with query like and on', async () => { 
+   /*  test('fetch members with query like and on', async () => { 
       var callback = await Member.query()
       .where('photoUrl','==','url2')
       .like('name','%!name%').on((memebrs:Member[]) => {
@@ -101,17 +115,25 @@ import { Product } from "../model/product";
        
       });
       callback();
-    }); 
-  */
+    });  */
+   
     
     test('Check elasticsearch sql', async () => { 
       //var result = await Product.elasticSql('select * from products',3);
-      var result:any = await Product.elasticSql('SELECT * from products WHERE qty > 0',10);
+      var result:any = await Product.elasticSql(
+        ['SELECT * from products WHERE qty in (:qty)'
+      ,{
+        'qty' : [
+          'a',
+          2,
+          'sssaaa'
+        ]
+      }],10);
       var index = 1;
-      console.log(' fetch '+index,result.data);
+      //console.log(' fetch '+index,result.data);
       console.log(' count ',index, await result.count());
       var current = 0;
-        while(result.next){
+      /*   while(result.next){
           index++;
           var result = await result.next();
             console.log(' fetch '+index,result.data);
@@ -120,9 +142,52 @@ import { Product } from "../model/product";
             console.error('endless loop');
             break;
           }
-        }
+        } */
       expect(1).toBe(1);
-    }); 
+    });  
        
  
+       test('Load object', async () => { 
+        var products = await Product.getAll();
+        products.forEach((product) => {
+         // console.log('product ---> ',product.getStorageFile('productUrl').getRef());
+        });
+        expect(1).toBe(1);
+      });  
+ 
+       test('Check image upload from url', async () => { 
+        //var result = await Product.elasticSql('select * from products',3);
+        var product = new Product();
+        product.name = 'test product';
+        var uploadObject = product.getStorageFile('photoUrl');
+        await uploadObject.uploadFromUrl(
+          'https://img.wcdn.co.il/f_auto,w_300,t_54/2/7/7/6/2776371-46.jpeg'
+          , function(snapshot:any){
+            // Observe state change events such as progress, pause, and resume
+            // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+            var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          //  console.log('222222 Upload is ' + progress + '% done');
+            switch (snapshot.state) {
+              case firebase.storage.TaskState.PAUSED: // or 'paused'
+              //  console.log('222222 Upload is paused');
+                break;
+              case firebase.storage.TaskState.RUNNING: // or 'running'
+           //     console.log('222222 Upload is running');
+                break;
+            }
+          }, function(error:any) {
+            // Handle unsuccessful uploads
+          }, function(task:any) {
+            // Handle successful uploads on complete
+            // For instance, get the download URL: https://firebasestorage.googleapis.com/...
+            task.snapshot.ref.getDownloadURL().then(function(downloadURL:any) {
+              console.log('File available at', downloadURL);
+            });
+          });
+      //    console.log('product ===== ',product.getData());
+          await product.save();
+        //console.log('task ===== ',task);
+        
+        expect(1).toBe(1);
+      }); 
    

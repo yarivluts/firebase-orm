@@ -1,5 +1,6 @@
-
-
+/**
+ * @jest-environment node
+ */
 
 import 'firebase/firestore';
 import { ModelInterface } from "./interfaces/model.interface";
@@ -10,15 +11,43 @@ import 'firebase/firestore';
 import { FireSQL } from "@arbel/firesql";
 import { Query, LIST_EVENTS } from "./query";
 import { Moment } from "moment";
-import { FieldOptions } from "./interfaces/field.options.interface";
-import { ObserveLoadModelInterface } from "./interfaces/observe.load.model.interface";
-import { ObserveRemoveModelInterface } from "./interfaces/observe.remove.model.interface";
+import { OrmUploadTask } from "./interfaces/upload.task.reference.interface";
+import { StorageReference } from "./interfaces/storage.file.reference.interface";
 import { ElasticWhereSqlResponse } from "./interfaces/elastic.where.sql.response.interface";
 import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface";
 import { ModelAllListOptions } from './interfaces/model.alllist.options.interface';
 import * as axios_ from 'axios';
 import * as moment_ from "moment";
 import * as qs from 'qs';
+/* import 'cross-fetch/polyfill'; */
+import * as crossFetch from 'cross-fetch';
+const fetchNode = require('node-fetch');
+
+/* if (typeof window === 'undefined') {
+  const fetchNode = require('node-fetch');
+  } */
+if (typeof window === 'undefined') {
+  var toArrayBuffer = require('to-arraybuffer')
+}
+if (typeof Blob === 'undefined') {
+  const Blob = require('blob');
+}
+
+if (typeof atob === 'undefined') {
+  (global as any).atob = require('atob');
+}
+if (typeof btoa === 'undefined') {
+  (global as any).btoa = require('btoa');
+}
+
+if (typeof XMLHttpRequest === 'undefined') {
+  // Polyfills required for Firebase
+  (global as any).XMLHttpRequest = require('@arbel/node-xhr2');
+  (global as any).WebSocket = require('ws'); // May also come in handy
+}
+
+
+
 
 const moment = moment_;
 const axios = axios_.default;
@@ -326,6 +355,29 @@ export class BaseModel implements ModelInterface {
     return query;
   }
 
+  /* 
+  static collectionGroup<T>(this: { new(): T }): Query<T> {
+    var query = new Query<T>();
+    var object: any = new this();
+    object.setModelType(this);
+    query.init(object,object.getCollectionName());
+    return query;
+  }
+
+
+  collectionGroup<T>(this: { new(): T }): Query<T> {
+    var query = new Query<T>();
+    var that: any = this;
+    var object: any = that.getCurrentModel();
+    query.init(object,object.getCollectionName());
+    return query;
+  } */
+
+  getCollectionName() : string {
+    var paths = this.referencePath.split('/');
+    return paths[paths.length -1];
+  }
+
   static async elasticFullSql<T>(this: { new(): T },
     sql?: string,
     limit?: number,
@@ -337,7 +389,7 @@ export class BaseModel implements ModelInterface {
     var object: any = new this();
     object.setModelType(this);
     var that: any = this;
-    var result:any = {
+    var result: any = {
       data: []
     };
 
@@ -379,64 +431,122 @@ export class BaseModel implements ModelInterface {
       columns = columns ? columns : response.data.columns;
       var rows = response.data.rows;
       rows.forEach((row: any) => {
-        var data:any = {};
+        var data: any = {};
         columns.forEach((column: any, index: any) => {
           data[column.name] = row[index];
         });
         if (asObject) {
           var newObject: any = new this();
           newObject.setModelType(this);
-        //  console.log('data --- ',data);
+          //  console.log('data --- ',data);
           newObject.initFromData(data);
         } else {
           var newObject: any = data;
         }
         result.data.push(newObject);
       });
-     //console.log(time,response.data);
-     //console.log(time,params);
+      //console.log(time,response.data);
+      //console.log(time,params);
 
       // return result;
       if (response.data.cursor) {
         result.next = async function () {
-          if(!this['_next']){
+          if (!this['_next']) {
             this['_next'] = await that.elasticFullSql(null, null, null, response.data.cursor, columns);
           }
           return this['_next'];
         }
-      }else{
+      } else {
         //console.log('no cursor -------******************************** ')
       }
 
     } catch (error) {
-      console.error(time,error);
+      console.error(time, error);
     }
 
-  //console.log(resultObject);
-    return result; 
+    //console.log(resultObject);
+    return result;
   }
 
-  
+   escapeStringSql (str:string) {
+     var string : any = str;
+     string = string.split("'").join('');
+     string = string.split('"').join('');
+    return string.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char:string) {
+        switch (char) {
+            case "\0":
+                return "\\0";
+            case "\x08":
+                return "\\b";
+            case "\x09":
+                return "\\t";
+            case "\x1a":
+                return "\\z";
+            case "\n":
+                return "\\n";
+            case "\r":
+                return "\\r";
+            case "\"":
+            case "'":
+            case "\\":
+            case "%":
+                return "\\"+char; // prepends a backslash to backslash, percent,
+                                  // and double/single quotes
+        }
+    });
+}
+
+   parseValueSql(value:any) : string{
+    var result = '';
+    if(typeof value === 'number'){
+      return value + '';
+    }
+    if(Object.prototype.toString.call( value ) === '[object Array]'){
+      value.forEach((val:string) => {
+        if(result != ''){
+          result += ',';
+        }
+          result += "'" + this.escapeStringSql(val + '') + "'";
+        
+      });
+      return result;
+    }
+    return "'" + this.escapeStringSql(value + '') + "'";
+  }
+
+
   static async elasticSql<T>(this: { new(): T },
-    whereSql?: string,
+    whereSql?: string | any,
     limit?: number,
     filters?: any,
     cursor?: any,
     columns?: any,
     asObject: boolean = true,
-    asCount : boolean = false
+    asCount: boolean = false
   ): Promise<ElasticWhereSqlResponse> {
     var object: any = new this();
     var that: any = this;
     object.setModelType(this);
-    var result:any = {
+    var result: any = {
       data: []
     };
 
+    if( whereSql && typeof whereSql !== 'string' && 
+    Object.prototype.toString.call( whereSql ) === '[object Array]' && whereSql.length == 2 ){
+      var query = whereSql[0];
+      var params = whereSql[1];
+      for(var key in params){
+        var search = ':'+key;
+        var value = object.parseValueSql(params[key]); 
+        query = query.split(search).join(value);
+      }
+      whereSql = query;
+      console.log('sql --- ',whereSql);
+    } 
     try {
       var connection = FirestoreOrmRepository.getGlobalElasticsearchConnection();
     } catch (error) {
-      console.error(error); 
+      console.error(error);
       return result;
     }
 
@@ -447,28 +557,28 @@ export class BaseModel implements ModelInterface {
     var params: any = {};
     var table = object.getReference().path.replace(new RegExp('/', 'g'), '_');
     var hasSelect = (whereSql + '').toLowerCase().trim().startsWith('select ');
-    if(!asCount){
+    if (!asCount) {
       /* var whereString = ((whereSql + '').toLowerCase().trim().startsWith('where ') ? ' ' : ' WHERE '); */
       /* var whereString = ((whereSql + '').toLowerCase().trim().startsWith('select ') ? ' ' : ' SELECT *  '); */
-      var sql:any = '';
-      if(hasSelect){
-         sql = whereSql;
-      }else{
-         sql = 'select * from '+ table  + ' '
-        + whereSql;
+      var sql: any = '';
+      if (hasSelect) {
+        sql = whereSql;
+      } else {
+        sql = 'select * from ' + table + ' '
+          + whereSql;
       }
-      
-    }else{
-      if(!hasSelect){
-        sql = 'SELECT count(*) as count from '+ table + ' '
-        + whereSql;
-      }else{
+
+    } else {
+      if (!hasSelect) {
+        sql = 'SELECT count(*) as count from ' + table + ' '
+          + whereSql;
+      } else {
         sql = 'SELECT count(*) as count from ('
-        + whereSql + ') as t';
+          + whereSql + ') as t';
       }
-      
+
     }
-    
+
     if (sql) {
       params['query'] = sql;
     }
@@ -483,16 +593,16 @@ export class BaseModel implements ModelInterface {
     }
 
     try {
-      var result = await that.elasticFullSql(sql,limit,filters,null,null,!asCount && asObject);
-    //
-    
-    
-    //console.log('result --------- ',result);
+      var result = await that.elasticFullSql(sql, limit, filters, null, null, !asCount && asObject);
+      //
+
+
+      //console.log('result --------- ',result);
 
       result.count = async function () {
-        if(!this['_count']){
-        var res = await that.elasticSql(whereSql,null,filters,null,null,null,true);
-        this['_count'] = res && res.data && res && res.data[0] && res.data[0].count ? res.data[0].count : 0;
+        if (!this['_count']) {
+          var res = await that.elasticSql(whereSql, null, filters, null, null, null, true);
+          this['_count'] = res && res.data && res && res.data[0] && res.data[0].count ? res.data[0].count : 0;
         }
         return this['_count'];
       }
@@ -500,9 +610,9 @@ export class BaseModel implements ModelInterface {
     } catch (error) {
       console.error(error);
     }
-     //console.log(params);
+    //console.log(params);
 
-  //console.log(resultObject);
+    //console.log(resultObject);
     return result;
   }
 
@@ -804,10 +914,10 @@ export class BaseModel implements ModelInterface {
     var object: any = !targetObject
       ? this.getCurrentModel()
       : targetObject;
-      if(data['id']){
-        this.is_exist = true;
-        this.setId(data['id']);
-      }
+    if (data['id']) {
+      this.is_exist = true;
+      this.setId(data['id']);
+    }
     var pathParams = this.getPathListParams();
     for (let key in pathParams) {
       let value = pathParams[key];
@@ -818,12 +928,25 @@ export class BaseModel implements ModelInterface {
       if (object.aliasFieldsMapper && object.aliasFieldsMapper[key]) {
         object[object.aliasFieldsMapper[key]] = value;
       } else {
-        if (!(this['ignoredFields'] && this['ignoredFields'][key])) {
+        if (object.getOriginName(key)) {
+          object[object.getOriginName(key)] = value;
+        } else if (!(this['ignoredFields'] && this['ignoredFields'][key])) {
           object[key] = value;
         }
+
       }
     }
     return object;
+  }
+
+  getOriginName(key: string) {
+    var that: any = this;
+    for (var originKey in that.aliasFieldsMapper) {
+      if (that.aliasFieldsMapper[originKey] == key) {
+        return originKey;
+      }
+    }
+    return null
   }
 
   initFromData(data: Object, targetObject?: this): this {
@@ -1180,15 +1303,134 @@ export class BaseModel implements ModelInterface {
   initAutoTime(): void {
     if (this.isAutoTime) {
       if (!this.created_at) {
-        this[BaseModel.CREATED_AT_FLAG] = firebase.firestore.FieldValue.serverTimestamp();
-        this.created_at = firebase.firestore.FieldValue.serverTimestamp();
+        this[BaseModel.CREATED_AT_FLAG] = new Date().getTime();
+        this.created_at = new Date().getTime();
       }
-      this[BaseModel.UPDATED_AT_FLAG] = firebase.firestore.FieldValue.serverTimestamp();
+      this[BaseModel.UPDATED_AT_FLAG] = new Date().getTime();
       this['storedFields'].push(BaseModel.CREATED_AT_FLAG);
       this['storedFields'].push(BaseModel.UPDATED_AT_FLAG);
-      this.updated_at = firebase.firestore.FieldValue.serverTimestamp();
+      this.updated_at = new Date().getTime();
     }
   }
+
+  makeId(length: number) {
+    var result = '';
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for (var i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+  }
+
+
+  getStorageFile(target: string): StorageReference {
+    var that = this;
+    var uniqueId = this.getId() ? this.getId() : this.makeId(20);
+    var path = this.getReference().path + '/' + uniqueId + '/' + target;
+    //console.log('path ----- ', path);
+    var storage = FirestoreOrmRepository.getGlobalStorage();
+    var storageRef = storage.ref();
+    // Create a reference to 'mountains.jpg'
+    var fileRef: any = storageRef.child(path);
+    fileRef['_put'] = fileRef.put;
+    fileRef['_putString'] = fileRef.putString;
+    fileRef.getRef = function (){
+      if(that[target]){
+        var url = target[target];
+        var ref = storage.refFromURL(url);
+        if(ref){
+          return ref;
+        }else{
+          return fileRef;
+        }
+      }else{
+        return fileRef;
+      }
+    };
+    fileRef.uploadFile = async function (data: any,
+      metadata?: firebase.storage.UploadMetadata | undefined
+      , onProcessingCallback: any = () => { }
+      , onErrorCallback: any = () => { }
+      , onFinishCallback: any = () => { }) {
+      var uploadTask = this.put(data, metadata);
+      return await that.initUpdateTask(
+        uploadTask,
+        target,
+        onProcessingCallback,
+        onErrorCallback,
+        onFinishCallback
+      );
+    }
+    fileRef.uploadString = async function (data: any,
+      format?: firebase.storage.StringFormat,
+      metadata?: firebase.storage.UploadMetadata
+      , onProcessingCallback: any = () => { }
+      , onErrorCallback: any = () => { }
+      , onFinishCallback: any = () => { }) {
+      var uploadTask = this.putString(data, format, metadata);
+      return await that.initUpdateTask(
+        uploadTask,
+        target,
+        onProcessingCallback,
+        onErrorCallback,
+        onFinishCallback
+      );
+    }
+    fileRef.uploadFromUrl = async function (url: string
+      , onProcessingCallback: any = () => { }
+      , onErrorCallback: any = () => { }
+      , onFinishCallback: any = () => { }) {
+      try {
+        var response = await axios({
+          method: 'get',
+          url: url,
+          responseType: 'arraybuffer'
+        });
+        var base64 = await (new Buffer(response.data, 'binary')).toString('base64');
+        return await this.uploadString(
+          base64,
+          'base64',
+          undefined,
+          onProcessingCallback,
+          onErrorCallback,
+          onFinishCallback);
+      } catch (err) {
+        console.error(err);
+        return false; 
+      }
+    }
+    return fileRef;
+  }
+
+  initUpdateTask(uploadTask: firebase.storage.UploadTask, target: string
+    , onProcessingCallback: any = () => { }
+    , onErrorCallback: any = () => { }
+    , onFinishCallback: any = () => { }) {
+    var that = this;
+    return new Promise(async (resolve, reject) => {
+      uploadTask.on('state_changed',
+        // Processing 
+        onProcessingCallback,
+        // Error 
+        (error: any) => {
+          reject(error);
+          onErrorCallback(error)
+        },
+        // Finish
+        () => {
+          onFinishCallback(uploadTask);
+          uploadTask.snapshot.ref.getDownloadURL().then((downloadURL: string) => {
+           // console.log('File available at', downloadURL);
+            that[target] = downloadURL;
+           // console.log('that', that.getData());
+            resolve(downloadURL);
+          });
+        });
+    });
+  }
+
+
 
   getCreatedAt(): Moment | null {
     return this.created_at ? moment.unix(this.created_at / 1000) : null;
@@ -1318,6 +1560,7 @@ export class BaseModel implements ModelInterface {
   getData(): Object {
     var result = {};
     var data = this.getDocumentData();
+    // console.log('data -- ',data);
     for (var key in data) {
       if (!(this['ignoredFields'] && this['ignoredFields'].includes(key))) {
         result[key] = data[key];

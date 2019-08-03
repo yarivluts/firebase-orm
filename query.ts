@@ -23,9 +23,11 @@ export class Query<T> {
   protected startAfterArr: BaseModel[] = [];
   protected queryLimit!: number;
   protected currentRef!: firebase.firestore.CollectionReference;
-  init(model: BaseModel) {
+  init(model: BaseModel,reference? : firebase.firestore.Query | any) {
     this.model = model;
-    this.current = this.model.getReference();
+    if(!reference){
+      this.current = this.model.getReference();
+    }
   }
 
   /*  get current(){
@@ -54,6 +56,9 @@ export class Query<T> {
     opStr: firebase.firestore.WhereFilterOp | WHERE_FILTER_OP,
     value: any
   ): Query<T> {
+    var field: any = fieldPath;
+    fieldPath = this.model.getFieldName(field);
+
     this.queryList.push(this.current);
     if (opStr == WHERE_FILTER_OP.NOT_EQUAL) {
       this.current = this.current.where(fieldPath, '<', value).where(fieldPath, '>', value);
@@ -81,6 +86,8 @@ export class Query<T> {
     opStr: firebase.firestore.WhereFilterOp | WHERE_FILTER_OP,
     value: any
   ): Query<T> {
+    var field: any = fieldPath;
+    fieldPath = this.model.getFieldName(field);
 
     this.orWhereList.push({
       fieldPath: fieldPath,
@@ -105,6 +112,8 @@ export class Query<T> {
     fieldPath: string | firebase.firestore.FieldPath,
     directionStr?: firebase.firestore.OrderByDirection
   ): Query<T> {
+    var field: any = fieldPath;
+    fieldPath = this.model.getFieldName(field);
     this.orderByList.push({
       fieldPath: fieldPath,
       directionStr: directionStr
@@ -136,6 +145,8 @@ export class Query<T> {
   }
 
   like(fieldName: string, find: string): Query<T> {
+    var field: any = fieldName;
+    fieldName = this.model.getFieldName(field);
     find = (find + '').toLowerCase();
     var likePrefix = '~~~';
     if (this.model['textIndexingFields'] && this.model['textIndexingFields'][this.model.getFieldName(fieldName)]) {

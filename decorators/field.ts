@@ -26,7 +26,7 @@ export function Field(options?: FieldOptions): any {
       target.internalFields = []; 
     }
     if(options && options.field_name){
-      target.aliasFieldsMapper[options.field_name] = key;
+      target.aliasFieldsMapper[key] = options.field_name;
     }
     
     
@@ -54,13 +54,13 @@ export function Field(options?: FieldOptions): any {
         enumerable: true,
       /*  writable: true, */
         set : function (value){
-          this['data'][key] = value;
+          this['data'][this.getFieldName(key)] = value;
           if(this.textIndexingFields[key]){
             this['data']['text_index_' + this.getFieldName(key) ] = this.parseTextIndexingFields(value + '');
           }
         },
         get : function () {
-            return typeof this['data'][key] === undefined ? undefined : this['data'][key];
+            return typeof this['data'][this.getFieldName(key)] === undefined ? undefined : this['data'][this.getFieldName(key)];
         },  
     });
      // If the update failed, something went wrong
