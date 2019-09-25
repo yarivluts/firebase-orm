@@ -555,28 +555,19 @@ export class BaseModel implements ModelInterface {
       return result;
     }
     var params: any = {};
-    var table = object.getReference().path.replace(new RegExp('/', 'g'), '_');
+    var table = object.getReference().path.replace(new RegExp('/', 'g'), '_').toLowerCase();
     var hasSelect = (whereSql + '').toLowerCase().trim().startsWith('select ');
-    if (!asCount) {
-      /* var whereString = ((whereSql + '').toLowerCase().trim().startsWith('where ') ? ' ' : ' WHERE '); */
-      /* var whereString = ((whereSql + '').toLowerCase().trim().startsWith('select ') ? ' ' : ' SELECT *  '); */
-      var sql: any = '';
-      if (hasSelect) {
-        sql = whereSql;
-      } else {
-        sql = 'select * from ' + table + ' '
-          + whereSql;
-      }
 
+    var sql: any = '';
+    if (hasSelect) {
+      sql = whereSql;
     } else {
-      if (!hasSelect) {
-        sql = 'SELECT count(*) as count from ' + table + ' '
-          + whereSql;
-      } else {
-        sql = 'SELECT count(*) as count from ('
-          + whereSql + ') as t';
-      }
-
+      sql = 'select * from ' + table + ' '
+        + whereSql;
+    }
+    if (asCount){
+       sql = 'SELECT count(*) as count from ('
+          + sql + ') as t';
     }
 
     if (sql) {

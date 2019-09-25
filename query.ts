@@ -21,6 +21,7 @@ export class Query<T> {
   protected orWhereList: any[] = [];
   protected orderByList: any[] = [];
   protected startAfterArr: BaseModel[] = [];
+  protected endBeforeArr: BaseModel[] = [];
   protected queryLimit!: number;
   protected currentRef!: firebase.firestore.CollectionReference;
   init(model: BaseModel,reference? : firebase.firestore.Query | any) {
@@ -338,13 +339,20 @@ export class Query<T> {
    * of the query's order by.
    * @return The created Query.
    */
-  endBefore(...fieldValues: any[]): Query<T> {
-    this.current = this.current.endBefore(...fieldValues);
-
-    for (var i = 0; this.orWhereList.length > i; i++) {
-      this.orWhereList[i].queryObject = this.orWhereList[i].queryObject.endBefore(...fieldValues);
-    }
+  endBefore(ormObject: BaseModel): Query<T> {
+    this.endBeforeArr.push(ormObject);
     return this;
+  }
+  
+  async initEndBefore() {
+    for (var i = 0; i < this.endBeforeArr.length; i++) {
+      var ormObject = this.endBeforeArr[i];
+      var doc = await ormObject.getSnapshot();
+      this.current = this.current.endBefore(doc);
+      for (var i = 0; this.orWhereList.length > i; i++) {
+        this.orWhere[i].queryObject = this.orWhere[i].queryObject.endBefore(doc);
+      }
+    }
   }
 
   /**
@@ -390,6 +398,7 @@ export class Query<T> {
 
   async initBeforeFetch(){
     await this.initStartAfter();
+    await this.initEndBefore();
     return this;
   }
 

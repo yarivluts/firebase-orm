@@ -26,7 +26,7 @@ export class FirestoreOrmRepository {
     static initGlobalConnection(firestore: firebase.firestore.Firestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         this.globalFirestores[key] = new FirestoreOrmRepository(firestore);
     }
-    
+
     static initGlobalStorage(storage: firebase.storage.Storage, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         this.globalFirebaseStoages[key] = storage;
     }
@@ -37,7 +37,7 @@ export class FirestoreOrmRepository {
         };
     }
 
-    static getGlobalStorage(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) : firebase.storage.Storage {
+    static getGlobalStorage(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): firebase.storage.Storage {
         if (this.globalFirebaseStoages[key]) {
             return this.globalFirebaseStoages[key];
         } else {
@@ -89,7 +89,7 @@ export class FirestoreOrmRepository {
             } else if (stage.type == 'document') {
                 current = current.doc(stage.value);
             }
-        } 
+        }
         return current;
     }
 
@@ -182,7 +182,9 @@ export class FirestoreOrmRepository {
             return false;
         }
         if (object.getId()) {
-            var docRef = await ref.doc(object.getId()).set(object.getDocumentData());
+            var docRef = ref.doc
+                ? await ref.doc(object.getId()).set(object.getDocumentData())
+                : await ref.set(object.getDocumentData());
         } else {
             try {
                 var docRef = await ref.add(object.getDocumentData());
