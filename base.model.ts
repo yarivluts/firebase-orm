@@ -52,6 +52,9 @@ if (typeof XMLHttpRequest === 'undefined') {
 const moment = moment_;
 const axios = axios_.default;
 
+/**
+ * Base model orm application
+ */
 export class BaseModel implements ModelInterface {
 
   protected static CREATED_AT_FLAG: string = "created_at";
@@ -63,6 +66,7 @@ export class BaseModel implements ModelInterface {
   protected isAutoTime!: boolean;
   created_at!: any;
   updated_at!: any;
+  protected unlistenFunc!: any;
   protected is_exist: boolean = false;
   pathId!: string;
   protected currentModel!: this & BaseModel;
@@ -89,6 +93,9 @@ export class BaseModel implements ModelInterface {
     this.initProp();
   }
 
+  /**
+   * Init properties
+   */
   initProp() {
     if (!this['storedFields']) {
       this['storedFields'] = [];
@@ -104,47 +111,72 @@ export class BaseModel implements ModelInterface {
     }
   }
 
+  /**
+   * Parse text indexing fields
+   * @param text : string
+   */
   parseTextIndexingFields(text: string) {
+    var map = {};
     text = (text + '').toLowerCase();
-    var result = [];
     var edgeSymbol = '~~~';
+    var result = [edgeSymbol + text + edgeSymbol, text];
     for (var i = 0; text.length > i; i++) {
       for (var x = 1; x < text.length; x++) {
         var subString = text.substr(i, text.length - x);
+        map[subString] = true;
         if (i == 0) {
           subString = edgeSymbol + subString;
+          map[subString] = true;
         } else if (i + 1 == text.length) {
           subString = subString + edgeSymbol;
         }
-        result.push(subString);
       }
-
+    }
+    for (var option in map) {
+      result.push(option);
     }
     return result;
   }
 
-
-
+  /**
+   * Get object id
+   */
   getId() {
     return this.id;
   }
 
+  /**
+   * Get path id
+   */
   getPathId() {
     return this.pathId;
   }
 
+  /**
+   * Init fields
+   */
   initFields(): void { }
 
+  /**
+   * Init exist
+   */
   isExist(): boolean {
     return this.is_exist;
   }
 
+  /**
+   * Get one relation
+   * @param model 
+   */
   async getOneRel<T>(model: { new(): T }): Promise<T & BaseModel> {
     var object: any = this.getModel(model);
     var that: any = this;
     return await object.load(that[object.getPathId()]);
   }
 
+  /**
+   * Get many relation
+   */
   async getManyRel<T>(model: {
     new(): T;
   }): Promise<Array<T & BaseModel>> {
@@ -347,8 +379,8 @@ export class BaseModel implements ModelInterface {
   }
 
 
-  query<T>(this: { new(): T }): Query<T> {
-    var query = new Query<T>();
+  query(): Query<this> {
+    var query = new Query<this>();
     var that: any = this;
     var object: any = that.getCurrentModel();
     query.init(object);
@@ -373,9 +405,9 @@ export class BaseModel implements ModelInterface {
     return query;
   } */
 
-  getCollectionName() : string {
+  getCollectionName(): string {
     var paths = this.referencePath.split('/');
-    return paths[paths.length -1];
+    return paths[paths.length - 1];
   }
 
   static async elasticFullSql<T>(this: { new(): T },
@@ -468,46 +500,46 @@ export class BaseModel implements ModelInterface {
     return result;
   }
 
-   escapeStringSql (str:string) {
-     var string : any = str;
-     string = string.split("'").join('');
-     string = string.split('"').join('');
-    return string.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char:string) {
-        switch (char) {
-            case "\0":
-                return "\\0";
-            case "\x08":
-                return "\\b";
-            case "\x09":
-                return "\\t";
-            case "\x1a":
-                return "\\z";
-            case "\n":
-                return "\\n";
-            case "\r":
-                return "\\r";
-            case "\"":
-            case "'":
-            case "\\":
-            case "%":
-                return "\\"+char; // prepends a backslash to backslash, percent,
-                                  // and double/single quotes
-        }
+  escapeStringSql(str: string) {
+    var string: any = str;
+    string = string.split("'").join('');
+    string = string.split('"').join('');
+    return string.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char: string) {
+      switch (char) {
+        case "\0":
+          return "\\0";
+        case "\x08":
+          return "\\b";
+        case "\x09":
+          return "\\t";
+        case "\x1a":
+          return "\\z";
+        case "\n":
+          return "\\n";
+        case "\r":
+          return "\\r";
+        case "\"":
+        case "'":
+        case "\\":
+        case "%":
+          return "\\" + char; // prepends a backslash to backslash, percent,
+        // and double/single quotes
+      }
     });
-}
+  }
 
-   parseValueSql(value:any) : string{
+  parseValueSql(value: any): string {
     var result = '';
-    if(typeof value === 'number'){
+    if (typeof value === 'number') {
       return value + '';
     }
-    if(Object.prototype.toString.call( value ) === '[object Array]'){
-      value.forEach((val:string) => {
-        if(result != ''){
+    if (Object.prototype.toString.call(value) === '[object Array]') {
+      value.forEach((val: string) => {
+        if (result != '') {
           result += ',';
         }
-          result += "'" + this.escapeStringSql(val + '') + "'";
-        
+        result += "'" + this.escapeStringSql(val + '') + "'";
+
       });
       return result;
     }
@@ -531,18 +563,18 @@ export class BaseModel implements ModelInterface {
       data: []
     };
 
-    if( whereSql && typeof whereSql !== 'string' && 
-    Object.prototype.toString.call( whereSql ) === '[object Array]' && whereSql.length == 2 ){
+    if (whereSql && typeof whereSql !== 'string' &&
+      Object.prototype.toString.call(whereSql) === '[object Array]' && whereSql.length == 2) {
       var query = whereSql[0];
       var params = whereSql[1];
-      for(var key in params){
-        var search = ':'+key;
-        var value = object.parseValueSql(params[key]); 
+      for (var key in params) {
+        var search = ':' + key;
+        var value = object.parseValueSql(params[key]);
         query = query.split(search).join(value);
       }
       whereSql = query;
-      console.log('sql --- ',whereSql);
-    } 
+      console.log('sql --- ', whereSql);
+    }
     try {
       var connection = FirestoreOrmRepository.getGlobalElasticsearchConnection();
     } catch (error) {
@@ -565,9 +597,9 @@ export class BaseModel implements ModelInterface {
       sql = 'select * from ' + table + ' '
         + whereSql;
     }
-    if (asCount){
-       sql = 'SELECT count(*) as count from ('
-          + sql + ') as t';
+    if (asCount) {
+      sql = 'SELECT count(*) as count from ('
+        + sql + ') as t';
     }
 
     if (sql) {
@@ -708,6 +740,25 @@ export class BaseModel implements ModelInterface {
           callback(that);
         });
     }
+  }
+
+  listen(callback?: CallableFunction) {
+    this.unlistenFunc = this.on((newObject: this) => {
+      this.copy(newObject);
+      if (callback) {
+        callback(this);
+      }
+    });
+    return this.unlistenFunc;
+  }
+
+  unlisten(): any {
+    if (this.unlistenFunc) {
+      var res = this.unlistenFunc();
+      this.unlistenFunc = null;
+      return res;
+    }
+    return false;
   }
 
   async sql(
@@ -1326,16 +1377,16 @@ export class BaseModel implements ModelInterface {
     var fileRef: any = storageRef.child(path);
     fileRef['_put'] = fileRef.put;
     fileRef['_putString'] = fileRef.putString;
-    fileRef.getRef = function (){
-      if(that[target]){
+    fileRef.getRef = function () {
+      if (that[target]) {
         var url = target[target];
         var ref = storage.refFromURL(url);
-        if(ref){
+        if (ref) {
           return ref;
-        }else{
+        } else {
           return fileRef;
         }
-      }else{
+      } else {
         return fileRef;
       }
     };
@@ -1387,8 +1438,7 @@ export class BaseModel implements ModelInterface {
           onErrorCallback,
           onFinishCallback);
       } catch (err) {
-        console.error(err);
-        return false; 
+        throw Error(err);
       }
     }
     return fileRef;
@@ -1412,9 +1462,9 @@ export class BaseModel implements ModelInterface {
         () => {
           onFinishCallback(uploadTask);
           uploadTask.snapshot.ref.getDownloadURL().then((downloadURL: string) => {
-           // console.log('File available at', downloadURL);
+            // console.log('File available at', downloadURL);
             that[target] = downloadURL;
-           // console.log('that', that.getData());
+            // console.log('that', that.getData());
             resolve(downloadURL);
           });
         });
@@ -1543,6 +1593,10 @@ export class BaseModel implements ModelInterface {
       }
     });
     return data;
+  }
+
+  copy(object: this) {
+    this.data = object.data;
   }
 
   /**

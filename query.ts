@@ -8,7 +8,7 @@ export enum LIST_EVENTS {
   REMOVED = "removed",
   MODIFIED = "modified",
   ADDEDD = "added",
-  INITIALIZE = "initialize"
+  INITIALIZE = "init"
 }
 export enum WHERE_FILTER_OP {
   NOT_EQUAL = "!="
@@ -24,9 +24,9 @@ export class Query<T> {
   protected endBeforeArr: BaseModel[] = [];
   protected queryLimit!: number;
   protected currentRef!: firebase.firestore.CollectionReference;
-  init(model: BaseModel,reference? : firebase.firestore.Query | any) {
+  init(model: BaseModel, reference?: firebase.firestore.Query | any) {
     this.model = model;
-    if(!reference){
+    if (!reference) {
       this.current = this.model.getReference();
     }
   }
@@ -181,14 +181,14 @@ export class Query<T> {
    * @return An unsubscribe function that can be called to cancel
    * the snapshot listener.
    */
-   on(callback: CallableFunction, event_type?: LIST_EVENTS) : CallableFunction {
-     var that = this;
-     
-     var response:any = { 
-      callback : null
+  onLegacy(callback: CallableFunction, event_type?: LIST_EVENTS): CallableFunction {
+    var that = this;
+
+    var response: any = {
+      callback: null
     };
 
-     this.initBeforeFetch().then(() => {
+    this.initBeforeFetch().then(() => {
       response.callback = this.current.onSnapshot(function (querySnapshot) {
         var result = that.parse(querySnapshot);
         if (event_type) {
@@ -213,20 +213,20 @@ export class Query<T> {
           callback(result);
         }
       });
-     })
-     
-    
-     var res = () => {
-       if(response.callback){
-        response.callback(); 
-       }else{
+    })
+
+
+    var res = () => {
+      if (response.callback) {
+        response.callback();
+      } else {
         setTimeout(function () {
           res();
-      }, 1000);
-       }
-     }
-     return res;
-  } 
+        }, 1000);
+      }
+    }
+    return res;
+  }
 
 
   /**
@@ -242,10 +242,30 @@ export class Query<T> {
    * @return An unsubscribe function that can be called to cancel
    * the snapshot listener.
    */
-  onMode(options: ModelAllListOptions) : CallableFunction {
-    
-    var response:any = { 
-      callback : null
+  on(callback: CallableFunction, event_type: LIST_EVENTS = LIST_EVENTS.INITIALIZE): CallableFunction {
+    var params = {};
+    params[event_type] = callback;
+    return this.onMode(params);
+  }
+
+
+  /**
+   * Attaches a listener for QuerySnapshot events. You may either pass
+   * individual `onNext` and `onError` callbacks or pass a single observer
+   * object with `next` and `error` callbacks. The listener can be cancelled by
+   * calling the function that is returned when `onSnapshot` is called.
+   *
+   * NOTE: Although an `onCompletion` callback can be provided, it will
+   * never be called because the snapshot stream is never-ending.
+   *
+   * @param callback A single object containing `next` and `error` callbacks.
+   * @return An unsubscribe function that can be called to cancel
+   * the snapshot listener.
+   */
+  onMode(options: ModelAllListOptions): CallableFunction {
+
+    var response: any = {
+      callback: null
     };
     this.initBeforeFetch().then(() => {
       var that = this;
@@ -275,12 +295,12 @@ export class Query<T> {
       });
     })
     var res = () => {
-      if(response.callback){
-       response.callback(); 
-      }else{
-       setTimeout(function () {
-         res();
-     }, 1000);
+      if (response.callback) {
+        response.callback();
+      } else {
+        setTimeout(function () {
+          res();
+        }, 1000);
       }
     }
     return res;
@@ -343,7 +363,7 @@ export class Query<T> {
     this.endBeforeArr.push(ormObject);
     return this;
   }
-  
+
   async initEndBefore() {
     for (var i = 0; i < this.endBeforeArr.length; i++) {
       var ormObject = this.endBeforeArr[i];
@@ -396,7 +416,7 @@ export class Query<T> {
     }
   }
 
-  async initBeforeFetch(){
+  async initBeforeFetch() {
     await this.initStartAfter();
     await this.initEndBefore();
     return this;
@@ -431,7 +451,7 @@ export class Query<T> {
     })())
     this.orWhereList.forEach((row) => {
       currentQuery = row.queryObject.where(row.fieldPath, row.opStr, row.value);
-     // console.log('row ', row);
+      // console.log('row ', row);
       promiseAllList.push((async () => {
         var queryResult = await currentQuery.get(options);
         var res = this.parse(queryResult);
@@ -507,7 +527,7 @@ export class Query<T> {
       object.setId(id);
       object.initFromData(data);
       result.push(object);
-    } 
+    }
     return result;
   }
 
