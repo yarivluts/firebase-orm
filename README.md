@@ -115,7 +115,7 @@ unsubscribe();
 
 1. Install the npm package:
 
-   `npm install @arbel/firebase-orm firebase rxfire @arbel/firesql moment rxjs --save`
+   `npm install @arbel/firebase-orm firebase rxfire firesql moment rxjs --save`
 
 ##### TypeScript configuration
 
@@ -238,7 +238,7 @@ export const elasticsearchProductsSync = functions.firestore
       newData.id = productId;
 
       if (!previousData) {
-        console.log("create new product - ", productId);
+        printLog("create new product - ", productId);
         client
           .create({
             index: "products",
@@ -252,7 +252,7 @@ export const elasticsearchProductsSync = functions.firestore
             console.error("Elasticsearch error - ", error);
           });
       } else {
-        console.log("update product - ", productId);
+        printLog("update product - ", productId);
         client.transport
           .request({
             method: "POST",
@@ -266,7 +266,7 @@ export const elasticsearchProductsSync = functions.firestore
           });
       }
     } else {
-      console.log("delete product - ", productId);
+      printLog("delete product - ", productId);
       client
         .delete({
           index: "products",
@@ -400,7 +400,7 @@ await storageRef.uploadFromUrl(
     // Handle successful uploads on complete
     // For instance, get the download URL: https://firebasestorage.googleapis.com/...
     task.snapshot.ref.getDownloadURL().then(function(downloadURL: any) {
-      console.log("File available at", downloadURL);
+      printLog("File available at", downloadURL);
     });
   }
 );

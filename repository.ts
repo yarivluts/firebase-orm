@@ -1,8 +1,10 @@
 import * as firebase from "firebase/app";
 import 'firebase/firestore';
+import { collection, addDoc, doc, Firestore } from "firebase/firestore";
+import { FirebaseStorage, getStorage } from "firebase/storage";
 import { BaseModel } from "./base.model";
 import { ModelInterface } from "./interfaces/model.interface";
-import { FireSQL } from "@arbel/firesql";
+import { FireSQL } from "firesql";
 import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface";
 import * as axios_ from 'axios';
 import * as qs from 'qs';
@@ -19,15 +21,15 @@ export class FirestoreOrmRepository {
     static elasticSearchConnections = {};
     static globalFirebaseStoages = {};
 
-    constructor(protected firestore: firebase.firestore.Firestore) {
+    constructor(protected firestore: Firestore) {
 
     }
 
-    static initGlobalConnection(firestore: firebase.firestore.Firestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+    static initGlobalConnection(firestore: Firestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         this.globalFirestores[key] = new FirestoreOrmRepository(firestore);
     }
 
-    static initGlobalStorage(storage: firebase.storage.Storage, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+    static initGlobalStorage(storage: FirebaseStorage, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         this.globalFirebaseStoages[key] = storage;
     }
 
@@ -37,7 +39,7 @@ export class FirestoreOrmRepository {
         };
     }
 
-    static getGlobalStorage(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): firebase.storage.Storage {
+    static getGlobalStorage(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): FirebaseStorage {
         if (this.globalFirebaseStoages[key]) {
             return this.globalFirebaseStoages[key];
         } else {
@@ -84,16 +86,19 @@ export class FirestoreOrmRepository {
         }
         for (var i = 0; i < pathList.length; i++) {
             var stage = pathList[i];
+            if (!stage.value) {
+                continue;
+            }
             if (stage.type == 'collection') {
-                current = current.collection(stage.value);
+                current = collection(current, stage.value);
             } else if (stage.type == 'document') {
-                current = current.doc(stage.value);
+                current = doc(current, stage.value);
             }
         }
         return current;
     }
 
-    getFirestore(): firebase.firestore.Firestore {
+    getFirestore(): Firestore {
         return this.firestore;
     }
 
@@ -124,7 +129,7 @@ export class FirestoreOrmRepository {
      * @param callback - running callback
      */
     onSql(sql: string, callback: CallableFunction): void {
-        const fireSQL = new FireSQL(this.firestore);
+        const fireSQL: any = new FireSQL(this.firestore);
         try {
             const res = fireSQL.rxQuery(sql, { includeId: 'id' });
             res.subscribe((results: any) => {
@@ -255,8 +260,8 @@ export class FirestoreOrmRepository {
                 });
                 result.data.push(newObject);
             });
-            //console.log(response.data);
-            //console.log(params);
+            //printLog(response.data);
+            //printLog(params);
 
             // return result;
             if (response.data.cursor) {
@@ -270,7 +275,7 @@ export class FirestoreOrmRepository {
             console.error(error);
         }
 
-        //console.log(resultObject);
+        //printLog(resultObject);
         return result;
     }
 

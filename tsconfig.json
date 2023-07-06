@@ -2,18 +2,28 @@
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
-    "lib": ["dom", "dom.iterable", "esnext","es2015"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext",
+      "es2015"
+    ],
     "skipLibCheck": true,
-    "declaration" : true,
+    "declaration": true,
     "strict": true,
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "experimentalDecorators": true,
-    "suppressImplicitAnyIndexErrors" : true,
+    "esModuleInterop": true,
+    "suppressImplicitAnyIndexErrors": true,
     "emitDecoratorMetadata": true,
-    "noStrictGenericChecks" : true
+    "noStrictGenericChecks": true
   },
-  "include": ["index.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "index.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -9,10 +9,10 @@
     "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged"
   },
   "peerDependencies": {
-    "firebase": "^5.9.4",
     "@arbel/firesql": "^1.0.3",
-    "rxfire": "^3.3.10",
+    "firebase": "^5.9.4",
     "moment": "^2.24.0",
+    "rxfire": "^3.3.10",
     "rxjs": "^6.4.0"
   },
   "devDependencies": {
@@ -44,13 +44,13 @@
     "blob": "0.0.5",
     "btoa": "^1.2.1",
     "cross-fetch": "^3.0.4",
-    "firebase": "^5.10.0",
+    "firebase": "^5.9.4",
     "firebase-admin": "^8.3.0",
     "moment": "^2.24.0",
     "node-fetch": "^2.6.0",
     "qs": "^6.7.0",
-    "rxfire": "^3.6.5",
-    "rxjs": "^6.5.2",
+    "rxfire": "^3.3.10",
+    "rxjs": "^6.4.0",
     "to-arraybuffer": "^1.0.1",
     "whatwg-fetch": "^3.0.0",
     "ws": "^7.1.1",

@@ -8,43 +8,40 @@ import { ModelOptions } from "./interfaces/model.options.interface";
 import { FirestoreOrmRepository } from "./repository";
 import * as firebase from "firebase/app";
 import 'firebase/firestore';
-import { FireSQL } from "@arbel/firesql";
+import { FireSQL } from "firesql";
+import 'firesql/rx'; // <-- Important! Don't forget
 import { Query, LIST_EVENTS } from "./query";
 import { Moment } from "moment";
-import { OrmUploadTask } from "./interfaces/upload.task.reference.interface";
 import { StorageReference } from "./interfaces/storage.file.reference.interface";
 import { ElasticWhereSqlResponse } from "./interfaces/elastic.where.sql.response.interface";
 import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface";
 import { ModelAllListOptions } from './interfaces/model.alllist.options.interface';
+import { printLog } from './utils';
 import * as axios_ from 'axios';
 import * as moment_ from "moment";
 import * as qs from 'qs';
-/* import 'cross-fetch/polyfill'; */
-import * as crossFetch from 'cross-fetch';
-const fetchNode = require('node-fetch');
-
-/* if (typeof window === 'undefined') {
-  const fetchNode = require('node-fetch');
-  } */
-if (typeof window === 'undefined') {
-  var toArrayBuffer = require('to-arraybuffer')
-}
-if (typeof Blob === 'undefined') {
-  const Blob = require('blob');
-}
-
+import { CollectionReference, DocumentReference, DocumentSnapshot, FieldPath, OrderByDirection, WhereFilterOp, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { StringFormat, UploadMetadata, UploadTask, getDownloadURL, ref } from 'firebase/storage';
 if (typeof atob === 'undefined') {
-  (global as any).atob = require('atob');
+  import('atob').then((atob) => {
+    (global as any).atob = atob;
+  });
 }
 if (typeof btoa === 'undefined') {
-  (global as any).btoa = require('btoa');
+  import('btoa').then((btoa) => {
+    (global as any).btoa = btoa;
+  });
 }
 
-if (typeof XMLHttpRequest === 'undefined') {
+/* if (typeof XMLHttpRequest === 'undefined') {
   // Polyfills required for Firebase
-  (global as any).XMLHttpRequest = require('@arbel/node-xhr2');
-  (global as any).WebSocket = require('ws'); // May also come in handy
-}
+  import('@arbel/node-xhr2').then((XMLHttpRequest) => {
+    (global as any).XMLHttpRequest = XMLHttpRequest;
+  });
+  import('ws').then((WebSocket) => {
+    (global as any).WebSocket = WebSocket;
+  });
+} */
 
 
 
@@ -61,7 +58,7 @@ export class BaseModel implements ModelInterface {
   protected static UPDATED_AT_FLAG: string = "updated_at";
 
   id!: string;
-  referencePath!: string;
+  //referencePath!: string;
   protected _referencePath!: string;
   protected isAutoTime!: boolean;
   created_at!: any;
@@ -248,12 +245,12 @@ export class BaseModel implements ModelInterface {
     return model;
   }
 
-  getReference(): firebase.firestore.CollectionReference {
+  getReference(): CollectionReference {
     return this.getRepository().getCollectionReferenceByModel(this);
   }
 
-  getDocReference(): firebase.firestore.DocumentReference {
-    return this.getReference().doc(this.getId());
+  getDocReference(): DocumentReference {
+    return doc(this.getReference(), this.getId());
   }
 
   setModelType(model: any): this {
@@ -268,7 +265,7 @@ export class BaseModel implements ModelInterface {
   static where<T>(
     this: { new(): T },
     fieldPath: string,
-    opStr: firebase.firestore.WhereFilterOp,
+    opStr: WhereFilterOp,
     value: any
   ): Query<T> {
     var that: any = this;
@@ -279,7 +276,7 @@ export class BaseModel implements ModelInterface {
   where<T>(
     this: { new(): T },
     fieldPath: string,
-    opStr: firebase.firestore.WhereFilterOp,
+    opStr: WhereFilterOp,
     value: any
   ): Query<T> {
     var that: any = this;
@@ -359,7 +356,7 @@ export class BaseModel implements ModelInterface {
       if (that.observeRemoveBefore) {
         that.observeRemoveBefore();
       }
-      await this.getDocReference().delete();
+      await deleteDoc(this.getDocReference());
       if (that.observeRemoveAfter) {
         that.observeRemoveAfter();
       }
@@ -406,7 +403,7 @@ export class BaseModel implements ModelInterface {
   } */
 
   getCollectionName(): string {
-    var paths = this.referencePath.split('/');
+    var paths = this['referencePath'].split('/');
     return paths[paths.length - 1];
   }
 
@@ -470,15 +467,15 @@ export class BaseModel implements ModelInterface {
         if (asObject) {
           var newObject: any = new this();
           newObject.setModelType(this);
-          //  console.log('data --- ',data);
+          //  printLog('data --- ',data);
           newObject.initFromData(data);
         } else {
           var newObject: any = data;
         }
         result.data.push(newObject);
       });
-      //console.log(time,response.data);
-      //console.log(time,params);
+      //printLog(time,response.data);
+      //printLog(time,params);
 
       // return result;
       if (response.data.cursor) {
@@ -489,14 +486,14 @@ export class BaseModel implements ModelInterface {
           return this['_next'];
         }
       } else {
-        //console.log('no cursor -------******************************** ')
+        //printLog('no cursor -------******************************** ')
       }
 
     } catch (error) {
       console.error(time, error);
     }
 
-    //console.log(resultObject);
+    //printLog(resultObject);
     return result;
   }
 
@@ -573,7 +570,7 @@ export class BaseModel implements ModelInterface {
         query = query.split(search).join(value);
       }
       whereSql = query;
-      console.log('sql --- ', whereSql);
+      printLog('sql --- ', whereSql);
     }
     try {
       var connection = FirestoreOrmRepository.getGlobalElasticsearchConnection();
@@ -620,7 +617,7 @@ export class BaseModel implements ModelInterface {
       //
 
 
-      //console.log('result --------- ',result);
+      //printLog('result --------- ',result);
 
       result.count = async function () {
         if (!this['_count']) {
@@ -633,9 +630,9 @@ export class BaseModel implements ModelInterface {
     } catch (error) {
       console.error(error);
     }
-    //console.log(params);
+    //printLog(params);
 
-    //console.log(resultObject);
+    //printLog(resultObject);
     return result;
   }
 
@@ -643,15 +640,15 @@ export class BaseModel implements ModelInterface {
   static async getAll<T>(this: { new(): T },
     whereArr?: Array<any>,
     orderBy?: {
-      fieldPath: string | firebase.firestore.FieldPath;
-      directionStr?: firebase.firestore.OrderByDirection;
+      fieldPath: string | FieldPath;
+      directionStr?: OrderByDirection;
     },
     limit?: number,
     params?: { [key: string]: string }
   ): Promise<Array<T>> {
     var object: any = new this();
     object.setModelType(this);
-    var query = object.query();
+    var query: Query<any> = object.query();
     if (whereArr && whereArr[0] && whereArr[0].length == 3) {
       for (var i = 0; i < whereArr.length; i++) {
         query.where(whereArr[i][0], whereArr[i][1], whereArr[i][2]);
@@ -667,8 +664,8 @@ export class BaseModel implements ModelInterface {
 
   async getAll(whereArr?: Array<any>,
     orderBy?: {
-      fieldPath: string | firebase.firestore.FieldPath;
-      directionStr?: firebase.firestore.OrderByDirection;
+      fieldPath: string | FieldPath;
+      directionStr?: OrderByDirection;
     },
     limit?: number,
     params?: { [key: string]: string }
@@ -715,7 +712,7 @@ export class BaseModel implements ModelInterface {
     var res = () => { };
     if (!that.getId()) {
       console.error(
-        this.referencePath +
+        this['referencePath'] +
         "/:" +
         this.pathId +
         " - " +
@@ -769,7 +766,7 @@ export class BaseModel implements ModelInterface {
     var result: any = [];
     if (isInsideQuery && !this.getId()) {
       console.error(
-        this.referencePath +
+        this['referencePath'] +
         "/:" +
         this.pathId +
         " - " +
@@ -784,7 +781,7 @@ export class BaseModel implements ModelInterface {
     }
     var ref: any = !isInsideQuery
       ? this.getReference().parent
-      : this.getReference().doc(this.getId());
+      : doc(this.getReference(), this.getId());
     const fireSQL = new FireSQL(ref, { includeId: "id" });
     try {
       var sqlResult = await fireSQL.query(sql);
@@ -799,7 +796,7 @@ export class BaseModel implements ModelInterface {
       return result;
     } catch (error) {
       console.error(
-        this.referencePath +
+        this['referencePath'] +
         "/:" +
         this.pathId +
         " - " +
@@ -819,7 +816,7 @@ export class BaseModel implements ModelInterface {
     var result: any = [];
     if (isInsideQuery && !this.getId()) {
       console.error(
-        this.referencePath +
+        this['referencePath'] +
         "/:" +
         this.pathId +
         " - " +
@@ -834,7 +831,7 @@ export class BaseModel implements ModelInterface {
         ? this.getReference().parent
           ? this.getReference().parent
           : this.getRepository().getFirestore()
-        : this.getReference().doc(this.getId());
+        : doc(this.getReference(), (this.getId()));
       const fireSQL = new FireSQL(ref, { includeId: "id" });
       try {
         const res = fireSQL.rxQuery(sql);
@@ -851,7 +848,7 @@ export class BaseModel implements ModelInterface {
         });
       } catch (error) {
         console.error(
-          this.referencePath +
+          this['referencePath'] +
           "/:" +
           this.pathId +
           " - " +
@@ -862,7 +859,7 @@ export class BaseModel implements ModelInterface {
     }
   }
 
-  async createFromDoc(doc: firebase.firestore.DocumentSnapshot): Promise<this> {
+  async createFromDoc(doc: DocumentSnapshot): Promise<this> {
     var object: any = this.getCurrentModel();
     var d: any = doc;
     var data = await doc.data();
@@ -881,7 +878,7 @@ export class BaseModel implements ModelInterface {
   }
 
 
-  static async createFromDoc<T>(this: { new(): T }, doc: firebase.firestore.DocumentSnapshot): Promise<T> {
+  static async createFromDoc<T>(this: { new(): T }, doc: DocumentSnapshot): Promise<T> {
     var object: any = new this();
     object.setModelType(this);
     var d: any = doc;
@@ -902,11 +899,11 @@ export class BaseModel implements ModelInterface {
 
 
 
-  static async createFromDocRef<T>(this: { new(): T }, doc: firebase.firestore.DocumentReference): Promise<T | null> {
+  static async createFromDocRef<T>(this: { new(): T }, doc: DocumentReference): Promise<T | null> {
     var object: any = new this();
     object.setModelType(this);
     var d: any = doc;
-    var data = (await doc.get()).data();
+    var data = (await getDoc(doc)).data();
     if (data) {
       var pathParams = object.getPathListParams();
 
@@ -927,11 +924,11 @@ export class BaseModel implements ModelInterface {
   }
 
 
-  async createFromDocRef<T>(this: { new(): T }, doc: firebase.firestore.DocumentReference): Promise<T | null> {
+  async createFromDocRef<T>(this: { new(): T }, doc: DocumentReference): Promise<T | null> {
     var object: any = new this();
     object.setModelType(this);
     var d: any = doc;
-    var data = (await doc.get()).data();
+    var data = (await getDoc(doc)).data();
     if (data) {
       var pathParams = object.getPathListParams();
 
@@ -995,7 +992,7 @@ export class BaseModel implements ModelInterface {
     return this.createFromData(data, this);
   }
 
-  initFromDoc(doc: firebase.firestore.DocumentSnapshot) {
+  initFromDoc(doc: DocumentSnapshot) {
     var that: any = this;
     var data = doc.data();
     for (let key in data) {
@@ -1370,19 +1367,19 @@ export class BaseModel implements ModelInterface {
     var that = this;
     var uniqueId = this.getId() ? this.getId() : this.makeId(20);
     var path = this.getReference().path + '/' + uniqueId + '/' + target;
-    //console.log('path ----- ', path);
+    //printLog('path ----- ', path);
     var storage = FirestoreOrmRepository.getGlobalStorage();
-    var storageRef = storage.ref();
+    var storageRef = ref(storage);
     // Create a reference to 'mountains.jpg'
-    var fileRef: any = storageRef.child(path);
+    var fileRef: any = ref(storageRef, path);
     fileRef['_put'] = fileRef.put;
     fileRef['_putString'] = fileRef.putString;
     fileRef.getRef = function () {
       if (that[target]) {
         var url = target[target];
-        var ref = storage.refFromURL(url);
-        if (ref) {
-          return ref;
+        const refVal = ref(storage, url);
+        if (refVal) {
+          return refVal;
         } else {
           return fileRef;
         }
@@ -1391,7 +1388,7 @@ export class BaseModel implements ModelInterface {
       }
     };
     fileRef.uploadFile = async function (data: any,
-      metadata?: firebase.storage.UploadMetadata | undefined
+      metadata?: UploadMetadata | undefined
       , onProcessingCallback: any = () => { }
       , onErrorCallback: any = () => { }
       , onFinishCallback: any = () => { }) {
@@ -1405,8 +1402,8 @@ export class BaseModel implements ModelInterface {
       );
     }
     fileRef.uploadString = async function (data: any,
-      format?: firebase.storage.StringFormat,
-      metadata?: firebase.storage.UploadMetadata
+      format?: StringFormat,
+      metadata?: UploadMetadata
       , onProcessingCallback: any = () => { }
       , onErrorCallback: any = () => { }
       , onFinishCallback: any = () => { }) {
@@ -1438,13 +1435,13 @@ export class BaseModel implements ModelInterface {
           onErrorCallback,
           onFinishCallback);
       } catch (err) {
-        throw Error(err);
+        throw Error(err as any);
       }
     }
     return fileRef;
   }
 
-  initUpdateTask(uploadTask: firebase.storage.UploadTask, target: string
+  initUpdateTask(uploadTask: UploadTask, target: string
     , onProcessingCallback: any = () => { }
     , onErrorCallback: any = () => { }
     , onFinishCallback: any = () => { }) {
@@ -1461,10 +1458,10 @@ export class BaseModel implements ModelInterface {
         // Finish
         () => {
           onFinishCallback(uploadTask);
-          uploadTask.snapshot.ref.getDownloadURL().then((downloadURL: string) => {
-            // console.log('File available at', downloadURL);
+          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL: string) => {
+            // printLog('File available at', downloadURL);
             that[target] = downloadURL;
-            // console.log('that', that.getData());
+            // printLog('that', that.getData());
             resolve(downloadURL);
           });
         });
@@ -1502,18 +1499,18 @@ export class BaseModel implements ModelInterface {
   }
 
   getReferencePath(): string {
-    return this.referencePath;
+    return this['referencePath'];
   }
 
   static async find<T>(this: { new(): T }, fieldPath: string,
-    opStr: firebase.firestore.WhereFilterOp,
+    opStr: WhereFilterOp,
     value: any): Promise<Array<T>> {
     var that: any = this;
     return await that.where(fieldPath, opStr, value).get();
   }
 
   static async findOne<T>(this: { new(): T }, fieldPath: string,
-    opStr: firebase.firestore.WhereFilterOp,
+    opStr: WhereFilterOp,
     value: any): Promise<T | null> {
     var that: any = this;
     return await that.where(fieldPath, opStr, value).getOne();
@@ -1521,26 +1518,26 @@ export class BaseModel implements ModelInterface {
 
 
   async find(fieldPath: string,
-    opStr: firebase.firestore.WhereFilterOp,
+    opStr: WhereFilterOp,
     value: any): Promise<Array<this>> {
     var that: any = this;
     return await that.where(fieldPath, opStr, value).get();
   }
 
-  getSnapshot(): Promise<firebase.firestore.DocumentSnapshot> {
+  getSnapshot(): Promise<DocumentSnapshot> {
     return new Promise((resolve, reject) => {
-      this.getDocReference().onSnapshot((doc) => {
+      onSnapshot(this.getDocReference(), (doc) => {
         if (doc) {
           resolve(doc);
         } else {
           reject(doc);
         }
-      });
+      })
     })
   }
 
   async findOne(fieldPath: string,
-    opStr: firebase.firestore.WhereFilterOp,
+    opStr: WhereFilterOp,
     value: any): Promise<this | null> {
     var that: any = this;
     return await that.where(fieldPath, opStr, value).getOne();
@@ -1559,7 +1556,7 @@ export class BaseModel implements ModelInterface {
       if (that[fields[i]] == null || typeof that[fields[i]] === undefined) {
         result = false;
         console.error(
-          this.referencePath +
+          this['referencePath'] +
           "/:" +
           this.pathId +
           " - " +
@@ -1605,7 +1602,7 @@ export class BaseModel implements ModelInterface {
   getData(): Object {
     var result = {};
     var data = this.getDocumentData();
-    // console.log('data -- ',data);
+    // printLog('data -- ',data);
     for (var key in data) {
       if (!(this['ignoredFields'] && this['ignoredFields'].includes(key))) {
         result[key] = data[key];
@@ -1630,7 +1627,7 @@ export class BaseModel implements ModelInterface {
           value = FirestoreOrmRepository.getGlobalPath(subPath);
         } else {
           console.error(
-            this.referencePath +
+            this['referencePath'] +
             "/:" +
             this.pathId +
             " - " +
@@ -1666,7 +1663,7 @@ export class BaseModel implements ModelInterface {
         value = FirestoreOrmRepository.getGlobalPath(subPath);
       } else {
         console.error(
-          this.referencePath +
+          this['referencePath'] +
           "/:" +
           this.pathId +
           " - " +
@@ -1693,5 +1690,9 @@ export class BaseModel implements ModelInterface {
       }
     }
     return result;
+  }
+
+  toJSON() {
+    return this.getData()
   }
 }    
