@@ -24,11 +24,15 @@ export function Model(options: ModelOptions): any {
     }
 
     return class extends constructor {
-      pathId = options.path_id;
-      isAutoTime = typeof options.auto_time === "undefined" ? true : options.auto_time;
       get referencePath() {
         const that: any = this;
         return that._referencePath ? that._referencePath : options.reference_path;
+      }
+      get pathId() {
+        return options.path_id;
+      }
+      get isAutoTime() {
+        return typeof options.auto_time === "undefined" ? true : options.auto_time;
       }
       get hello() {
         return "world";

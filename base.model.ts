@@ -20,7 +20,7 @@ import { printLog } from './utils';
 import * as axios_ from 'axios';
 import * as moment_ from "moment";
 import * as qs from 'qs';
-import { CollectionReference, DocumentReference, DocumentSnapshot, FieldPath, OrderByDirection, WhereFilterOp, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot, FieldPath, OrderByDirection, WhereFilterOp, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { StringFormat, UploadMetadata, UploadTask, getDownloadURL, ref } from 'firebase/storage';
 if (typeof atob === 'undefined') {
   import('atob').then((atob) => {
@@ -33,7 +33,7 @@ if (typeof btoa === 'undefined') {
   });
 }
 
-/* if (typeof XMLHttpRequest === 'undefined') {
+if (typeof XMLHttpRequest === 'undefined') {
   // Polyfills required for Firebase
   import('@arbel/node-xhr2').then((XMLHttpRequest) => {
     (global as any).XMLHttpRequest = XMLHttpRequest;
@@ -41,7 +41,7 @@ if (typeof btoa === 'undefined') {
   import('ws').then((WebSocket) => {
     (global as any).WebSocket = WebSocket;
   });
-} */
+}
 
 
 
@@ -68,6 +68,7 @@ export class BaseModel implements ModelInterface {
   pathId!: string;
   protected currentModel!: this & BaseModel;
   protected static aliasFieldsMapper: any = {};
+  protected static reverseAliasFieldsMapper: any = {};
   protected static textIndexingFields: any = {};
   protected static ignoreFields: any = [];
   protected static fields: any = {};
@@ -245,12 +246,16 @@ export class BaseModel implements ModelInterface {
     return model;
   }
 
-  getReference(): CollectionReference {
+  getRepositoryReference(): DocumentReference<DocumentData> | CollectionReference<DocumentData> | null {
     return this.getRepository().getCollectionReferenceByModel(this);
   }
 
-  getDocReference(): DocumentReference {
-    return doc(this.getReference(), this.getId());
+  getDocRepositoryReference(): DocumentReference<DocumentData> {
+    return this.getRepository().getDocReferenceByModel(this) as DocumentReference<DocumentData>;
+  }
+
+  getDocReference(): DocumentReference<DocumentData> {
+    return doc(this.getDocRepositoryReference(), this.getId());
   }
 
   setModelType(model: any): this {
@@ -339,7 +344,7 @@ export class BaseModel implements ModelInterface {
     id: string,
     params: { [key: string]: string } = {}
   ): Promise<T | null> {
-    var object: any = new this();
+    var object: BaseModel = (new this()) as BaseModel;
     var res: any;
     object.setId(id);
     if (object.getRepository()) {
@@ -773,15 +778,15 @@ export class BaseModel implements ModelInterface {
         "Can't search inside a model without id!"
       );
       return result;
-    } else if (!this.getReference()) {
+    } else if (!this.getDocReference()) {
       console.error(
         "The model path params is not set and can't run sql() function "
       );
       return result;
     }
     var ref: any = !isInsideQuery
-      ? this.getReference().parent
-      : doc(this.getReference(), this.getId());
+      ? this.getDocReference().parent
+      : doc(this.getDocReference(), this.getId());
     const fireSQL = new FireSQL(ref, { includeId: "id" });
     try {
       var sqlResult = await fireSQL.query(sql);
@@ -822,16 +827,16 @@ export class BaseModel implements ModelInterface {
         " - " +
         "Can't search inside a model without id!"
       );
-    } else if (!this.getReference()) {
+    } else if (!this.getDocReference()) {
       console.error(
         "The model path params is not set and can't run onSql() function "
       );
     } else {
       var ref: any = !isInsideQuery
-        ? this.getReference().parent
-          ? this.getReference().parent
+        ? this.getDocReference().parent
+          ? this.getDocReference().parent
           : this.getRepository().getFirestore()
-        : doc(this.getReference(), (this.getId()));
+        : doc(this.getDocReference(), (this.getId()));
       const fireSQL = new FireSQL(ref, { includeId: "id" });
       try {
         const res = fireSQL.rxQuery(sql);
@@ -1366,7 +1371,7 @@ export class BaseModel implements ModelInterface {
   getStorageFile(target: string): StorageReference {
     var that = this;
     var uniqueId = this.getId() ? this.getId() : this.makeId(20);
-    var path = this.getReference().path + '/' + uniqueId + '/' + target;
+    var path = this.getDocReference().path + '/' + uniqueId + '/' + target;
     //printLog('path ----- ', path);
     var storage = FirestoreOrmRepository.getGlobalStorage();
     var storageRef = ref(storage);
@@ -1573,7 +1578,11 @@ export class BaseModel implements ModelInterface {
     return this['aliasFieldsMapper'] && this['aliasFieldsMapper'][key] ? this['aliasFieldsMapper'][key] : key;
   }
 
-  getDocumentData(): Object {
+  getAliasName(key: string): string {
+    return this['reverseAliasFieldsMapper'] && this['reverseAliasFieldsMapper'][key] ? this['reverseAliasFieldsMapper'][key] : key;
+  }
+
+  getDocumentData(useAliasName: boolean = false): Object {
     var data = {};
     this['storedFields'].forEach((fieldName: string) => {
       fieldName = this.getFieldName(fieldName);
@@ -1582,6 +1591,9 @@ export class BaseModel implements ModelInterface {
         val = this[fieldName];
       } else if (this['data'] && typeof this['data'][fieldName] !== 'undefined') {
         val = this['data'][fieldName];
+      }
+      if (useAliasName) {
+        fieldName = this.getAliasName(fieldName);
       }
       if (val instanceof BaseModel) {
         data[fieldName] = val.getDocReference();
@@ -1599,9 +1611,9 @@ export class BaseModel implements ModelInterface {
   /**
    * Alias of getDocumentData
    */
-  getData(): Object {
+  getData(useAliasName: boolean = false): Object {
     var result = {};
-    var data = this.getDocumentData();
+    var data = this.getDocumentData(useAliasName);
     // printLog('data -- ',data);
     for (var key in data) {
       if (!(this['ignoredFields'] && this['ignoredFields'].includes(key))) {

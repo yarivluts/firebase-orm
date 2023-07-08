@@ -1,6 +1,6 @@
 import * as firebase from "firebase/app";
 import 'firebase/firestore';
-import { collection, addDoc, doc, Firestore } from "firebase/firestore";
+import { collection, addDoc, doc, Firestore, getDoc, updateDoc, setDoc, DocumentReference, DocumentData, CollectionReference, FieldPath, query, documentId, where, getDocs } from "firebase/firestore";
 import { FirebaseStorage, getStorage } from "firebase/storage";
 import { BaseModel } from "./base.model";
 import { ModelInterface } from "./interfaces/model.interface";
@@ -77,12 +77,13 @@ export class FirestoreOrmRepository {
         }
     }
 
-    getCollectionReferenceByModel(object: any) {
+    getCollectionReferenceByModel(object: any): DocumentReference<DocumentData> | CollectionReference<DocumentData> | null {
         var current: any = this.firestore;
         var pathList: any = object.getPathList();
+        console.log('pathList ', pathList);
         if (!pathList || pathList.length < 1) {
             console.error("Can't get collection path - ", object);
-            return false;
+            return null;
         }
         for (var i = 0; i < pathList.length; i++) {
             var stage = pathList[i];
@@ -96,6 +97,10 @@ export class FirestoreOrmRepository {
             }
         }
         return current;
+    }
+
+    getDocReferenceByModel(object: any): DocumentReference<DocumentData> | null {
+        return this.getCollectionReferenceByModel(object) as DocumentReference<DocumentData> | null;
     }
 
     getFirestore(): Firestore {
@@ -152,7 +157,7 @@ export class FirestoreOrmRepository {
             let value = params[key];
             object[key] = value;
         }
-        var ref = this.getCollectionReferenceByModel(object);
+        var ref = this.getCollectionReferenceByModel(object) as CollectionReference<DocumentData>;
         if (!ref) {
             console.error("Can't load the model " + object.getReferencePath() + " , please set all values");
             return object;
@@ -160,13 +165,17 @@ export class FirestoreOrmRepository {
             if (!id) {
                 console.error("Can't load the model " + object.getReferencePath() + " , please set id");
             } else {
-                var doc = await ref.doc(id).get();
-                if (!doc.exists) {
+                const docsRef = await getDocs(query(ref, where(documentId(), '==', id)));
+
+                /*   const docRef = doc(ref, id)
+                  var docObj = await getDoc(docRef); */
+                if (docsRef.size == 0) {
                     object.is_exist = false;
                     return object;
                 } else {
+                    const docObj = docsRef.docs[0];
                     object.is_exist = true;
-                    object.initFromData(doc.data());
+                    object.initFromData(docObj.data());
                     return object;
                 }
             }
@@ -181,19 +190,21 @@ export class FirestoreOrmRepository {
      */
     async save(model: any) {
         var object: ModelInterface = model;
-        var ref = this.getCollectionReferenceByModel(object);
+        var ref = this.getDocReferenceByModel(object);
         if (!ref) {
             console.error("Can't save the model " + object.getReferencePath() + " , please set all values");
             return false;
         }
         if (object.getId()) {
-            var docRef = ref.doc
-                ? await ref.doc(object.getId()).set(object.getDocumentData())
-                : await ref.set(object.getDocumentData());
+            updateDoc(ref, object.getDocumentData() as any)
+            /*  var docRef = ref.doc
+                 ? await ref.doc(object.getId()).set(object.getDocumentData())
+                 : await ref.set(object.getDocumentData()); */
         } else {
             try {
-                var docRef = await ref.add(object.getDocumentData());
-                object.setId(docRef.id);
+                setDoc(ref, object.getDocumentData() as any);
+                /* var docRef = await ref.add(object.getDocumentData()); */
+                object.setId(ref.id);
             } catch (error) {
                 console.error("Error adding document: ", error);
             }

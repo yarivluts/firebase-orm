@@ -29,7 +29,7 @@ export class Query<T> {
   init(model: BaseModel, reference?: FirestoreQuery | any) {
     this.model = model;
     if (!reference) {
-      this.current = this.model.getReference();
+      this.current = this.model.getRepositoryReference() as CollectionReference<DocumentData>;
     }
   }
 

@@ -1,7 +1,7 @@
 import * as firebase from "firebase";
 import { FirestoreOrmRepository } from "../repository";
-import { Query,LIST_EVENTS } from "../query";
-import {Moment} from 'moment';
+import { Query, LIST_EVENTS } from "../query";
+import { Moment } from 'moment';
 import { ModelAllListOptions } from "./model.alllist.options.interface";
 import { BaseModel } from "../base.model";
 
@@ -10,7 +10,7 @@ import { BaseModel } from "../base.model";
  * Model interface 
  */
 export interface ModelInterface {
-  
+
   /**
    * Get Id
    * @return string
@@ -23,7 +23,7 @@ export interface ModelInterface {
    */
   setId(id: string): this;
 
-  
+
   /**
    * Check if object exist inside the db
    */
@@ -33,22 +33,22 @@ export interface ModelInterface {
    * Verfiy required fields 
    * @return boolean
    */
-  verifyRequiredFields() : boolean;
+  verifyRequiredFields(): boolean;
 
-  
+
   /**
    * Get Id
    * @return string
    */
   getCreatedAt(): Moment | null;
-  
+
   /**
    * Get Id
    * @return string
    */
   getUpdatedAt(): Moment | null;
 
-  
+
   /**
    * Get Id
    * @return string
@@ -58,7 +58,7 @@ export interface ModelInterface {
   /**
    * Get current model
    */
-  getCurrentModel() : this;
+  getCurrentModel(): this;
 
 
   /**
@@ -70,7 +70,7 @@ export interface ModelInterface {
     id: string,
     params?: { [key: string]: string }
   ): Promise<this>;
-  
+
   /**
    * Init new model by id
    * @param id - string
@@ -86,38 +86,38 @@ export interface ModelInterface {
    * @param key 
    * @param value 
    */
-  setParam(key : string,value : any) : this;
-  
+  setParam(key: string, value: any): this;
+
   /**
    * Set document data directly
    * @param key 
    * @param value 
    */
-  getParam(key : string,defaultValue : any) : any;
+  getParam(key: string, defaultValue: any): any;
 
   /**
    * Remove the current doc
    */
-  remove() : Promise<boolean>;
+  remove(): Promise<boolean>;
 
   /**
    * Object real time changes listener
    * @param callback 
    */
-  on(callback: CallableFunction,eventType? : LIST_EVENTS): CallableFunction; 
-    
+  on(callback: CallableFunction, eventType?: LIST_EVENTS): CallableFunction;
+
   /**
    * Get relation one
    * @param model 
    */
-  getOneRel<T>(model: { new (): T }): Promise<T & BaseModel> ;
+  getOneRel<T>(model: { new(): T }): Promise<T & BaseModel>;
 
   /**
    * Get relation many
    * @param model 
    */
-  getManyRel<T>(model: { new (): T }): Promise<Array<T & BaseModel>>;
- 
+  getManyRel<T>(model: { new(): T }): Promise<Array<T & BaseModel>>;
+
   /**
    * Init the current model by firestore object
    * @param doc 
@@ -130,7 +130,7 @@ export interface ModelInterface {
    * @return document data - Object
    */
   getDocumentData(): Object;
-  
+
   /**
    * Get model collection reference path
    * @return reference path - string
@@ -141,7 +141,7 @@ export interface ModelInterface {
    * Get model collection reference
    * @return reference path - CollectionReference
    */
-  getReference(): firebase.firestore.CollectionReference;
+  getRepositoryReference(): firebase.firestore.CollectionReference;
 
   /**
    * Get model document reference
@@ -160,31 +160,31 @@ export interface ModelInterface {
    * @param model - The class reference
    * @return initialize model object
    */
-  getModel<T>(model: { new (): T }): T & BaseModel;
+  getModel<T>(model: { new(): T }): T & BaseModel;
 
   /**
    * Get required fields
    * @return fields array 
    */
   getRequiredFields(): Array<string>;
-  
+
   /**
    * Get data in json string
    * @return string
    */
   toString(): string;
-  
+
   /**
    * load from string
    * @return this
    */
-  loadFromString(jsonString : string): this;
-  
+  loadFromString(jsonString: string): this;
+
   /**
    * Init object from string
    * @return new model
    */
-  initFromString(jsonString : string): this;
+  initFromString(jsonString: string): this;
 
   /**
    * Get path list
@@ -197,7 +197,7 @@ export interface ModelInterface {
    * @return FirestoreOrmRepository
    */
   getRepository(): FirestoreOrmRepository;
-  
+
   /**
    * Set firestore orm repository
    * @param FirestoreOrmRepository
