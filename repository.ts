@@ -77,10 +77,9 @@ export class FirestoreOrmRepository {
         }
     }
 
-    getCollectionReferenceByModel(object: any): DocumentReference<DocumentData> | CollectionReference<DocumentData> | null {
+    getCollectionReferenceByModel(object: any, isDoc: boolean = false, customId?: string): DocumentReference<DocumentData> | CollectionReference<DocumentData> | null {
         var current: any = this.firestore;
         var pathList: any = object.getPathList();
-        console.log('pathList ', pathList);
         if (!pathList || pathList.length < 1) {
             console.error("Can't get collection path - ", object);
             return null;
@@ -92,6 +91,13 @@ export class FirestoreOrmRepository {
             }
             if (stage.type == 'collection') {
                 current = collection(current, stage.value);
+                if ((isDoc && i + 1 == pathList.length)) {
+                    if (customId) {
+                        current = doc(current, customId);
+                    } else {
+                        current = doc(current);
+                    }
+                }
             } else if (stage.type == 'document') {
                 current = doc(current, stage.value);
             }
@@ -99,8 +105,8 @@ export class FirestoreOrmRepository {
         return current;
     }
 
-    getDocReferenceByModel(object: any): DocumentReference<DocumentData> | null {
-        return this.getCollectionReferenceByModel(object) as DocumentReference<DocumentData> | null;
+    getDocReferenceByModel(object: any, customId?: string): DocumentReference<DocumentData> | null {
+        return this.getCollectionReferenceByModel(object, true, customId) as DocumentReference<DocumentData> | null;
     }
 
     getFirestore(): Firestore {
@@ -188,9 +194,9 @@ export class FirestoreOrmRepository {
      * Save the model object
      * @param model 
      */
-    async save(model: any) {
+    async save(model: any, customId?: string) {
         var object: ModelInterface = model;
-        var ref = this.getDocReferenceByModel(object);
+        var ref = this.getDocReferenceByModel(object, customId);
         if (!ref) {
             console.error("Can't save the model " + object.getReferencePath() + " , please set all values");
             return false;

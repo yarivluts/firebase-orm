@@ -341,14 +341,17 @@ export class BaseModel implements ModelInterface {
   }
 
   static async init<T>(this: { new(): T },
-    id: string,
+    id?: string,
     params: { [key: string]: string } = {}
   ): Promise<T | null> {
     var object: BaseModel = (new this()) as BaseModel;
     var res: any;
-    object.setId(id);
+    if (id) {
+      object.setId(id as string);
+    }
+
     if (object.getRepository()) {
-      res = await object.getRepository().load(object, id, params);
+      res = await object.getRepository().load(object, object.getId() as string, params);
     } else {
       console.error("No repository!");
     }
@@ -1483,7 +1486,7 @@ export class BaseModel implements ModelInterface {
     return this.updated_at ? moment.unix(this.updated_at / 1000) : null;
   }
 
-  async save(): Promise<this> {
+  async save(customId?: string): Promise<this> {
     var that: any = this;
     if (that.observeSaveBefore) {
       that.observeSaveBefore();
@@ -1493,7 +1496,7 @@ export class BaseModel implements ModelInterface {
     }
     this.initAutoTime();
     if (this.getRepository()) {
-      await this.getRepository().save(this);
+      await this.getRepository().save(this, customId);
     } else {
       console.error("No repository!");
     }
@@ -1616,7 +1619,7 @@ export class BaseModel implements ModelInterface {
     var data = this.getDocumentData(useAliasName);
     // printLog('data -- ',data);
     for (var key in data) {
-      if (!(this['ignoredFields'] && this['ignoredFields'].includes(key))) {
+      if (!(this['ignoredFields'] && this['ignoredFields'].includes(key)) && typeof data[key] !== 'undefined') {
         result[key] = data[key];
       }
     }

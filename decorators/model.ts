@@ -37,6 +37,10 @@ export function Model(options: ModelOptions): any {
       get hello() {
         return "world";
       }
+      getId() {
+        const that: any = this;
+        return options.static_id ? options.static_id : that.id;
+      }
 
       set referencePath(val) {
         const that: any = this;
