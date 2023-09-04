@@ -970,12 +970,16 @@ export class BaseModel implements ModelInterface {
       let value = pathParams[key];
       object[key] = value;
     }
+    console.log('object.aliasFieldsMapper', object.aliasFieldsMapper);
     for (let key in params) {
       let value = params[key];
       if (object.aliasFieldsMapper && object.aliasFieldsMapper[key]) {
         object[object.aliasFieldsMapper[key]] = value;
       } else {
-        if (object.getOriginName(key)) {
+        if (object.getAliasName(key) !== key) {
+          object[object.getAliasName(key)] = value;
+          object.setParam(key, value)
+        } else if (object.getOriginName(key)) {
           object[object.getOriginName(key)] = value;
         } else if (!(this['ignoredFields'] && this['ignoredFields'][key])) {
           object[key] = value;

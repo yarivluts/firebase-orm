@@ -9,7 +9,6 @@
     "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged"
   },
   "peerDependencies": {
-    "@arbel/firesql": "^1.0.3",
     "firebase": "^5.9.4",
     "moment": "^2.24.0",
     "rxfire": "^3.3.10",
@@ -35,7 +34,6 @@
   },
   "homepage": "https://gitlab.com/yariv.luts/firestore-orm#readme",
   "dependencies": {
-    "@arbel/firesql": "^1.0.3",
     "@arbel/node-xhr2": "^0.2.0",
     "@types/axios": "^0.14.0",
     "@types/qs": "^6.5.3",
