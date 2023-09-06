@@ -19,8 +19,9 @@ import { ModelAllListOptions } from './interfaces/model.alllist.options.interfac
 import { printLog } from './utils';
 import * as axios_ from 'axios';
 import * as moment_ from "moment";
+
 import * as qs from 'qs';
-import { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot, FieldPath, OrderByDirection, WhereFilterOp, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot, FieldPath, OrderByDirection, Timestamp, WhereFilterOp, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { StringFormat, UploadMetadata, UploadTask, getDownloadURL, ref } from 'firebase/storage';
 if (typeof atob === 'undefined') {
   import('atob').then((atob) => {
@@ -46,7 +47,7 @@ if (typeof XMLHttpRequest === 'undefined') {
 
 
 
-const moment = moment_;
+const moment = moment_.default;
 const axios = axios_.default;
 
 /**
@@ -65,7 +66,6 @@ export class BaseModel implements ModelInterface {
   updated_at!: any;
   protected unlistenFunc!: any;
   protected is_exist: boolean = false;
-  pathId!: string;
   protected currentModel!: this & BaseModel;
   protected static aliasFieldsMapper: any = {};
   protected static reverseAliasFieldsMapper: any = {};
@@ -143,12 +143,6 @@ export class BaseModel implements ModelInterface {
     return this.id;
   }
 
-  /**
-   * Get path id
-   */
-  getPathId() {
-    return this.pathId;
-  }
 
   /**
    * Init fields
@@ -169,7 +163,7 @@ export class BaseModel implements ModelInterface {
   async getOneRel<T>(model: { new(): T }): Promise<T & BaseModel> {
     var object: any = this.getModel(model);
     var that: any = this;
-    return await object.load(that[object.getPathId()]);
+    return await object.load(that[object['pathId']]);
   }
 
   /**
@@ -181,7 +175,7 @@ export class BaseModel implements ModelInterface {
     var object: any = this.getModel(model);
     var that: any = this;
     return await object
-      .where(object.getPathId(), "==", that[object.getPathId()])
+      .where(object['pathId'], "==", that[object['pathId']])
       .get();
   }
 
@@ -722,7 +716,7 @@ export class BaseModel implements ModelInterface {
       console.error(
         this['referencePath'] +
         "/:" +
-        this.pathId +
+        this['pathId'] +
         " - " +
         "The model not stored yet"
       );
@@ -776,7 +770,7 @@ export class BaseModel implements ModelInterface {
       console.error(
         this['referencePath'] +
         "/:" +
-        this.pathId +
+        this['pathId'] +
         " - " +
         "Can't search inside a model without id!"
       );
@@ -806,7 +800,7 @@ export class BaseModel implements ModelInterface {
       console.error(
         this['referencePath'] +
         "/:" +
-        this.pathId +
+        this['pathId'] +
         " - " +
         "SQL GENERAL ERROR - ",
         error
@@ -826,7 +820,7 @@ export class BaseModel implements ModelInterface {
       console.error(
         this['referencePath'] +
         "/:" +
-        this.pathId +
+        this['pathId'] +
         " - " +
         "Can't search inside a model without id!"
       );
@@ -858,7 +852,7 @@ export class BaseModel implements ModelInterface {
         console.error(
           this['referencePath'] +
           "/:" +
-          this.pathId +
+          this['pathId'] +
           " - " +
           "SQL GENERAL ERROR - ",
           error
@@ -970,7 +964,6 @@ export class BaseModel implements ModelInterface {
       let value = pathParams[key];
       object[key] = value;
     }
-    console.log('object.aliasFieldsMapper', object.aliasFieldsMapper);
     for (let key in params) {
       let value = params[key];
       if (object.aliasFieldsMapper && object.aliasFieldsMapper[key]) {
@@ -1351,6 +1344,24 @@ export class BaseModel implements ModelInterface {
       .on(callback, eventType);
   }
 
+  format(field: string, format: string) {
+    return this.moment(field).format(format);
+  }
+
+  moment(field: string) {
+    const value: Timestamp = this[field];
+    return moment.unix(value?.seconds);
+  }
+
+  date(field: string) {
+    const value: Timestamp = this[field];
+    if (value?.seconds) {
+      return new Date(value?.seconds);
+    } else {
+      return new Date();
+    }
+  }
+
   initAutoTime(): void {
     if (this.isAutoTime) {
       if (!this.created_at) {
@@ -1570,7 +1581,7 @@ export class BaseModel implements ModelInterface {
         console.error(
           this['referencePath'] +
           "/:" +
-          this.pathId +
+          this['pathId'] +
           " - " +
           "Can't save " +
           fields[i] +
@@ -1594,7 +1605,9 @@ export class BaseModel implements ModelInterface {
     this['storedFields'].forEach((fieldName: string) => {
       fieldName = this.getFieldName(fieldName);
       var val;
-      if (typeof this[fieldName] !== 'undefined') {
+      if (typeof this[this.getAliasName(fieldName)] !== 'undefined') {
+        val = this[this.getAliasName(fieldName)];
+      } else if (typeof this[fieldName] !== 'undefined') {
         val = this[fieldName];
       } else if (this['data'] && typeof this['data'][fieldName] !== 'undefined') {
         val = this['data'][fieldName];
@@ -1648,7 +1661,7 @@ export class BaseModel implements ModelInterface {
           console.error(
             this['referencePath'] +
             "/:" +
-            this.pathId +
+            this['pathId'] +
             " - " +
             subPath +
             " is missing!"
@@ -1684,7 +1697,7 @@ export class BaseModel implements ModelInterface {
         console.error(
           this['referencePath'] +
           "/:" +
-          this.pathId +
+          this['pathId'] +
           " - " +
           subPath +
           " is missing!"

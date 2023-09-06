@@ -92,8 +92,9 @@ export class FirestoreOrmRepository {
             if (stage.type == 'collection') {
                 current = collection(current, stage.value);
                 if ((isDoc && i + 1 == pathList.length)) {
-                    if (customId) {
-                        current = doc(current, customId);
+                    const id = customId ?? object.id ?? null;
+                    if (id) {
+                        current = doc(current, id);
                     } else {
                         current = doc(current);
                     }

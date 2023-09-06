@@ -31,12 +31,16 @@ export function Model(options: ModelOptions): any {
       get pathId() {
         return options.path_id;
       }
+      set pathId(value: string) {
+
+      }
       get isAutoTime() {
         return typeof options.auto_time === "undefined" ? true : options.auto_time;
       }
-      get hello() {
-        return "world";
+      set isAutoTime(value: boolean) {
+
       }
+
       getId() {
         const that: any = this;
         return options.static_id ? options.static_id : that.id;
