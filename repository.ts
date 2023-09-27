@@ -125,7 +125,7 @@ export class FirestoreOrmRepository {
     }
 
     async sql(sql: string): Promise<Array<Object>> {
-        const fireSQL = new FireSQL(this.firestore);
+        const fireSQL = new FireSQL(this.firestore as any);
         try {
             return await fireSQL.query(sql, { includeId: 'id' });
         } catch (error) {
@@ -140,7 +140,7 @@ export class FirestoreOrmRepository {
      * @param callback - running callback
      */
     onSql(sql: string, callback: CallableFunction): void {
-        const fireSQL: any = new FireSQL(this.firestore);
+        const fireSQL: any = new FireSQL(this.firestore as any);
         try {
             const res = fireSQL.rxQuery(sql, { includeId: 'id' });
             res.subscribe((results: any) => {
@@ -196,11 +196,12 @@ export class FirestoreOrmRepository {
      */
     async save(model: any, customId?: string) {
         var object: ModelInterface = model;
-        var ref = this.getDocReferenceByModel(object, customId);
+        var ref = this.getDocReferenceByModel(object, object.getId() ?? customId);
         if (!ref) {
             console.error("Can't save the model " + object.getReferencePath() + " , please set all values");
             return false;
         }
+
         if (object.getId()) {
             updateDoc(ref, object.getDocumentData() as any)
             /*  var docRef = ref.doc
@@ -283,8 +284,8 @@ export class FirestoreOrmRepository {
             // return result;
             if (response.data.cursor) {
                 result.next = async () => {
-                    var that: any = this;
-                    return await that.elasticSql(null, null, null, response.data.cursor, columns);
+
+                    return await (this as any).elasticSql(null, null, null, response.data.cursor, columns);
                 }
             }
 

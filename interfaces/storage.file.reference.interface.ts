@@ -1,13 +1,14 @@
 
-import * as firebase from "firebase/app";
+import * as firebase from "firebase/compat/app";
 import { OrmUploadTask } from "./upload.task.reference.interface";
+import { StringFormat, UploadMetadata, StorageReference as OriginStorageReference } from "firebase/storage";
 /**
  * Represents a reference to a Arbel ORM and Google Cloud Storage object. Developers can
  * upload, download, and delete objects, as well as get/set object metadata.
  */
-export interface StorageReference extends firebase.storage.Reference {
+export interface StorageReference extends OriginStorageReference {
 
-  getRef() : firebase.storage.Reference;
+  getRef(): OriginStorageReference;
 
   uploadFromUrl(url: string,
     onProcessingCallback?: CallableFunction,
@@ -15,14 +16,14 @@ export interface StorageReference extends firebase.storage.Reference {
     onFinishCallback?: CallableFunction): OrmUploadTask;
 
   uploadFile(data: any,
-    metadata?: firebase.storage.UploadMetadata,
+    metadata?: UploadMetadata,
     onProcessingCallback?: CallableFunction,
     onErrorCallback?: CallableFunction,
     onFinishCallback?: CallableFunction): OrmUploadTask;
 
   uploadString(data: string,
-    format?: firebase.storage.StringFormat,
-    metadata?: firebase.storage.UploadMetadata,
+    format?: StringFormat,
+    metadata?: UploadMetadata,
     onProcessingCallback?: CallableFunction,
     onErrorCallback?: CallableFunction,
     onFinishCallback?: CallableFunction): OrmUploadTask;

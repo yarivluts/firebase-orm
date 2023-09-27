@@ -1,9 +1,9 @@
-import * as firebase from "firebase";
 import { FirestoreOrmRepository } from "../repository";
 import { Query, LIST_EVENTS } from "../query";
 import { Moment } from 'moment';
 import { ModelAllListOptions } from "./model.alllist.options.interface";
 import { BaseModel } from "../base.model";
+import { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot } from "firebase/firestore";
 
 /**
  * Firestore Orm
@@ -123,7 +123,7 @@ export interface ModelInterface {
    * @param doc 
    * @return Current model
    */
-  initFromDoc(doc: firebase.firestore.DocumentSnapshot): this;
+  initFromDoc(doc: DocumentSnapshot): this;
 
   /**
    * Get document data from the current model
@@ -141,13 +141,13 @@ export interface ModelInterface {
    * Get model collection reference
    * @return reference path - CollectionReference
    */
-  getRepositoryReference(): firebase.firestore.CollectionReference;
+  getRepositoryReference(): DocumentReference<DocumentData> | CollectionReference<DocumentData> | null;
 
   /**
    * Get model document reference
    * @return reference path - CollectionReference
    */
-  getDocReference(): firebase.firestore.DocumentReference
+  getDocReference(): DocumentReference
 
   /**
    * Get path list params

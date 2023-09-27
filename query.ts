@@ -3,7 +3,7 @@ import 'firebase/firestore';
 import { ModelInterface } from "./interfaces/model.interface";
 import { ModelAllListOptions } from "./interfaces/model.alllist.options.interface";
 import { BaseModel } from "./base.model";
-import { CollectionReference, DocumentData, FieldPath, Query as FirestoreQuery, OrderByDirection, WhereFilterOp, and, endAt, endBefore, getDocs, limit, onSnapshot, or, orderBy, query, startAfter, startAt, where } from "firebase/firestore";
+import { CollectionReference, DocumentData, FieldPath, Query as FirestoreQuery, OrderByDirection, WhereFilterOp, and, endAt, endBefore, getCountFromServer, getDocs, limit, onSnapshot, or, orderBy, query, startAfter, startAt, where } from "firebase/firestore";
 
 export enum LIST_EVENTS {
   REMOVED = "removed",
@@ -303,6 +303,14 @@ export class Query<T> {
     await this.initBeforeFetch();
     const list = await getDocs(query(this.current, ...this.whereList));
     return this.parse(list);
+  }
+
+  async count(
+  ): Promise<Number> {
+    await this.initBeforeFetch();
+    const q = await query(query(this.current, ...this.whereList));
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
   }
 
   async initBeforeFetch() {

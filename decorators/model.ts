@@ -25,8 +25,8 @@ export function Model(options: ModelOptions): any {
 
     return class extends constructor {
       get referencePath() {
-        const that: any = this;
-        return that._referencePath ? that._referencePath : options.reference_path;
+
+        return (this as any)._referencePath ? (this as any)._referencePath : options.reference_path;
       }
       get pathId() {
         return options.path_id;
@@ -38,13 +38,13 @@ export function Model(options: ModelOptions): any {
         return "world";
       }
       getId() {
-        const that: any = this;
-        return options.static_id ? options.static_id : that.id;
+
+        return options.static_id ? options.static_id : (this as any).id;
       }
 
       set referencePath(val) {
-        const that: any = this;
-        that._referencePath = val;
+
+        (this as any)._referencePath = val;
       }
     };
     //return constructor;
