@@ -80,10 +80,12 @@ export class FirestoreOrmRepository {
     getCollectionReferenceByModel(object: any, isDoc: boolean = false, customId?: string): DocumentReference<DocumentData> | CollectionReference<DocumentData> | null {
         var current: any = this.firestore;
         var pathList: any = object.getPathList();
+        const id = customId ?? object.getId();
         if (!pathList || pathList.length < 1) {
             console.error("Can't get collection path - ", object);
             return null;
         }
+        console.log('pathList', pathList)
         for (var i = 0; i < pathList.length; i++) {
             var stage = pathList[i];
             if (!stage.value) {
@@ -92,11 +94,13 @@ export class FirestoreOrmRepository {
             if (stage.type == 'collection') {
                 current = collection(current, stage.value);
                 if ((isDoc && i + 1 == pathList.length)) {
-                    if (customId) {
-                        current = doc(current, customId);
+                    if (id) {
+                        current = doc(current, id);
                     } else {
                         current = doc(current);
                     }
+                    console.log('isDoc', isDoc, 'id', id, 'current', current)
+
                 }
             } else if (stage.type == 'document') {
                 current = doc(current, stage.value);

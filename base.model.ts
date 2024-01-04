@@ -255,7 +255,7 @@ export class BaseModel implements ModelInterface {
   }
 
   getDocReference(): DocumentReference<DocumentData> {
-    return doc(this.getDocRepositoryReference(), this.getId());
+    return this.getDocRepositoryReference();
   }
 
   setModelType(model: any): this {
@@ -364,7 +364,8 @@ export class BaseModel implements ModelInterface {
       if (that.observeRemoveBefore) {
         that.observeRemoveBefore();
       }
-      await deleteDoc(this.getDocReference());
+      const ref = this.getDocReference();
+      await deleteDoc(ref);
       if (that.observeRemoveAfter) {
         that.observeRemoveAfter();
       }
