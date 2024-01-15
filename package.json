@@ -1,6 +1,6 @@
 {
   "name": "@arbel/firebase-orm",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "description": "Firestore Orm",
   "main": "dist/index.js",
   "scripts": {
@@ -9,7 +9,6 @@
     "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged"
   },
   "peerDependencies": {
-    "firebase": "^5.9.4",
     "moment": "^2.24.0",
     "rxfire": "^3.3.10",
     "rxjs": "^6.4.0"
@@ -42,7 +41,7 @@
     "blob": "0.0.5",
     "btoa": "^1.2.1",
     "cross-fetch": "^3.0.4",
-    "firebase": "^5.9.4",
+    "firebase": "^10.3.1",
     "firebase-admin": "^8.3.0",
     "moment": "^2.24.0",
     "node-fetch": "^2.6.0",
