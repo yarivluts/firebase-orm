@@ -36,9 +36,8 @@ if (typeof btoa === 'undefined') {
 
 if (typeof XMLHttpRequest === 'undefined') {
   // Polyfills required for Firebase
-  import('@arbel/node-xhr2').then((XMLHttpRequest) => {
-    (global as any).XMLHttpRequest = XMLHttpRequest;
-  });
+  var XMLHttpRequest = require('xhr2');
+  (global as any).XMLHttpRequest = XMLHttpRequest;
   import('ws').then((WebSocket) => {
     (global as any).WebSocket = WebSocket;
   });
@@ -338,7 +337,7 @@ export class BaseModel implements ModelInterface {
     id?: string,
     params: { [key: string]: string } = {}
   ): Promise<T | null> {
-    var object: BaseModel = (new this()) as BaseModel;
+    var object: BaseModel = (new this()) as any;
     var res: any;
     if (id) {
       object.setId(id as string);
