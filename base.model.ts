@@ -338,7 +338,7 @@ export class BaseModel implements ModelInterface {
     id?: string,
     params: { [key: string]: string } = {}
   ): Promise<T | null> {
-    var object: BaseModel = (new this()) as any;
+    var object: BaseModel & T = (new this()) as BaseModel & T;
     var res: any;
     if (id) {
       object.setId(id as string);
