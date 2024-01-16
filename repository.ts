@@ -85,7 +85,6 @@ export class FirestoreOrmRepository {
             console.error("Can't get collection path - ", object);
             return null;
         }
-        console.log('pathList', pathList)
         for (var i = 0; i < pathList.length; i++) {
             var stage = pathList[i];
             if (!stage.value) {
