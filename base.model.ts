@@ -333,11 +333,12 @@ export class BaseModel implements ModelInterface {
     return res;
   }
 
+
   static async init<T>(this: { new(): T },
     id?: string,
     params: { [key: string]: string } = {}
   ): Promise<T | null> {
-    var object: BaseModel = new (this.constructor as any)();
+    var object: BaseModel = (new this()) as any;
     var res: any;
     if (id) {
       object.setId(id as string);
