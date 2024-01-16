@@ -1675,7 +1675,7 @@ export class BaseModel implements ModelInterface {
           value: value
         });
       } else {
-        const type = prev !== 'collection' ? "collection" : 'document';
+        const type: string = prev !== 'collection' ? "collection" : 'document';
         result.push({
           type,
           value: subPath
