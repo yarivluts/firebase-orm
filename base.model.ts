@@ -1649,6 +1649,7 @@ export class BaseModel implements ModelInterface {
     var result = [];
     var path = this.getReferencePath();
     var newTxt = path.split("/");
+    let prev = null;
     for (var x = 0; x < newTxt.length; x++) {
       var subPath = newTxt[x];
       if (subPath.search(":") != -1) {
@@ -1674,10 +1675,12 @@ export class BaseModel implements ModelInterface {
           value: value
         });
       } else {
+        const type = prev !== 'collection' ? "collection" : 'document';
         result.push({
-          type: "collection",
+          type,
           value: subPath
         });
+        prev = type;
       }
     }
     return result;
