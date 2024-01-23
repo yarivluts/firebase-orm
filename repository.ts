@@ -14,6 +14,7 @@ const axios = axios_.default;
 export class FirestoreOrmRepository {
 
     static globalFirestores = {};
+    static globalWait = {};
     static globalPaths = {};
     static documentsRequiredFields = {};
     static DEFAULT_KEY_NAME = 'default';
@@ -27,6 +28,9 @@ export class FirestoreOrmRepository {
 
     static initGlobalConnection(firestore: Firestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         this.globalFirestores[key] = new FirestoreOrmRepository(firestore);
+        if (this.globalWait[key]) {
+            this.globalWait[key](this.globalFirestores[key]);
+        }
     }
 
     static initGlobalStorage(storage: FirebaseStorage, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
@@ -64,6 +68,18 @@ export class FirestoreOrmRepository {
         }
     }
 
+    static waitForGlobalConnection(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+        if (this.globalWait[key]) {
+            return this.globalWait[key];
+        }
+        return new Promise((resolve) => {
+            if (this.globalFirestores[key]) {
+                resolve(this.globalFirestores[key]);
+            }
+            this.globalWait[key] = resolve;
+        });
+    }
+
 
     static initGlobalPath(pathIdKey: string, pathIdValue: string) {
         this.globalPaths[pathIdKey] = pathIdValue;
@@ -81,6 +97,9 @@ export class FirestoreOrmRepository {
         var current: any = this.firestore;
         var pathList: any = object.getPathList();
         const id = customId ?? object.getId();
+        window['getCollectionReferenceByModel'] = this.getCollectionReferenceByModel.bind(this);
+        console.log('object: any, isDoc: boolean = false, customId?: string', object, isDoc, customId);
+        console.log('pathList', pathList);
         if (!pathList || pathList.length < 1) {
             console.error("Can't get collection path - ", object);
             return null;
@@ -91,6 +110,8 @@ export class FirestoreOrmRepository {
                 continue;
             }
             if (stage.type == 'collection') {
+
+                console.log('current', current);
                 current = collection(current, stage.value);
                 if ((isDoc && i + 1 == pathList.length)) {
                     const id = customId ?? object.id ?? null;

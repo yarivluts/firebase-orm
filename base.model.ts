@@ -23,23 +23,24 @@ import * as moment_ from "moment";
 import * as qs from 'qs';
 import { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot, FieldPath, OrderByDirection, Timestamp, WhereFilterOp, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { StringFormat, UploadMetadata, UploadTask, getDownloadURL, ref } from 'firebase/storage';
+let globalVar = (typeof global !== 'undefined' ? global : window) as any;
 if (typeof atob === 'undefined') {
   import('atob').then((atob) => {
-    (global as any).atob = atob;
+    globalVar.atob = atob;
   });
 }
 if (typeof btoa === 'undefined') {
   import('btoa').then((btoa) => {
-    (global as any).btoa = btoa;
+    globalVar.btoa = btoa;
   });
 }
 
 if (typeof XMLHttpRequest === 'undefined') {
   // Polyfills required for Firebase
   var XMLHttpRequest = require('xhr2');
-  (global as any).XMLHttpRequest = XMLHttpRequest;
+  globalVar.XMLHttpRequest = XMLHttpRequest;
   import('ws').then((WebSocket) => {
-    (global as any).WebSocket = WebSocket;
+    globalVar.WebSocket = WebSocket;
   });
 }
 
@@ -1651,6 +1652,7 @@ export class BaseModel implements ModelInterface {
     var newTxt = path.split("/");
     let prev = null;
     for (var x = 0; x < newTxt.length; x++) {
+      const type: string = prev !== 'collection' ? "collection" : 'document';
       var subPath = newTxt[x];
       if (subPath.search(":") != -1) {
         subPath = subPath.replace(":", "");
@@ -1671,17 +1673,16 @@ export class BaseModel implements ModelInterface {
           return false;
         }
         result.push({
-          type: "document",
+          type,
           value: value
         });
       } else {
-        const type: string = prev !== 'collection' ? "collection" : 'document';
         result.push({
           type,
           value: subPath
         });
-        prev = type;
       }
+      prev = type;
     }
     return result;
   }
