@@ -14,5 +14,6 @@ export * from './interfaces/model.options.interface';
 export * from './interfaces/observe.load.model.interface';
 export * from './interfaces/observe.remove.model.interface';
 export * from './interfaces/observe.save.model.interface';
-export *  as firebase from 'firebase/app';
-export *  as firestore from 'firebase/firestore';
+export { initializeApp } from 'firebase/app';
+export { getFirestore } from 'firebase/firestore';
+export { getAnalytics } from 'firebase/analytics';
