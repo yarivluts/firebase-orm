@@ -1,6 +1,6 @@
 {
   "name": "@arbel/firebase-orm",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "description": "Firestore Orm",
   "main": "dist/index.js",
   "scripts": {
@@ -10,7 +10,9 @@
   },
   "peerDependencies": {
     "moment": "^2.24.0",
-    "rxjs": "^6.4.0"
+    "rxjs": "^6.4.0",
+    "firebase": "^10.3.1",
+    "firebase-admin": "^8.3.0"
   },
   "devDependencies": {
     "@types/atob": "^2.1.4",
@@ -42,8 +44,6 @@
     "blob": "0.0.5",
     "btoa": "^1.2.1",
     "cross-fetch": "^3.0.4",
-    "firebase": "^10.3.1",
-    "firebase-admin": "^8.3.0",
     "moment": "^2.24.0",
     "node-fetch": "^2.6.0",
     "qs": "^6.7.0",

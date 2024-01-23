@@ -108,7 +108,7 @@ export class FirestoreOrmRepository {
             }
             if (stage.type == 'collection') {
 
-                console.log('current', current);
+                // console.log('current', current);
                 current = collection(current, stage.value);
                 if ((isDoc && i + 1 == pathList.length)) {
                     const id = customId ?? object.id ?? null;
@@ -117,7 +117,7 @@ export class FirestoreOrmRepository {
                     } else {
                         current = doc(current);
                     }
-                    console.log('isDoc', isDoc, 'id', id, 'current', current)
+                    //  console.log('isDoc', isDoc, 'id', id, 'current', current)
 
                 }
             } else if (stage.type == 'document') {
