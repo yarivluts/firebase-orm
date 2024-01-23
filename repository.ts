@@ -97,9 +97,6 @@ export class FirestoreOrmRepository {
         var current: any = this.firestore;
         var pathList: any = object.getPathList();
         const id = customId ?? object.getId();
-        window['getCollectionReferenceByModel'] = this.getCollectionReferenceByModel.bind(this);
-        console.log('object: any, isDoc: boolean = false, customId?: string', object, isDoc, customId);
-        console.log('pathList', pathList);
         if (!pathList || pathList.length < 1) {
             console.error("Can't get collection path - ", object);
             return null;
