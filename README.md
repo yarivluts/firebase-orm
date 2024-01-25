@@ -11,7 +11,6 @@ Some Arbel Firebase Orm features:
 - easy way to keep the Firestore nosql sturcture orginazied and easy to managed
 - fetching list and data in real-time (Firesotre feature)
 - store created time and updated time automaticly
-- sql support (from the library firesql)
 
 And more...
 
@@ -115,7 +114,7 @@ unsubscribe();
 
 1. Install the npm package:
 
-   `npm install @arbel/firebase-orm firebase rxfire firesql moment rxjs --save`
+   `npm install @arbel/firebase-orm firebase rxfire moment --save`
 
 ##### TypeScript configuration
 

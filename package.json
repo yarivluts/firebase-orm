@@ -1,6 +1,6 @@
 {
   "name": "@arbel/firebase-orm",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "description": "Firestore Orm",
   "main": "dist/index.js",
   "scripts": {
@@ -9,10 +9,9 @@
     "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged"
   },
   "peerDependencies": {
-    "moment": "^2.24.0",
-    "rxjs": "^6.4.0",
     "firebase": "^10.3.1",
-    "firebase-admin": "^8.3.0"
+    "firebase-admin": "^8.3.0",
+    "moment": "^2.24.0"
   },
   "devDependencies": {
     "@types/atob": "^2.1.4",
@@ -47,7 +46,6 @@
     "moment": "^2.24.0",
     "node-fetch": "^2.6.0",
     "qs": "^6.7.0",
-    "rxjs": "^6.4.0",
     "to-arraybuffer": "^1.0.1",
     "whatwg-fetch": "^3.0.0",
     "ws": "^7.1.1",

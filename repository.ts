@@ -4,7 +4,6 @@ import { collection, addDoc, doc, Firestore, getDoc, updateDoc, setDoc, Document
 import { FirebaseStorage, getStorage } from "firebase/storage";
 import { BaseModel } from "./base.model";
 import { ModelInterface } from "./interfaces/model.interface";
-import { FireSQL } from "firesql";
 import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface";
 import * as axios_ from 'axios';
 import * as qs from 'qs';
@@ -144,33 +143,6 @@ export class FirestoreOrmRepository {
         //object.initFields();
 
         return <T & BaseModel>object;
-    }
-
-    async sql(sql: string): Promise<Array<Object>> {
-        const fireSQL = new FireSQL(this.firestore as any);
-        try {
-            return await fireSQL.query(sql, { includeId: 'id' });
-        } catch (error) {
-            console.error('SQL GENERAL ERROR - ', error);
-            return [];
-        }
-    }
-
-    /**
-     * Listen to sql query result 
-     * @param sql - sql query 
-     * @param callback - running callback
-     */
-    onSql(sql: string, callback: CallableFunction): void {
-        const fireSQL: any = new FireSQL(this.firestore as any);
-        try {
-            const res = fireSQL.rxQuery(sql, { includeId: 'id' });
-            res.subscribe((results: any) => {
-                callback(results);
-            })
-        } catch (error) {
-            console.error('SQL GENERAL ERROR - ', error);
-        }
     }
 
     /**

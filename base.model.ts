@@ -8,8 +8,6 @@ import { ModelOptions } from "./interfaces/model.options.interface";
 import { FirestoreOrmRepository } from "./repository";
 import * as firebase from "firebase/app";
 import 'firebase/firestore';
-import { FireSQL } from "firesql";
-import 'firesql/rx'; // <-- Important! Don't forget
 import { Query, LIST_EVENTS } from "./query";
 import { Moment } from "moment";
 import { StorageReference } from "./interfaces/storage.file.reference.interface";
@@ -760,107 +758,6 @@ export class BaseModel implements ModelInterface {
       return res;
     }
     return false;
-  }
-
-  async sql(
-    sql: string,
-    asObject: boolean = false,
-    isInsideQuery = false
-  ): Promise<Array<this>> {
-    var result: any = [];
-    if (isInsideQuery && !this.getId()) {
-      console.error(
-        this['referencePath'] +
-        "/:" +
-        this['pathId'] +
-        " - " +
-        "Can't search inside a model without id!"
-      );
-      return result;
-    } else if (!this.getDocReference()) {
-      console.error(
-        "The model path params is not set and can't run sql() function "
-      );
-      return result;
-    }
-    var ref: any = !isInsideQuery
-      ? this.getDocReference().parent
-      : doc(this.getDocReference(), this.getId());
-    const fireSQL = new FireSQL(ref, { includeId: "id" });
-    try {
-      var sqlResult = await fireSQL.query(sql);
-      for (var i = 0; i < sqlResult.length; i++) {
-        let data = sqlResult[i];
-        if (asObject) {
-          result.push(this.createFromData(data));
-        } else {
-          result.push(data);
-        }
-      }
-      return result;
-    } catch (error) {
-      console.error(
-        this['referencePath'] +
-        "/:" +
-        this['pathId'] +
-        " - " +
-        "SQL GENERAL ERROR - ",
-        error
-      );
-      return result;
-    }
-  }
-
-  onSql(
-    sql: string,
-    callback: CallableFunction,
-    asObject: boolean = false,
-    isInsideQuery: boolean = false
-  ): void {
-    var result: any = [];
-    if (isInsideQuery && !this.getId()) {
-      console.error(
-        this['referencePath'] +
-        "/:" +
-        this['pathId'] +
-        " - " +
-        "Can't search inside a model without id!"
-      );
-    } else if (!this.getDocReference()) {
-      console.error(
-        "The model path params is not set and can't run onSql() function "
-      );
-    } else {
-      var ref: any = !isInsideQuery
-        ? this.getDocReference().parent
-          ? this.getDocReference().parent
-          : this.getRepository().getFirestore()
-        : doc(this.getDocReference(), (this.getId()));
-      const fireSQL = new FireSQL(ref, { includeId: "id" });
-      try {
-        const res = fireSQL.rxQuery(sql);
-        res.subscribe((sqlResult: any) => {
-          for (var i = 0; i < sqlResult.length; i++) {
-            let data = sqlResult[i];
-            if (asObject) {
-              result.push(this.createFromData(data));
-            } else {
-              result.push(data);
-            }
-          }
-          callback(result);
-        });
-      } catch (error) {
-        console.error(
-          this['referencePath'] +
-          "/:" +
-          this['pathId'] +
-          " - " +
-          "SQL GENERAL ERROR - ",
-          error
-        );
-      }
-    }
   }
 
   async createFromDoc(doc: DocumentSnapshot): Promise<this> {
