@@ -616,10 +616,6 @@ export class BaseModel implements ModelInterface {
 
     try {
       var result = await that.elasticFullSql(sql, limit, filters, null, null, !asCount && asObject);
-      //
-
-
-      //printLog('result --------- ',result);
 
       result.count = async function () {
         if (!this['_count']) {
