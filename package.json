@@ -10,7 +10,6 @@
   },
   "peerDependencies": {
     "firebase": "^10.3.1",
-    "firebase-admin": "^8.3.0",
     "moment": "^2.24.0"
   },
   "devDependencies": {

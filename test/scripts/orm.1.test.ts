@@ -5,17 +5,6 @@ import { config } from "../config";
 import { Member } from "../model/member";
 import { Product } from "../model/product";
 
-/* if (typeof window === 'undefined') {
-  var admin = require("firebase-admin");
-  var firebaseApp:any = admin.initializeApp(config.api['firebase-admin']); 
-  var storage = firebaseApp.storage().bucket('fir-orm-4311d.appspot.com');
-
-}else{
-  var firebaseApp:any = firebase.initializeApp(config.api.firebase); 
-  var storage = firebaseApp.storage();
-
-} */
-
 var firebaseApp: any = firebase.initializeApp(config.api.firebase);
 var storage = firebaseApp.storage();
 var connection = firebaseApp.firestore();
