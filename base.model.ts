@@ -45,7 +45,7 @@ if (typeof XMLHttpRequest === 'undefined') {
 
 
 
-const moment = moment_ ?? moment_['default'];
+const moment = moment_['default'] ?? moment_;
 const axios = axios_.default;
 
 /**
