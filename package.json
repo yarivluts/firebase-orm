@@ -1,6 +1,6 @@
 {
   "name": "@arbel/firebase-orm",
-  "version": "1.9.10",
+  "version": "1.9.11",
   "description": "Firestore Orm",
   "main": "dist/index.js",
   "scripts": {
