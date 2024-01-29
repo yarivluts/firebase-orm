@@ -17,6 +17,11 @@ jobs:
           node-version: '16'  # Adjust as needed
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Set Git user
+        run: |
+          git config --local user.name "Yariv"
+          git config --local user.email "yarivluts@gmail.com"
+
       - name: Bump version and create tag
         run: |
           npm version patch
