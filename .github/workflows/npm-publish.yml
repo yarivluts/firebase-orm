@@ -27,7 +27,7 @@ jobs:
           npm version patch
           git add .  # Add all modified files
           git commit -m "Bump version to [new version]"
-          git push origin --tags
+          git push origin
 
       - name: Install dependencies
         run: npm ci
