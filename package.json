@@ -10,9 +10,19 @@
   },
   "peerDependencies": {
     "firebase": "^10.3.1",
-    "moment": "^2.24.0"
+    "moment": "^2.24.0",
+    "atob": "^2.1.2",
+    "axios": "^0.21.1",
+    "blob": "0.0.5",
+    "btoa": "^1.2.1",
+    "qs": "^6.7.0",
+    "ws": "^7.1.1",
+    "xhr2": "^0.2.1"
   },
   "devDependencies": {
+    "@arbel/node-xhr2": "^0.2.0",
+    "@types/axios": "^0.14.0",
+    "@types/qs": "^6.5.3",
     "@types/atob": "^2.1.4",
     "@types/btoa": "^1.2.5",
     "@types/jest": "^24.0.15",
@@ -34,21 +44,5 @@
     "url": "https://gitlab.com/yariv.luts/firestore-orm/issues"
   },
   "homepage": "https://gitlab.com/yariv.luts/firestore-orm#readme",
-  "dependencies": {
-    "@arbel/node-xhr2": "^0.2.0",
-    "@types/axios": "^0.14.0",
-    "@types/qs": "^6.5.3",
-    "atob": "^2.1.2",
-    "axios": "^0.21.1",
-    "blob": "0.0.5",
-    "btoa": "^1.2.1",
-    "cross-fetch": "^3.0.4",
-    "moment": "^2.24.0",
-    "node-fetch": "^2.6.0",
-    "qs": "^6.7.0",
-    "to-arraybuffer": "^1.0.1",
-    "whatwg-fetch": "^3.0.0",
-    "ws": "^7.1.1",
-    "xhr2": "^0.2.1"
-  }
+  "dependencies": {}
 }
