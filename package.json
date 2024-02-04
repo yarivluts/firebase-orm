@@ -9,24 +9,24 @@
     "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged"
   },
   "peerDependencies": {
-    "firebase": "^10.3.1",
-    "moment": "^2.24.0",
     "atob": "^2.1.2",
     "axios": "^0.21.1",
     "blob": "0.0.5",
     "btoa": "^1.2.1",
+    "firebase": "^10.3.1",
+    "moment": "^2.24.0",
     "qs": "^6.7.0",
-    "ws": "^7.1.1",
+    "ws": "^8.16.0",
     "xhr2": "^0.2.1"
   },
   "devDependencies": {
     "@arbel/node-xhr2": "^0.2.0",
-    "@types/axios": "^0.14.0",
-    "@types/qs": "^6.5.3",
     "@types/atob": "^2.1.4",
+    "@types/axios": "^0.14.0",
     "@types/btoa": "^1.2.5",
     "@types/jest": "^24.0.15",
     "@types/node": "^12.6.3",
+    "@types/qs": "^6.5.3",
     "@types/ws": "^8.5.10",
     "jest": "^24.8.0",
     "jest-cli": "^24.8.0",
@@ -43,6 +43,5 @@
   "bugs": {
     "url": "https://gitlab.com/yariv.luts/firestore-orm/issues"
   },
-  "homepage": "https://gitlab.com/yariv.luts/firestore-orm#readme",
-  "dependencies": {}
+  "homepage": "https://gitlab.com/yariv.luts/firestore-orm#readme"
 }
