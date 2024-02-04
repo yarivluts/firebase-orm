@@ -32,8 +32,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-#      - name: Build the package
-#        run: npm run build  # Replace with your build command
+      - name: Build the package
+        run: npm run build  # Replace with your build command
 
       - name: Publish to npm
         run: npm publish

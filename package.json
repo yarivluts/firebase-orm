@@ -2,7 +2,7 @@
   "name": "@arbel/firebase-orm",
   "version": "1.9.18",
   "description": "Firestore Orm",
-  "main": "index.ts",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "build:full": "rm -rf dist && npm run build",
