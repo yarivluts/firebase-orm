@@ -1,9 +1,8 @@
 import { FirestoreOrmRepository } from "../repository";
-import { Query, LIST_EVENTS } from "../query";
-import { Moment } from 'moment';
-import { ModelAllListOptions } from "./model.alllist.options.interface";
+import { LIST_EVENTS } from "../query";
+import type { Moment } from 'moment';
 import { BaseModel } from "../base.model";
-import { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot } from "firebase/firestore";
+import type { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot } from "firebase/firestore";
 
 /**
  * Firestore Orm

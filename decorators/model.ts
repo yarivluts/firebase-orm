@@ -1,11 +1,6 @@
 import { ModelOptions } from "../interfaces/model.options.interface";
-import 'firebase/firestore';
 
-import * as moment_ from "moment";
 
-const moment = moment_;
-
-import { ModelAllListOptions } from "../interfaces/model.alllist.options.interface";
 import { BaseModel } from "../base.model";
 
 function applyMixins(derivedCtor: any, baseCtors: any[]) {

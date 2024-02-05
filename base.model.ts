@@ -2,25 +2,66 @@
  * @jest-environment node
  */
 
-import 'firebase/firestore';
+
 import { ModelInterface } from "./interfaces/model.interface";
-import { ModelOptions } from "./interfaces/model.options.interface";
 import { FirestoreOrmRepository } from "./repository";
-import * as firebase from "firebase/app";
-import 'firebase/firestore';
 import { Query, LIST_EVENTS } from "./query";
-import { Moment } from "moment";
+import type { Moment } from "moment";
 import { StorageReference } from "./interfaces/storage.file.reference.interface";
 import { ElasticWhereSqlResponse } from "./interfaces/elastic.where.sql.response.interface";
 import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface";
 import { ModelAllListOptions } from './interfaces/model.alllist.options.interface';
 import { printLog } from './utils';
-import * as axios_ from 'axios';
-import * as moment_ from "moment";
+let axios: typeof import('axios').default;
+
+function lazyLoadAxios() {
+  return new Promise((resolve) => {
+    if (axios) {
+      resolve(axios);
+    } else {
+      import('axios').then((axiosModule) => {
+        axios = axiosModule.default;
+        resolve(axios);
+      });
+    }
+  });
+}
 
 import * as qs from 'qs';
-import { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot, FieldPath, OrderByDirection, Timestamp, WhereFilterOp, deleteDoc, doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { StringFormat, UploadMetadata, UploadTask, getDownloadURL, ref } from 'firebase/storage';
+import type { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot, FieldPath, OrderByDirection, Timestamp, WhereFilterOp } from 'firebase/firestore';
+async function deleteDocument(path: any): Promise<void> {
+  const { deleteDoc } = await import('firebase/firestore');
+  await deleteDoc(path);
+}
+
+async function getDocument(path: any): Promise<DocumentSnapshot<DocumentData>> {
+  const { getDoc } = await import('firebase/firestore');
+  return await getDoc(path);
+}
+
+async function onDocumentSnapshot(path: any, callback: (snapshot: DocumentSnapshot<DocumentData>) => void): Promise<() => void> {
+  const { onSnapshot } = await import('firebase/firestore');
+  return onDocumentSnapshot(path, callback);
+}
+import type { StringFormat, UploadMetadata, UploadTask } from 'firebase/storage';
+let getDownloadURL: any;
+let ref: any;
+
+function lazyLoadFirebaseStorage() {
+  return new Promise((resolve) => {
+    if (getDownloadURL && ref) {
+      resolve({ getDownloadURL, ref });
+    } else {
+      import('firebase/storage').then((firebaseStorage) => {
+        getDownloadURL = firebaseStorage.getDownloadURL;
+        ref = firebaseStorage.ref;
+        resolve({ getDownloadURL, ref });
+      });
+    }
+  });
+}
+
+
 let globalVar = (typeof global !== 'undefined' ? global : window) as any;
 if (typeof atob === 'undefined') {
   import('atob').then((atob) => {
@@ -35,18 +76,33 @@ if (typeof btoa === 'undefined') {
 
 if (typeof XMLHttpRequest === 'undefined') {
   // Polyfills required for Firebase
-  var XMLHttpRequest = require('xhr2');
-  globalVar.XMLHttpRequest = XMLHttpRequest;
-  import('ws').then((WebSocket) => {
-    globalVar.WebSocket = WebSocket;
+  var XMLHttpRequest: any;
+  // @ts-ignore
+  import('xhr2').then((XMLHttpRequest) => {
+    globalVar.XMLHttpRequest = XMLHttpRequest;
+    import('ws').then((WebSocket) => {
+      globalVar.WebSocket = WebSocket;
+    });
   });
 }
 
 
 
 
-const moment = moment_['default'] ?? moment_;
-const axios = axios_.default;
+let moment: any;
+
+function getMoment() {
+  return new Promise((resolve) => {
+    if (moment) {
+      resolve(moment);
+    } else {
+      /* import('moment').then((moment_) => {
+        moment = moment_['default'] ?? moment_;
+        resolve(moment);
+      }); */
+    }
+  });
+}
 
 /**
  * Base model orm application
@@ -81,6 +137,7 @@ export class BaseModel implements ModelInterface {
 
 
   constructor() {
+    getMoment();
     var connectionName = FirestoreOrmRepository.DEFAULT_KEY_NAME;
     if (this['connectionName']) {
       connectionName = this['connectionName'];
@@ -358,7 +415,7 @@ export class BaseModel implements ModelInterface {
         that.observeRemoveBefore();
       }
       const ref = this.getDocReference();
-      await deleteDoc(ref);
+      await deleteDocument(ref);
       if (that.observeRemoveAfter) {
         that.observeRemoveAfter();
       }
@@ -452,6 +509,7 @@ export class BaseModel implements ModelInterface {
 
     var time = (+ new Date()) + Math.random() * 100;
     try {
+      await lazyLoadAxios();
       var response = await axios({
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -800,7 +858,7 @@ export class BaseModel implements ModelInterface {
     var object: any = new this();
     object.setModelType(this);
     var d: any = doc;
-    var data = (await getDoc(doc)).data();
+    var data = (await getDocument(doc)).data();
     if (data) {
       var pathParams = object.getPathListParams();
 
@@ -825,7 +883,7 @@ export class BaseModel implements ModelInterface {
     var object: any = new this();
     object.setModelType(this);
     var d: any = doc;
-    var data = (await getDoc(doc)).data();
+    var data = (await getDocument(doc)).data();
     if (data) {
       var pathParams = object.getPathListParams();
 
@@ -1281,7 +1339,8 @@ export class BaseModel implements ModelInterface {
   }
 
 
-  getStorageFile(target: string): StorageReference {
+  async getStorageFile(target: string): Promise<StorageReference> {
+    await lazyLoadFirebaseStorage();
     var that = this;
     var uniqueId = this.getId() ? this.getId() : this.makeId(20);
     var path = this.getDocReference().path + '/' + uniqueId + '/' + target;
@@ -1339,6 +1398,7 @@ export class BaseModel implements ModelInterface {
       , onErrorCallback: any = () => { }
       , onFinishCallback: any = () => { }) {
       try {
+        await lazyLoadAxios();
         var response = await axios({
           method: 'get',
           url: url,
@@ -1374,7 +1434,8 @@ export class BaseModel implements ModelInterface {
           onErrorCallback(error)
         },
         // Finish
-        () => {
+        async () => {
+          await lazyLoadFirebaseStorage();
           onFinishCallback(uploadTask);
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL: string) => {
             // printLog('File available at', downloadURL);
@@ -1444,7 +1505,7 @@ export class BaseModel implements ModelInterface {
 
   getSnapshot(): Promise<DocumentSnapshot> {
     return new Promise((resolve, reject) => {
-      onSnapshot(this.getDocReference(), (doc) => {
+      onDocumentSnapshot(this.getDocReference(), (doc) => {
         if (doc) {
           resolve(doc);
         } else {

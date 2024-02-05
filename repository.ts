@@ -1,14 +1,38 @@
-import * as firebase from "firebase/app";
-import 'firebase/firestore';
-import { collection, addDoc, doc, Firestore, getDoc, updateDoc, setDoc, DocumentReference, DocumentData, CollectionReference, FieldPath, query, documentId, where, getDocs } from "firebase/firestore";
-import { FirebaseStorage, getStorage } from "firebase/storage";
+import type {
+    collection as collectionFuncType,
+    doc as docFuncType,
+    Firestore,
+    updateDoc as updateDocFuncType,
+    setDoc as setDocFuncType,
+    DocumentReference,
+    DocumentData,
+    CollectionReference,
+    query as queryFuncType,
+    documentId as documentIdFuncType,
+    where as whereFuncType,
+    getDocs as getDocsFuncType
+} from "firebase/firestore";
+
+let collection: typeof collectionFuncType;
+let doc: typeof docFuncType;
+let updateDoc: typeof updateDocFuncType;
+let setDoc: typeof setDocFuncType;
+let query: typeof queryFuncType;
+let documentId: typeof documentIdFuncType;
+let where: typeof whereFuncType;
+let getDocs: typeof getDocsFuncType;
+
+
+/* import { collection, addDoc, doc, Firestore, getDoc, updateDoc, setDoc, DocumentReference, DocumentData, CollectionReference, FieldPath, query, documentId, where, getDocs } from "firebase/firestore"; */
+
+
+import type { FirebaseStorage } from "firebase/storage";
 import { BaseModel } from "./base.model";
 import { ModelInterface } from "./interfaces/model.interface";
 import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface";
-import * as axios_ from 'axios';
 import * as qs from 'qs';
 
-const axios = axios_.default;
+let axios: any;
 
 export class FirestoreOrmRepository {
 
@@ -20,9 +44,23 @@ export class FirestoreOrmRepository {
     static ormFieldsStructure = {};
     static elasticSearchConnections = {};
     static globalFirebaseStoages = {};
+    static isReady = false;
 
     constructor(protected firestore: Firestore) {
-
+        import("firebase/firestore").then((module) => {
+            collection = module.collection;
+            doc = module.doc;
+            updateDoc = module.updateDoc;
+            setDoc = module.setDoc;
+            query = module.query;
+            documentId = module.documentId;
+            where = module.where;
+            getDocs = module.getDocs;
+            FirestoreOrmRepository.isReady = true;
+        });
+        import('axios').then((module) => {
+            axios = module.default;
+        });
     }
 
     static initGlobalConnection(firestore: Firestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {

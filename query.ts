@@ -1,9 +1,6 @@
-import * as firebase from "firebase/app";
-import 'firebase/firestore';
-import { ModelInterface } from "./interfaces/model.interface";
-import { ModelAllListOptions } from "./interfaces/model.alllist.options.interface";
+import { ModelAllListOptions } from "interfaces/model.alllist.options.interface";
 import { BaseModel } from "./base.model";
-import { CollectionReference, DocumentData, FieldPath, Query as FirestoreQuery, OrderByDirection, WhereFilterOp, and, endAt, endBefore, getCountFromServer, getDocs, limit, onSnapshot, or, orderBy, query, startAfter, startAt, where } from "firebase/firestore";
+import type { CollectionReference, DocumentData, FieldPath, Query as FirestoreQuery, OrderByDirection, WhereFilterOp, } from "firebase/firestore";
 
 export enum LIST_EVENTS {
   REMOVED = "removed",
@@ -15,6 +12,39 @@ export enum WHERE_FILTER_OP {
   NOT_EQUAL = "<>"
 }
 
+
+let endAt: typeof import("firebase/firestore").endAt;
+let endBefore: typeof import("firebase/firestore").endBefore;
+let getCountFromServer: typeof import("firebase/firestore").getCountFromServer;
+let getDocs: typeof import("firebase/firestore").getDocs;
+let limit: typeof import("firebase/firestore").limit;
+let onSnapshot: typeof import("firebase/firestore").onSnapshot;
+let or: typeof import("firebase/firestore").or;
+let orderBy: typeof import("firebase/firestore").orderBy;
+let query: typeof import("firebase/firestore").query;
+let startAfter: typeof import("firebase/firestore").startAfter;
+let startAt: typeof import("firebase/firestore").startAt;
+let where: typeof import("firebase/firestore").where;
+
+async function lazyLoadFirestoreImports() {
+  if (!!endAt) {
+    return;
+  }
+  const module = await import("firebase/firestore");
+  endAt = module.endAt;
+  endBefore = module.endBefore;
+  getCountFromServer = module.getCountFromServer;
+  getDocs = module.getDocs;
+  limit = module.limit;
+  onSnapshot = module.onSnapshot;
+  or = module.or;
+  orderBy = module.orderBy;
+  query = module.query;
+  startAfter = module.startAfter;
+  startAt = module.startAt;
+  where = module.where;
+}
+lazyLoadFirestoreImports();
 export class Query<T> {
   protected current!: CollectionReference<DocumentData>;
   protected model!: BaseModel;
@@ -27,10 +57,13 @@ export class Query<T> {
   protected queryLimit!: number;
   protected currentRef!: CollectionReference;
   init(model: BaseModel, reference?: FirestoreQuery | any) {
+
     this.model = model;
     if (!reference) {
       this.current = this.model.getRepositoryReference() as CollectionReference<DocumentData>;
     }
+
+
   }
 
   /**
