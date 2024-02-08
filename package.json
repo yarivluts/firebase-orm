@@ -16,7 +16,8 @@
     "moment": "^2.24.0",
     "qs": "^6.7.0",
     "ws": "^8.16.0",
-    "xhr2": "^0.2.1"
+    "xhr2": "^0.2.1",
+    "firebase": "^9.0.0"
   },
   "devDependencies": {
     "@arbel/node-xhr2": "^0.2.0",

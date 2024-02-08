@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import type {
     collection as collectionFuncType,
     doc as docFuncType,
@@ -28,7 +26,6 @@ let getDocs: typeof getDocsFuncType;
 /* import { collection, addDoc, doc, Firestore, getDoc, updateDoc, setDoc, DocumentReference, DocumentData, CollectionReference, FieldPath, query, documentId, where, getDocs } from "firebase/firestore"; */
 
 
-// @ts-ignore
 import type { FirebaseStorage } from "firebase/storage";
 import { BaseModel } from "./base.model";
 import { ModelInterface } from "./interfaces/model.interface";
@@ -48,20 +45,9 @@ export class FirestoreOrmRepository {
     static elasticSearchConnections = {};
     static globalFirebaseStoages = {};
     static isReady = false;
+    static firestoreLib: typeof import('firebase/firestore');
 
     constructor(protected firestore: Firestore) {
-        // @ts-ignore
-        import("firebase/firestore").then((module) => {
-            collection = module.collection;
-            doc = module.doc;
-            updateDoc = module.updateDoc;
-            setDoc = module.setDoc;
-            query = module.query;
-            documentId = module.documentId;
-            where = module.where;
-            getDocs = module.getDocs;
-            FirestoreOrmRepository.isReady = true;
-        });
         import('axios').then((module) => {
             axios = module.default;
         });
@@ -72,6 +58,18 @@ export class FirestoreOrmRepository {
         if (this.globalWait[key]) {
             this.globalWait[key](this.globalFirestores[key]);
         }
+    }
+
+    static initFirestoreLib(firestoreLib: typeof import('firebase/firestore')) {
+        collection = firestoreLib.collection;
+        doc = firestoreLib.doc;
+        updateDoc = firestoreLib.updateDoc;
+        setDoc = firestoreLib.setDoc;
+        query = firestoreLib.query;
+        documentId = firestoreLib.documentId;
+        where = firestoreLib.where;
+        getDocs = firestoreLib.getDocs;
+        this.firestoreLib = firestoreLib;
     }
 
     static initGlobalStorage(storage: FirebaseStorage, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {

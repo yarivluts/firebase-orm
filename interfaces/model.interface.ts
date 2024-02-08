@@ -2,7 +2,7 @@ import { FirestoreOrmRepository } from "../repository";
 import { LIST_EVENTS } from "../query";
 import type { Moment } from 'moment';
 import { BaseModel } from "../base.model";
-// @ts-ignore
+
 import type { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot } from "firebase/firestore";
 
 /**

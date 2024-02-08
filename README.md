@@ -135,8 +135,10 @@ You may also need to enable `es6` in the `lib` section of compiler options, or i
 
 ```typescript
 import * as app from "firebase";
+import * as firestoreLib from "firebase/firestore";
 import { FirestoreOrmRepository } from "@arbel/firebase-orm";
 
+FirestoreOrmRepository.initFirestoreLib(firestoreLib);
 var firebaseApp = app.initializeApp(config);
 var connection = this.firebaseApp.firestore();
 
