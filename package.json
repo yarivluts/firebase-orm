@@ -10,7 +10,7 @@
   },
   "peerDependencies": {
     "atob": "^2.1.2",
-    "axios": "1",
+    "axios": "1.x",
     "blob": "0.0.5",
     "btoa": "^1.2.1",
     "moment": "^2.24.0",
