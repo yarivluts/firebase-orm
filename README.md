@@ -138,11 +138,8 @@ import * as app from "firebase";
 import * as firestoreLib from "firebase/firestore";
 import { FirestoreOrmRepository } from "@arbel/firebase-orm";
 
-FirestoreOrmRepository.initFirestoreLib(firestoreLib);
-var firebaseApp = app.initializeApp(config);
-var connection = this.firebaseApp.firestore();
+var firebaseApp = FirestoreOrmRepository.initializeApp(config);
 
-FirestoreOrmRepository.initGlobalConnection(connection);
 ```
 
 2.Create global path id - (optinal)
