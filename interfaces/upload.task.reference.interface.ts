@@ -1,4 +1,4 @@
-
+// @ts-ignore
 import type { UploadTask } from "firebase/storage";
 
 /**

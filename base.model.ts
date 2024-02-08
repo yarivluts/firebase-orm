@@ -47,6 +47,7 @@ async function onDocumentSnapshot(path: any, callback: (snapshot: DocumentSnapsh
   const { onSnapshot } = await import('firebase/firestore');
   return onSnapshot(path, callback);
 }
+// @ts-ignore
 import type { StringFormat, UploadMetadata, UploadTask } from 'firebase/storage';
 let getDownloadURL: any;
 let ref: any;

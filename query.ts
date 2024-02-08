@@ -1,5 +1,6 @@
 import { ModelAllListOptions } from "./interfaces/model.alllist.options.interface";
 import { BaseModel } from "./base.model";
+// @ts-ignore
 import type { CollectionReference, DocumentData, FieldPath, Query as FirestoreQuery, OrderByDirection, WhereFilterOp, } from "firebase/firestore";
 
 export enum LIST_EVENTS {
@@ -220,7 +221,7 @@ export class Query<T> {
     this.initBeforeFetch().then(() => {
       var that = this;
       var now = new Date().getTime();
-      response.callback = onSnapshot(this.current, async function (querySnapshot) {
+      response.callback = onSnapshot(this.current, async function (querySnapshot: any) {
         for (var i = 0; i < querySnapshot.docChanges().length; i++) {
           var change = querySnapshot.docChanges()[i];
           if (change.type === LIST_EVENTS.ADDEDD && (options.added || options.init)) {
