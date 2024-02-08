@@ -13,11 +13,11 @@
     "axios": "1.x",
     "blob": "0.0.5",
     "btoa": "^1.2.1",
+    "firebase": "^10.8.0",
     "moment": "^2.24.0",
     "qs": "^6.7.0",
     "ws": "^8.16.0",
-    "xhr2": "^0.2.1",
-    "firebase": "^10.8.0"
+    "xhr2": "^0.2.1"
   },
   "devDependencies": {
     "@arbel/node-xhr2": "^0.2.0",
