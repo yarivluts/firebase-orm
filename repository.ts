@@ -86,7 +86,7 @@ export class FirestoreOrmRepository {
         const firebaseApp = app.initializeApp(options, name);
         const { getFirestore } = await import('firebase/firestore');
         const connection = getFirestore(firebaseApp);
-        FirestoreOrmRepository.initGlobalConnection(connection);
+        this.initGlobalConnection(connection);
         return firebaseApp;
     }
 
