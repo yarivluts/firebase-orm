@@ -45,7 +45,6 @@ export class FirestoreOrmRepository {
     static elasticSearchConnections = {};
     static globalFirebaseStoages = {};
     static isReady = false;
-    static firestoreLib: typeof import('firebase/firestore');
 
     constructor(protected firestore: Firestore) {
         import("firebase/firestore").then((module) => {
