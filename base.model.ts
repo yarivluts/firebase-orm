@@ -41,7 +41,7 @@ async function getDocument(path: any): Promise<DocumentSnapshot<DocumentData>> {
 
 async function onDocumentSnapshot(path: any, callback: (snapshot: DocumentSnapshot<DocumentData>) => void): Promise<() => void> {
   const { onSnapshot } = await import('firebase/firestore');
-  return onDocumentSnapshot(path, callback);
+  return onSnapshot(path, callback);
 }
 import type { StringFormat, UploadMetadata, UploadTask } from 'firebase/storage';
 let getDownloadURL: any;
