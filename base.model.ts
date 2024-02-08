@@ -28,18 +28,22 @@ function lazyLoadAxios() {
 }
 
 import * as qs from 'qs';
+// @ts-ignore
 import type { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot, FieldPath, OrderByDirection, Timestamp, WhereFilterOp } from 'firebase/firestore';
 async function deleteDocument(path: any): Promise<void> {
+  // @ts-ignore
   const { deleteDoc } = await import('firebase/firestore');
   await deleteDoc(path);
 }
 
 async function getDocument(path: any): Promise<DocumentSnapshot<DocumentData>> {
+  // @ts-ignore
   const { getDoc } = await import('firebase/firestore');
   return await getDoc(path);
 }
 
 async function onDocumentSnapshot(path: any, callback: (snapshot: DocumentSnapshot<DocumentData>) => void): Promise<() => void> {
+  // @ts-ignore
   const { onSnapshot } = await import('firebase/firestore');
   return onSnapshot(path, callback);
 }
@@ -52,6 +56,7 @@ function lazyLoadFirebaseStorage() {
     if (getDownloadURL && ref) {
       resolve({ getDownloadURL, ref });
     } else {
+      // @ts-ignore
       import('firebase/storage').then((firebaseStorage) => {
         getDownloadURL = firebaseStorage.getDownloadURL;
         ref = firebaseStorage.ref;
@@ -64,11 +69,13 @@ function lazyLoadFirebaseStorage() {
 
 let globalVar = (typeof global !== 'undefined' ? global : window) as any;
 if (typeof atob === 'undefined') {
+  // @ts-ignore
   import('atob').then((atob) => {
     globalVar.atob = atob;
   });
 }
 if (typeof btoa === 'undefined') {
+  // @ts-ignore
   import('btoa').then((btoa) => {
     globalVar.btoa = btoa;
   });

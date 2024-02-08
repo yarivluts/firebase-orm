@@ -12,24 +12,36 @@ export enum WHERE_FILTER_OP {
   NOT_EQUAL = "<>"
 }
 
-
+// @ts-ignore
 let endAt: typeof import("firebase/firestore").endAt;
+// @ts-ignore
 let endBefore: typeof import("firebase/firestore").endBefore;
+// @ts-ignore
 let getCountFromServer: typeof import("firebase/firestore").getCountFromServer;
+// @ts-ignore
 let getDocs: typeof import("firebase/firestore").getDocs;
+// @ts-ignore
 let limit: typeof import("firebase/firestore").limit;
+// @ts-ignore
 let onSnapshot: typeof import("firebase/firestore").onSnapshot;
+// @ts-ignore
 let or: typeof import("firebase/firestore").or;
+// @ts-ignore
 let orderBy: typeof import("firebase/firestore").orderBy;
+// @ts-ignore
 let query: typeof import("firebase/firestore").query;
+// @ts-ignore
 let startAfter: typeof import("firebase/firestore").startAfter;
+// @ts-ignore
 let startAt: typeof import("firebase/firestore").startAt;
+// @ts-ignore
 let where: typeof import("firebase/firestore").where;
 
 async function lazyLoadFirestoreImports() {
   if (!!endAt) {
     return;
   }
+  // @ts-ignore
   const module = await import("firebase/firestore");
   endAt = module.endAt;
   endBefore = module.endBefore;

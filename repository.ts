@@ -1,3 +1,4 @@
+// @ts-ignore
 import type {
     collection as collectionFuncType,
     doc as docFuncType,
@@ -26,6 +27,7 @@ let getDocs: typeof getDocsFuncType;
 /* import { collection, addDoc, doc, Firestore, getDoc, updateDoc, setDoc, DocumentReference, DocumentData, CollectionReference, FieldPath, query, documentId, where, getDocs } from "firebase/firestore"; */
 
 
+// @ts-ignore
 import type { FirebaseStorage } from "firebase/storage";
 import { BaseModel } from "./base.model";
 import { ModelInterface } from "./interfaces/model.interface";
@@ -47,6 +49,7 @@ export class FirestoreOrmRepository {
     static isReady = false;
 
     constructor(protected firestore: Firestore) {
+        // @ts-ignore
         import("firebase/firestore").then((module) => {
             collection = module.collection;
             doc = module.doc;
