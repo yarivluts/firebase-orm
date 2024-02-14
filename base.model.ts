@@ -1589,7 +1589,11 @@ export class BaseModel implements ModelInterface {
   }
 
   copy(object: this) {
-    this.data = object.data;
+    for (let key in object.getData(true)) {
+      if (typeof object[key] !== 'undefined') {
+        this[key] = object[key];
+      }
+    }
   }
 
   /**

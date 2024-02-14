@@ -28,6 +28,8 @@ let onSnapshot: typeof import("firebase/firestore").onSnapshot;
 
 let or: typeof import("firebase/firestore").or;
 
+let and: typeof import("firebase/firestore").and;
+
 let orderBy: typeof import("firebase/firestore").orderBy;
 
 let query: typeof import("firebase/firestore").query;
@@ -37,6 +39,8 @@ let startAfter: typeof import("firebase/firestore").startAfter;
 let startAt: typeof import("firebase/firestore").startAt;
 
 let where: typeof import("firebase/firestore").where;
+
+let collectionGroup: typeof import("firebase/firestore").collectionGroup;
 
 async function lazyLoadFirestoreImports() {
   if (!!endAt) {
@@ -51,13 +55,20 @@ async function lazyLoadFirestoreImports() {
   limit = module.limit;
   onSnapshot = module.onSnapshot;
   or = module.or;
+  and = module.and;
   orderBy = module.orderBy;
   query = module.query;
   startAfter = module.startAfter;
   startAt = module.startAt;
   where = module.where;
+  collectionGroup = module.collectionGroup;
 }
 lazyLoadFirestoreImports();
+
+/**
+ * Represents a query for retrieving documents from a Firestore collection.
+ * @template T The type of the documents returned by the query.
+ */
 export class Query<T> {
   protected current!: CollectionReference<DocumentData>;
   protected model!: BaseModel;
@@ -65,10 +76,13 @@ export class Query<T> {
   protected whereList: any[] = [];
   protected orWhereList: any[] = [];
   protected orderByList: any[] = [];
+  protected ops: any[] = [];
   protected startAfterArr: BaseModel[] = [];
   protected endBeforeArr: BaseModel[] = [];
   protected queryLimit!: number;
   protected currentRef!: CollectionReference;
+  protected isCollectionGroup_: boolean = false;
+
   init(model: BaseModel, reference?: FirestoreQuery | any) {
 
     this.model = model;
@@ -77,6 +91,17 @@ export class Query<T> {
     }
 
 
+  }
+
+  /**
+   * Sets whether the query is targeting a collection group.
+   * 
+   * @param isCollectionGroup - A boolean value indicating whether the query is targeting a collection group.
+   * @returns The updated Query object.
+   */
+  setCollectionGroup(isCollectionGroup: boolean) {
+    this.isCollectionGroup_ = isCollectionGroup;
+    return this;
   }
 
   /**
@@ -126,7 +151,7 @@ export class Query<T> {
   ): Query<T> {
     var field: any = fieldPath;
     fieldPath = this.model.getFieldName(field);
-    this.whereList.push(or(where(fieldPath, opStr as any, value)));
+    this.orWhereList.push(where(fieldPath, opStr as any, value));
     return this;
   }
 
@@ -145,7 +170,7 @@ export class Query<T> {
   ): Query<T> {
     var field: any = fieldPath;
     fieldPath = this.model.getFieldName(field);
-    this.whereList.push((orderBy(fieldPath, directionStr)));
+    this.orderByList.push(orderBy(fieldPath, directionStr));
     return this;
   }
 
@@ -158,7 +183,7 @@ export class Query<T> {
    */
   limit(val: number): Query<T> {
     this.queryLimit = val;
-    this.whereList.push((limit(val)));
+    this.ops.push((limit(val)));
     return this;
   }
 
@@ -347,16 +372,31 @@ export class Query<T> {
   async get(
   ): Promise<Array<BaseModel & T>> {
     await this.initBeforeFetch();
-    const list = await getDocs(query(this.current, ...this.whereList));
+    const list = await getDocs(this.getFirestoreQuery());
     return this.parse(list);
   }
 
   async count(
   ): Promise<Number> {
     await this.initBeforeFetch();
-    const q = await query(query(this.current, ...this.whereList));
+    const q = await this.getFirestoreQuery();
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count;
+  }
+
+  getCurrentQueryArray(): Array<any> {
+    const res = [and(...this.whereList.filter((op) => {
+      return op.type == 'where' || op.type == 'or';
+    }, or(...this.orWhereList))), ...this.orderByList, ...this.ops];
+
+    if (this.isCollectionGroup_) {
+      res.push(collectionGroup(this.current.firestore, this.current.id));
+    }
+    return res;
+  }
+
+  getFirestoreQuery() {
+    return query(this.current, ...this.getCurrentQueryArray());
   }
 
   async initBeforeFetch() {
@@ -373,14 +413,14 @@ export class Query<T> {
   ): Promise<BaseModel | null> {
     await this.initBeforeFetch();
     this.limit(1);
-    var list = await getDocs(query(this.current, ...this.whereList));
+    let list;
+    list = await getDocs(this.getFirestoreQuery());
     var res = this.parse(list);
     if (res.length > 0) {
       return res[0];
     } else {
       return null;
     }
-
   }
 
   public parse(list: any) {//FirestoreQuerySnapshot
