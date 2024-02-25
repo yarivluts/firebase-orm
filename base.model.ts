@@ -115,12 +115,26 @@ function getMoment() {
 /**
  * Base model orm application
  */
+/**
+ * Represents a base model for Firebase ORM.
+ */
 export class BaseModel implements ModelInterface {
 
+  /**
+   * The flag for the created_at field.
+   */
   protected static CREATED_AT_FLAG: string = "created_at";
+
+  /**
+   * The flag for the updated_at field.
+   */
   protected static UPDATED_AT_FLAG: string = "updated_at";
 
+  /**
+   * The ID of the model.
+   */
   id!: string;
+
   //referencePath!: string;
   protected _referencePath!: string;
   protected isAutoTime!: boolean;
@@ -143,7 +157,6 @@ export class BaseModel implements ModelInterface {
   protected currentQueryListener!: any;
   protected modelType!: any;
 
-
   constructor() {
     getMoment();
     var connectionName = FirestoreOrmRepository.DEFAULT_KEY_NAME;
@@ -155,7 +168,7 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
-   * Init properties
+   * Initializes the properties of the model.
    */
   initProp() {
     if (!this['storedFields']) {
@@ -173,8 +186,9 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
-   * Parse text indexing fields
-   * @param text : string
+   * Parses the text indexing fields.
+   * @param text - The text to parse.
+   * @returns An array of parsed text indexing fields.
    */
   parseTextIndexingFields(text: string) {
     var map = {};
@@ -200,28 +214,30 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
-   * Get object id
+   * Gets the ID of the object.
+   * @returns The ID of the object.
    */
   getId() {
     return this.id;
   }
 
-
   /**
-   * Init fields
+   * Initializes the fields of the model.
    */
   initFields(): void { }
 
   /**
-   * Init exist
+   * Checks if the model exists.
+   * @returns True if the model exists, false otherwise.
    */
   isExist(): boolean {
     return this.is_exist;
   }
 
   /**
-   * Get one relation
-   * @param model 
+   * Gets one relation.
+   * @param model - The model to get the relation from.
+   * @returns A promise that resolves to the related model.
    */
   async getOneRel<T>(model: { new(): T }): Promise<T & BaseModel> {
     var object: any = this.getModel(model);
@@ -230,11 +246,11 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
-   * Get many relation
+   * Gets many relations.
+   * @param model - The model to get the relations from.
+   * @returns A promise that resolves to an array of related models.
    */
-  async getManyRel<T>(model: {
-    new(): T;
-  }): Promise<Array<T & BaseModel>> {
+  async getManyRel<T>(model: { new(): T }): Promise<Array<T & BaseModel>> {
     var object: any = this.getModel(model);
     var that: any = this;
     return await object
@@ -242,6 +258,11 @@ export class BaseModel implements ModelInterface {
       .get();
   }
 
+  /**
+   * Gets the model instance.
+   * @param model - The model to get the instance of.
+   * @returns The model instance.
+   */
   getModel<T>(model: { new(): T }): T & BaseModel {
     var object: any = this.getRepository().getModel(model);
     var keys = object.getPathListKeys();
@@ -257,7 +278,10 @@ export class BaseModel implements ModelInterface {
     return object;
   }
 
-
+  /**
+   * Gets the current model instance.
+   * @returns The current model instance.
+   */
   getCurrentModel(): this {
     var object: any = this.getRepository().getModel(this.getModelType());
     var keys = object.getPathListKeys();
@@ -273,6 +297,10 @@ export class BaseModel implements ModelInterface {
     return object;
   }
 
+  /**
+   * Converts the model to a string.
+   * @returns The model as a string.
+   */
   toString(): string {
     var res: any = Object.assign({}, this.getDocumentData());
     if (this.getId()) {
@@ -282,8 +310,9 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
-   * load from string
-   * @return fields array
+   * Loads the model from a string.
+   * @param jsonString - The string representation of the model.
+   * @returns The loaded model.
    */
   loadFromString(jsonString: string): this {
     var model: any = this;
@@ -293,8 +322,9 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
-   * Init object from string
-   * @return fields array
+   * Initializes the object from a string.
+   * @param jsonString - The string representation of the model.
+   * @returns The initialized model.
    */
   initFromString(jsonString: string): this {
     var model: any = this.getCurrentModel();
@@ -303,27 +333,55 @@ export class BaseModel implements ModelInterface {
     return model;
   }
 
+  /**
+   * Gets the repository reference for the model.
+   * @returns The repository reference.
+   */
   getRepositoryReference(): DocumentReference<DocumentData> | CollectionReference<DocumentData> | null {
     return this.getRepository().getCollectionReferenceByModel(this);
   }
 
+  /**
+   * Gets the document repository reference for the model.
+   * @returns The document repository reference.
+   */
   getDocRepositoryReference(): DocumentReference<DocumentData> {
     return this.getRepository().getDocReferenceByModel(this) as DocumentReference<DocumentData>;
   }
 
+  /**
+   * Gets the document reference for the model.
+   * @returns The document reference.
+   */
   getDocReference(): DocumentReference<DocumentData> {
     return this.getDocRepositoryReference();
   }
 
+  /**
+   * Sets the model type.
+   * @param model - The model type.
+   * @returns The updated model instance.
+   */
   setModelType(model: any): this {
     this.modelType = model;
     return this;
   }
 
+  /**
+   * Gets the model type.
+   * @returns The model type.
+   */
   getModelType() {
     return this.modelType;
   }
 
+  /**
+   * Creates a query with a where clause.
+   * @param fieldPath - The field path to filter on.
+   * @param opStr - The operator string.
+   * @param value - The value to compare against.
+   * @returns The query with the where clause.
+   */
   static where<T>(
     this: { new(): T },
     fieldPath: string,
@@ -335,6 +393,13 @@ export class BaseModel implements ModelInterface {
     return query;
   }
 
+  /**
+   * Creates a query with a where clause.
+   * @param fieldPath - The field path to filter on.
+   * @param opStr - The operator string.
+   * @param value - The value to compare against.
+   * @returns The query with the where clause.
+   */
   where<T>(
     this: { new(): T },
     fieldPath: string,
@@ -346,6 +411,10 @@ export class BaseModel implements ModelInterface {
     return query;
   }
 
+  /**
+   * Gets one document from the current query.
+   * @returns A promise that resolves to the document.
+   */
   async getOne() {
     if (!this.currentQuery) {
       var that: any = this;
@@ -356,11 +425,22 @@ export class BaseModel implements ModelInterface {
     return await this.currentQuery.get();
   }
 
+  /**
+   * Sets the ID of the model.
+   * @param id - The ID to set.
+   * @returns The updated model instance.
+   */
   setId(id: string) {
     this.id = id;
     return this;
   }
 
+  /**
+   * Loads the model with the specified ID.
+   * @param id - The ID of the model to load.
+   * @param params - Additional parameters for loading the model.
+   * @returns A promise that resolves to the loaded model.
+   */
   async load(
     id: string,
     params: { [key: string]: string } = {}
@@ -382,6 +462,12 @@ export class BaseModel implements ModelInterface {
     return this;
   }
 
+  /**
+   * Initializes the model with the specified ID.
+   * @param id - The ID of the model to initialize.
+   * @param params - Additional parameters for initializing the model.
+   * @returns A promise that resolves to the initialized model.
+   */
   async init(
     id: string,
     params: { [key: string]: string } = {}
@@ -397,7 +483,12 @@ export class BaseModel implements ModelInterface {
     return res;
   }
 
-
+  /**
+   * Initializes the model with the specified ID.
+   * @param id - The ID of the model to initialize.
+   * @param params - Additional parameters for initializing the model.
+   * @returns A promise that resolves to the initialized model.
+   */
   static async init<T>(this: { new(): T },
     id?: string,
     params: { [key: string]: string } = {}
@@ -416,6 +507,10 @@ export class BaseModel implements ModelInterface {
     return res;
   }
 
+  /**
+   * Removes the model from the database.
+   * @returns A promise that resolves to true if the removal was successful, false otherwise.
+   */
   async remove(): Promise<boolean> {
     try {
       var that: any = this;
@@ -434,15 +529,35 @@ export class BaseModel implements ModelInterface {
     }
   }
 
+  /**
+   * Creates a query for the model.
+   * @returns The query for the model.
+   */
   static query<T>(this: { new(): T }): Query<T> {
     var query = new Query<T>();
     var object: any = new this();
     object.setModelType(this);
-    query.init(object);
+    query.init(object, null);
     return query;
   }
 
+  /**
+   * Creates a collection query for the model.
+   * @returns The collection query for the model.
+   */
+  static collectionQuery<T>(this: { new(): T }): Query<T> {
+    const isCollectionGroup = true;
+    var query = new Query<T>();
+    var object: any = new this();
+    object.setModelType(this);
+    query.init(object, null, isCollectionGroup);
+    return query;
+  }
 
+  /**
+   * Creates a query for the model.
+   * @returns The query for the model.
+   */
   query(): Query<this> {
     var query = new Query<this>();
     var that: any = this;
@@ -451,29 +566,25 @@ export class BaseModel implements ModelInterface {
     return query;
   }
 
-  /* 
-  static collectionGroup<T>(this: { new(): T }): Query<T> {
-    var query = new Query<T>();
-    var object: any = new this();
-    object.setModelType(this);
-    query.init(object,object.getCollectionName());
-    return query;
-  }
-
-
-  collectionGroup<T>(this: { new(): T }): Query<T> {
-    var query = new Query<T>();
-    var that: any = this;
-    var object: any = that.getCurrentModel();
-    query.init(object,object.getCollectionName());
-    return query;
-  } */
-
+  /**
+   * Gets the collection name for the model.
+   * @returns The collection name.
+   */
   getCollectionName(): string {
     var paths = this['referencePath'].split('/');
     return paths[paths.length - 1];
   }
 
+  /**
+   * Executes a full SQL query on Elasticsearch.
+   * @param sql - The SQL query to execute.
+   * @param limit - The maximum number of results to return.
+   * @param filters - Additional filters to apply to the query.
+   * @param cursor - The cursor for pagination.
+   * @param columns - The columns to include in the result.
+   * @param asObject - Whether to return the result as an object or not.
+   * @returns A promise that resolves to the Elasticsearch SQL response.
+   */
   static async elasticFullSql<T>(this: { new(): T },
     sql?: string,
     limit?: number,
@@ -1653,10 +1764,25 @@ export class BaseModel implements ModelInterface {
     return result;
   }
 
+  /**
+   * Initializes the path of the model from a string.
+   * @param path - The string representing the path.
+   */
+  initPathFromStr(path: string) {
+    const keysWithPos = this.getPathListKeysWithPos();
+    var that: any = this;
+    var newTxt = path.split("/");
+
+    for (const prop of keysWithPos) {
+      that[prop.key] = newTxt[prop.pos];
+    }
+  }
+
   getPathListParams(): any {
     var that: any = this;
     var result: any = {};
     var keys = this.getPathListKeys();
+
     for (var i = 0; i < keys.length; i++) {
       var subPath = keys[i];
       var value;
@@ -1690,6 +1816,21 @@ export class BaseModel implements ModelInterface {
       if (subPath.search(":") != -1) {
         subPath = subPath.replace(":", "");
         result.push(subPath);
+      }
+    }
+    return result;
+  }
+
+  getPathListKeysWithPos(): Array<{ key: string; pos: number }> {
+    var that: any = this;
+    var result = [];
+    var path = this.getReferencePath();
+    var newTxt = path.split("/");
+    for (var x = 0; x < newTxt.length; x++) {
+      var subPath = newTxt[x];
+      if (subPath.search(":") != -1) {
+        subPath = subPath.replace(":", "");
+        result.push({ key: subPath, pos: x });
       }
     }
     return result;

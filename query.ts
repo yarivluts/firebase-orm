@@ -1,7 +1,8 @@
 import { ModelAllListOptions } from "./interfaces/model.alllist.options.interface";
 import { BaseModel } from "./base.model";
 
-import type { CollectionReference, DocumentData, FieldPath, Query as FirestoreQuery, OrderByDirection, WhereFilterOp, } from "firebase/firestore";
+import type { QuerySnapshot, CollectionReference, DocumentData, FieldPath, Query as FirestoreQuery, OrderByDirection, WhereFilterOp, } from "firebase/firestore";
+import { FirestoreOrmRepository } from "repository";
 
 export enum LIST_EVENTS {
   REMOVED = "removed",
@@ -83,11 +84,15 @@ export class Query<T> {
   protected currentRef!: CollectionReference;
   protected isCollectionGroup_: boolean = false;
 
-  init(model: BaseModel, reference?: FirestoreQuery | any) {
+  init(model: BaseModel, reference?: FirestoreQuery | any, isCollectionGroup?: boolean) {
 
     this.model = model;
-    if (!reference) {
+    if (!reference && !isCollectionGroup) {
       this.current = this.model.getRepositoryReference() as CollectionReference<DocumentData>;
+    }
+
+    if (isCollectionGroup) {
+      this.isCollectionGroup_ = isCollectionGroup;
     }
 
 
@@ -376,6 +381,13 @@ export class Query<T> {
     return this.parse(list);
   }
 
+  async getRowList(
+  ): Promise<QuerySnapshot<DocumentData, DocumentData>> {
+    await this.initBeforeFetch();
+    const list = await getDocs(this.getFirestoreQuery());
+    return list;
+  }
+  
   async count(
   ): Promise<Number> {
     await this.initBeforeFetch();
@@ -389,14 +401,15 @@ export class Query<T> {
       return op.type == 'where' || op.type == 'or';
     }, or(...this.orWhereList))), ...this.orderByList, ...this.ops];
 
-    if (this.isCollectionGroup_) {
-      res.push(collectionGroup(this.current.firestore, this.current.id));
-    }
     return res;
   }
 
   getFirestoreQuery() {
-    return query(this.current, ...this.getCurrentQueryArray());
+    if (this.isCollectionGroup_) {
+      return query(collectionGroup(this.model.getRepository().getFirestore(), this.model.getCollectionName()), ...this.getCurrentQueryArray());
+    } else {
+      return query(this.current, ...this.getCurrentQueryArray());
+    }
   }
 
   async initBeforeFetch() {
@@ -426,9 +439,15 @@ export class Query<T> {
   public parse(list: any) {//FirestoreQuerySnapshot
     var result = [];
     for (var i = 0; i < list.docs.length; i++) {
+
       let object: any = this.model.getCurrentModel();
       let data = list.docs[i].data();
       let id = list.docs[i].id;
+      let ref = list.docs[i].ref;
+      let path = list.docs[i].ref.path;
+      if (this.isCollectionGroup_) {
+        object.initPathFromStr(path);
+      }
       object.setId(id);
       object.initFromData(data);
       result.push(object);
