@@ -82,7 +82,7 @@ if (typeof btoa === 'undefined') {
   });
 }
 
-if (typeof XMLHttpRequest === 'undefined') {
+if (typeof XMLHttpRequest === 'undefined' && (!window || !window?.XMLHttpRequest)) {
   // Polyfills required for Firebase
   var XMLHttpRequest: any;
   // @ts-ignore
