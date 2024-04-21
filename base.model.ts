@@ -82,7 +82,7 @@ if (typeof btoa === 'undefined') {
   });
 }
 
-if (typeof XMLHttpRequest === 'undefined' && (!window || !window?.XMLHttpRequest)) {
+if (typeof XMLHttpRequest === 'undefined') {
   // Polyfills required for Firebase
   var XMLHttpRequest: any;
   // @ts-ignore
@@ -1598,6 +1598,37 @@ export class BaseModel implements ModelInterface {
 
   getReferencePath(): string {
     return this['referencePath'];
+  }
+
+  getDocRefPath(): string {
+    return this.getDocReference().path;
+  }
+
+  
+  /**
+   * Initializes an instance of the model by retrieving data from a specified reference path.
+   * @param path - The reference path to retrieve the data from.
+   * @returns A promise that resolves to an instance of the model with the retrieved data, or null if the reference path is not provided or the repository is not available.
+   */
+  static async initByRef<T>(this: { new(): T },
+    path?: string
+  ): Promise<T | null> {
+    var object: BaseModel & T = (new this()) as BaseModel & T;
+    var res: any;
+    if (!path) {
+      console.error("No ref path!");
+      return null;
+    }
+
+    if (object.getRepository()) {
+      const doc = await getDocument(path);
+      res = object.initFromDoc(doc);
+      object.id = doc.id;
+      object['referencePath'] = doc.ref.parent.path;
+    } else {
+      console.error("No repository!");
+    }
+    return res;
   }
 
   static async find<T>(this: { new(): T }, fieldPath: string,
