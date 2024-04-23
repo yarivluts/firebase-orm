@@ -1151,10 +1151,7 @@ export class BaseModel implements ModelInterface {
   initFromDoc(doc: DocumentSnapshot) {
     var that: any = this;
     var data = doc.data();
-    for (let key in data) {
-      let value = data[key];
-      that[key] = value;
-    }
+    if(data) this.createFromData(data,this);
     return this;
   }
 
