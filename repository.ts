@@ -144,7 +144,7 @@ export class FirestoreOrmRepository {
      * @returns The global Firestore connection.
      * @throws An error if the global Firestore connection is undefined.
      */
-    static getGlobalConnection(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+    static getGlobalConnection(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): FirestoreOrmRepository {
         if (this.globalFirestores[key]) {
             return this.globalFirestores[key];
         } else {
@@ -157,7 +157,7 @@ export class FirestoreOrmRepository {
      * @param key - The key to identify the global Firestore connection (optional).
      * @returns A promise that resolves to the global Firestore connection.
      */
-    static waitForGlobalConnection(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+    static waitForGlobalConnection(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): Promise<FirestoreOrmRepository> {
         if (this.globalWait[key]) {
             return this.globalWait[key];
         }
@@ -402,4 +402,4 @@ export class FirestoreOrmRepository {
         return result;
     }
 
-} 
+}

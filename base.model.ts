@@ -39,6 +39,11 @@ async function deleteDocument(path: any): Promise<void> {
 async function getDocument(path: any): Promise<DocumentSnapshot<DocumentData>> {
 
   const { getDoc } = await import('firebase/firestore');
+  // Convert path to ref if it is a string
+  if (typeof path === 'string') {
+    const { doc } = await import('firebase/firestore');
+    path = doc(FirestoreOrmRepository.getGlobalConnection().getFirestore(), path);
+  }
   return await getDoc(path);
 }
 
@@ -112,9 +117,6 @@ function getMoment() {
   });
 }
 
-/**
- * Base model orm application
- */
 /**
  * Represents a base model for Firebase ORM.
  */
@@ -676,6 +678,11 @@ export class BaseModel implements ModelInterface {
     return result;
   }
 
+  /**
+   * Escapes special characters in a string for SQL queries.
+   * @param str - The string to escape.
+   * @returns The escaped string.
+   */
   escapeStringSql(str: string) {
     var string: any = str;
     string = string.split("'").join('');
@@ -704,6 +711,12 @@ export class BaseModel implements ModelInterface {
     });
   }
 
+  /**
+   * Parses a value into a SQL string representation.
+   * 
+   * @param value - The value to be parsed.
+   * @returns The SQL string representation of the value.
+   */
   parseValueSql(value: any): string {
     var result = '';
     if (typeof value === 'number') {
@@ -723,6 +736,20 @@ export class BaseModel implements ModelInterface {
   }
 
 
+
+  /**
+   * Executes an Elasticsearch SQL query.
+   * 
+   * @template T - The type of the model.
+   * @param {string | any} whereSql - The SQL query or an array containing the query and its parameters.
+   * @param {number} [limit] - The maximum number of results to return.
+   * @param {any} [filters] - Additional filters to apply to the query.
+   * @param {any} [cursor] - The cursor for pagination.
+   * @param {any} [columns] - The columns to select in the query.
+   * @param {boolean} [asObject=true] - Indicates whether to return the result as an object or an array.
+   * @param {boolean} [asCount=false] - Indicates whether to return the count of the result.
+   * @returns {Promise<ElasticWhereSqlResponse>} A promise that resolves to the result of the Elasticsearch SQL query.
+   */
   static async elasticSql<T>(this: { new(): T },
     whereSql?: string | any,
     limit?: number,
@@ -812,6 +839,16 @@ export class BaseModel implements ModelInterface {
   }
 
 
+  /**
+   * Retrieves all documents of a specific model type from Firestore.
+   * 
+   * @template T - The type of the model.
+   * @param {Array<any>} [whereArr] - An array of where conditions to filter the documents.
+   * @param {{ fieldPath: string | FieldPath; directionStr?: OrderByDirection; }} [orderBy] - The field to order the documents by and the direction of the ordering.
+   * @param {number} [limit] - The maximum number of documents to retrieve.
+   * @param {{ [key: string]: string }} [params] - Additional parameters for the query.
+   * @returns {Promise<Array<T>>} - A promise that resolves to an array of documents of the specified model type.
+   */
   static async getAll<T>(this: { new(): T },
     whereArr?: Array<any>,
     orderBy?: {
@@ -837,6 +874,15 @@ export class BaseModel implements ModelInterface {
   }
 
 
+  /**
+   * Retrieves all the records from the database that match the specified conditions.
+   * 
+   * @param whereArr - An optional array of conditions to filter the records.
+   * @param orderBy - An optional object specifying the field to order the records by and the direction of the ordering.
+   * @param limit - An optional number specifying the maximum number of records to retrieve.
+   * @param params - An optional object containing additional parameters for the query.
+   * @returns A promise that resolves to an array of records.
+   */
   async getAll(whereArr?: Array<any>,
     orderBy?: {
       fieldPath: string | FieldPath;
@@ -860,10 +906,21 @@ export class BaseModel implements ModelInterface {
     return res;
   }
 
+
+  /**
+   * Returns the repository associated with this model.
+   * @returns The repository instance.
+   */
   getRepository() {
     return this.repository;
   }
 
+  /**
+   * Sets the repository for the model.
+   * 
+   * @param repository - The repository to set.
+   * @returns The updated model instance.
+   */
   setRepository(repository: FirestoreOrmRepository) {
     this.repository = repository;
     return this;
@@ -914,6 +971,11 @@ export class BaseModel implements ModelInterface {
     }
   }
 
+  /**
+   * Listens for changes on the current object and invokes the provided callback function.
+   * @param callback - The callback function to be invoked when the object changes.
+   * @returns A function that can be used to stop listening for changes.
+   */
   listen(callback?: CallableFunction) {
     this.unlistenFunc = this.on((newObject: this) => {
       this.copy(newObject);
@@ -924,6 +986,10 @@ export class BaseModel implements ModelInterface {
     return this.unlistenFunc;
   }
 
+  /**
+   * Stops listening for changes on the model.
+   * @returns {any} The result of the unlisten function, or `false` if there is no unlisten function.
+   */
   unlisten(): any {
     if (this.unlistenFunc) {
       var res = this.unlistenFunc();
@@ -933,6 +999,12 @@ export class BaseModel implements ModelInterface {
     return false;
   }
 
+  /**
+   * Creates an instance of the current model from a Firestore DocumentSnapshot.
+   * 
+   * @param doc - The DocumentSnapshot containing the data.
+   * @returns A Promise that resolves to an instance of the current model.
+   */
   async createFromDoc(doc: DocumentSnapshot): Promise<this> {
     var object: any = this.getCurrentModel();
     var d: any = doc;
@@ -952,6 +1024,13 @@ export class BaseModel implements ModelInterface {
   }
 
 
+  /**
+   * Creates an instance of the model from a Firestore DocumentSnapshot.
+   * 
+   * @template T - The type of the model.
+   * @param {DocumentSnapshot} doc - The Firestore DocumentSnapshot.
+   * @returns {Promise<T>} - A promise that resolves to the created model instance.
+   */
   static async createFromDoc<T>(this: { new(): T }, doc: DocumentSnapshot): Promise<T> {
     var object: any = new this();
     object.setModelType(this);
@@ -1604,7 +1683,7 @@ export class BaseModel implements ModelInterface {
     return this.getDocReference().path;
   }
 
-  
+
   /**
    * Initializes an instance of the model by retrieving data from a specified reference path.
    * @param path - The reference path to retrieve the data from.
@@ -1631,6 +1710,15 @@ export class BaseModel implements ModelInterface {
     return res;
   }
 
+  /**
+   * Finds and retrieves an array of objects that match the specified criteria.
+   * 
+   * @template T - The type of the objects to be retrieved.
+   * @param {string} fieldPath - The field path to filter on.
+   * @param {WhereFilterOp} opStr - The comparison operator.
+   * @param {any} value - The value to compare against.
+   * @returns {Promise<Array<T>>} - A promise that resolves to an array of objects that match the specified criteria.
+   */
   static async find<T>(this: { new(): T }, fieldPath: string,
     opStr: WhereFilterOp,
     value: any): Promise<Array<T>> {
@@ -1638,6 +1726,15 @@ export class BaseModel implements ModelInterface {
     return await that.where(fieldPath, opStr, value).get();
   }
 
+  /**
+   * Finds a single document in the collection that matches the specified criteria.
+   * 
+   * @template T - The type of the document to be returned.
+   * @param {string} fieldPath - The field path to query on.
+   * @param {WhereFilterOp} opStr - The operator to use for the query.
+   * @param {any} value - The value to compare against.
+   * @returns {Promise<T | null>} A promise that resolves to the matching document, or null if no document is found.
+   */
   static async findOne<T>(this: { new(): T }, fieldPath: string,
     opStr: WhereFilterOp,
     value: any): Promise<T | null> {
@@ -1646,6 +1743,14 @@ export class BaseModel implements ModelInterface {
   }
 
 
+  /**
+   * Finds documents in the collection that match the specified criteria.
+   * 
+   * @param fieldPath - The field path to filter on.
+   * @param opStr - The comparison operator.
+   * @param value - The value to compare against.
+   * @returns A promise that resolves to an array of documents that match the criteria.
+   */
   async find(fieldPath: string,
     opStr: WhereFilterOp,
     value: any): Promise<Array<this>> {
@@ -1653,6 +1758,10 @@ export class BaseModel implements ModelInterface {
     return await that.where(fieldPath, opStr, value).get();
   }
 
+  /**
+   * Retrieves a snapshot of the document associated with this model.
+   * @returns A promise that resolves with the document snapshot.
+   */
   getSnapshot(): Promise<DocumentSnapshot> {
     return new Promise((resolve, reject) => {
       onDocumentSnapshot(this.getDocReference(), (doc) => {
@@ -1665,6 +1774,14 @@ export class BaseModel implements ModelInterface {
     })
   }
 
+  /**
+   * Finds a single document in the collection that matches the specified criteria.
+   * 
+   * @param fieldPath - The field path to query on.
+   * @param opStr - The comparison operator.
+   * @param value - The value to compare against.
+   * @returns A promise that resolves to the found document or null if no document is found.
+   */
   async findOne(fieldPath: string,
     opStr: WhereFilterOp,
     value: any): Promise<this | null> {
@@ -1672,11 +1789,19 @@ export class BaseModel implements ModelInterface {
     return await that.where(fieldPath, opStr, value).getOne();
   }
 
+  /**
+   * Retrieves the required fields for the model.
+   * @returns An array of strings representing the required fields.
+   */
   getRequiredFields(): Array<string> {
     var that: any = this;
     return that.requiredFields ? that.requiredFields : [];
   }
 
+  /**
+   * Verifies if all the required fields of the model have values.
+   * @returns {boolean} Returns true if all the required fields have values, otherwise returns false.
+   */
   verifyRequiredFields(): boolean {
     var that: any = this;
     var fields = this.getRequiredFields();
@@ -1698,14 +1823,36 @@ export class BaseModel implements ModelInterface {
     return result;
   }
 
+  /**
+   * Retrieves the field name for the given key.
+   * If an aliasFieldsMapper is defined and it contains a mapping for the key, the mapped field name is returned.
+   * Otherwise, the key itself is returned as the field name.
+   * 
+   * @param key - The key for which to retrieve the field name.
+   * @returns The field name corresponding to the key.
+   */
   getFieldName(key: string): string {
     return this['aliasFieldsMapper'] && this['aliasFieldsMapper'][key] ? this['aliasFieldsMapper'][key] : key;
   }
 
+  /**
+   * Returns the alias name for the given key.
+   * If a reverse alias fields mapper is defined and the key exists in the mapper, the corresponding alias name is returned.
+   * Otherwise, the key itself is returned.
+   * 
+   * @param key - The key for which to retrieve the alias name.
+   * @returns The alias name for the given key.
+   */
   getAliasName(key: string): string {
     return this['reverseAliasFieldsMapper'] && this['reverseAliasFieldsMapper'][key] ? this['reverseAliasFieldsMapper'][key] : key;
   }
 
+  /**
+   * Retrieves the document data as an object.
+   * 
+   * @param useAliasName - Indicates whether to use the alias name for field names.
+   * @returns An object containing the document data.
+   */
   getDocumentData(useAliasName: boolean = false): Object {
     var data = {};
     this['storedFields'].forEach((fieldName: string) => {
@@ -1730,6 +1877,12 @@ export class BaseModel implements ModelInterface {
     return data;
   }
 
+  /**
+   * Copies the properties from the given object to the current object.
+   * Only copies properties that are defined in the given object.
+   * 
+   * @param object - The object from which to copy the properties.
+   */
   copy(object: this) {
     for (let key in object.getData(true)) {
       if (typeof object[key] !== 'undefined') {
@@ -1753,6 +1906,15 @@ export class BaseModel implements ModelInterface {
     return result;
   }
 
+  /**
+   * Retrieves the path list for the current model instance.
+   * The path list is an array of objects, where each object represents a segment of the path.
+   * Each object has a `type` property indicating whether it's a "collection" or "document",
+   * and a `value` property containing the corresponding path segment value.
+   * If any path segment is missing, it returns `false`.
+   * 
+   * @returns An array of objects representing the path segments, or `false` if any segment is missing.
+   */
   getPathList(): Array<{ type: string; value: string }> | boolean {
     var that: any = this;
     var result = [];
@@ -1809,6 +1971,10 @@ export class BaseModel implements ModelInterface {
     }
   }
 
+  /**
+   * Retrieves the parameters required for constructing the path list.
+   * @returns An object containing the path list parameters.
+   */
   getPathListParams(): any {
     var that: any = this;
     var result: any = {};
@@ -1837,6 +2003,10 @@ export class BaseModel implements ModelInterface {
     return result;
   }
 
+  /**
+   * Returns an array of keys extracted from the reference path.
+   * @returns An array of string keys.
+   */
   getPathListKeys(): Array<string> {
     var that: any = this;
     var result = [];
@@ -1852,6 +2022,10 @@ export class BaseModel implements ModelInterface {
     return result;
   }
 
+  /**
+   * Returns an array of objects containing the keys and positions of the path list.
+   * @returns An array of objects with `key` and `pos` properties.
+   */
   getPathListKeysWithPos(): Array<{ key: string; pos: number }> {
     var that: any = this;
     var result = [];
@@ -1867,7 +2041,11 @@ export class BaseModel implements ModelInterface {
     return result;
   }
 
+  /**
+   * Converts the model instance to a JSON object.
+   * @returns The JSON representation of the model instance.
+   */
   toJSON() {
     return this.getData()
   }
-}    
+}
