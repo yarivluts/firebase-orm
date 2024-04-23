@@ -1704,6 +1704,7 @@ export class BaseModel implements ModelInterface {
       res = object.initFromDoc(doc);
       object.id = doc.id;
       object['referencePath'] = doc.ref.parent.path;
+      object.is_exist = true;
     } else {
       console.error("No repository!");
     }
