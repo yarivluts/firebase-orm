@@ -14,10 +14,16 @@
     "blob": "0.0.5",
     "btoa": "^1.2.1",
     "firebase": "^10.8.0",
+    "firebase-admin": "^11.0.0 || ^12.0.0",
     "moment": "^2.24.0",
     "qs": "^6.7.0",
     "ws": "^8.16.0",
     "xhr2": "^0.2.1"
+  },
+  "peerDependenciesMeta": {
+    "firebase-admin": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@arbel/node-xhr2": "^0.2.0",
@@ -28,6 +34,7 @@
     "@types/node": "^12.6.3",
     "@types/qs": "^6.5.3",
     "@types/ws": "^8.5.10",
+    "firebase-admin": "^12.0.0",
     "jest": "^24.8.0",
     "jest-cli": "^24.8.0",
     "ts-jest": "^24.0.2",

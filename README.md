@@ -116,6 +116,10 @@ unsubscribe();
 
    `npm install @arbel/firebase-orm firebase rxfire moment --save`
 
+   For Firebase Admin SDK support:
+
+   `npm install @arbel/firebase-orm firebase-admin moment --save`
+
 ##### TypeScript configuration
 
 Also, make sure you are using TypeScript compiler version **3.3** or greater,
@@ -139,6 +143,29 @@ import { FirestoreOrmRepository } from "@arbel/firebase-orm";
 
 var firebaseApp = FirestoreOrmRepository.initializeApp(config);
 
+```
+
+## Usage with Firebase Admin
+
+1.Initialize with Firebase Admin SDK
+
+```typescript
+import * as admin from "firebase-admin";
+import { FirestoreOrmRepository } from "@arbel/firebase-orm";
+
+// Initialize Firebase Admin with your credentials
+const adminApp = admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://your-project-id.firebaseio.com",
+  storageBucket: "your-project-id.appspot.com"
+});
+
+// Initialize Firebase ORM with the Admin app
+FirestoreOrmRepository.initializeAdminApp(adminApp);
+
+// Initialize storage (optional)
+const adminStorage = admin.storage();
+FirestoreOrmRepository.initGlobalStorage(adminStorage);
 ```
 
 2.Create global path id - (optinal)

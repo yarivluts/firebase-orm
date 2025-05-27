@@ -17,9 +17,7 @@
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "esModuleInterop": true,
-    "suppressImplicitAnyIndexErrors": true,
-    "emitDecoratorMetadata": true,
-    "noStrictGenericChecks": true
+    "emitDecoratorMetadata": true
   },
   "include": [
     "index.ts"
