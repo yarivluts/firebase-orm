@@ -1,0 +1,18 @@
+{
+  "extends": "tslint:recommended",
+  "rules": {
+    "no-console": false,
+    "no-var-requires": false,
+    "no-string-literal": false,
+    "quotemark": [true, "single", "avoid-escape"],
+    "object-literal-sort-keys": false,
+    "ordered-imports": false,
+    "member-ordering": false,
+    "member-access": false,
+    "variable-name": false,
+    "max-line-length": [true, 140],
+    "trailing-comma": false,
+    "arrow-parens": false,
+    "interface-name": false
+  }
+}

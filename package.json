@@ -12,7 +12,9 @@
   },
   "scripts": {
     "build": "rm -rf dist && bash scripts/build-dual-module.sh",
-    "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged"
+    "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged",
+    "lint": "tslint -p tsconfig.eslint.json",
+    "lint:fix": "tslint -p tsconfig.eslint.json --fix"
   },
   "peerDependencies": {
     "atob": "^2.1.2",
@@ -33,6 +35,9 @@
   },
   "devDependencies": {
     "@arbel/node-xhr2": "^0.2.0",
+    "@firebase/app-types": "^0.9.3",
+    "@firebase/firestore-types": "^3.0.3",
+    "@firebase/storage-types": "^0.8.3",
     "@types/atob": "^2.1.4",
     "@types/axios": "^0.14.0",
     "@types/btoa": "^1.2.5",
@@ -40,12 +45,19 @@
     "@types/node": "^12.6.3",
     "@types/qs": "^6.5.3",
     "@types/ws": "^8.5.10",
+    "atob": "^2.1.2",
+    "axios": "^1.9.0",
+    "btoa": "^1.2.1",
+    "firebase": "^11.8.1",
     "firebase-admin": "^12.0.0",
     "jest": "^24.8.0",
     "jest-cli": "^24.8.0",
+    "moment": "^2.30.1",
+    "qs": "^6.14.0",
     "ts-jest": "^24.0.2",
     "tslint": "^5.15.0",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "ws": "^8.18.2"
   },
   "repository": {
     "type": "git",

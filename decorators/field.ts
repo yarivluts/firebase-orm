@@ -67,7 +67,7 @@ export function Field(options?: FieldOptions): any {
         }
       },
       get: function () {
-        return typeof this['data'][this.getFieldName(key)] === undefined ? undefined : this['data'][this.getFieldName(key)];
+        return typeof this['data'][this.getFieldName(key)] === 'undefined' ? undefined : this['data'][this.getFieldName(key)];
       },
     });
     // If the update failed, something went wrong

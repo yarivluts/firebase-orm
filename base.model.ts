@@ -73,6 +73,10 @@ function lazyLoadFirebaseStorage() {
 }
 
 
+// Declare global and window for cross-environment compatibility
+declare const global: any;
+declare const window: any;
+
 let globalVar = (typeof global !== 'undefined' ? global : window) as any;
 if (typeof atob === 'undefined') {
 

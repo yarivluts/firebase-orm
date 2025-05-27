@@ -6,11 +6,11 @@ mkdir -p dist/esm
 
 # First build the CommonJS version with forced output
 echo "Building CommonJS version..."
-npx tsc -p tsconfig.json --skipLibCheck --noEmitOnError false --outDir dist/cjs --module commonjs
+npx tsc -p tsconfig.json --skipLibCheck --skipDefaultLibCheck --noEmitOnError false --outDir dist/cjs --module commonjs
 
 # Then build the ESM version with forced output
 echo "Building ESM version..."
-npx tsc -p tsconfig.json --skipLibCheck --noEmitOnError false --outDir dist/esm --module esnext --moduleResolution node
+npx tsc -p tsconfig.json --skipLibCheck --skipDefaultLibCheck --noEmitOnError false --outDir dist/esm --module esnext --moduleResolution node
 
 # Create package.json files for each directory
 echo "Creating package.json for CJS..."

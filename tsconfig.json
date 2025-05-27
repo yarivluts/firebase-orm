@@ -19,12 +19,15 @@
     "experimentalDecorators": true,
     "esModuleInterop": true,
     "emitDecoratorMetadata": true,
-    "noEmitOnError": false
+    "noEmitOnError": false,
+    "skipDefaultLibCheck": true,
+    "suppressImplicitAnyIndexErrors": true
   },
   "include": [
     "index.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules", 
+    "test"
   ]
 }
