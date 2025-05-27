@@ -13,7 +13,7 @@
     "strict": false,
     "noImplicitAny": false,
     "sourceMap": true,
-    "outDir": "./dist",
+    "outDir": "./dist/cjs",
     "baseUrl": "./",
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
