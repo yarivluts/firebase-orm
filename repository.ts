@@ -13,6 +13,11 @@ import type {
     getDocs as getDocsFuncType
 } from "firebase/firestore";
 
+// Support for Admin SDK types
+import type { FirebaseApp as AdminApp } from 'firebase-admin/app';
+import type { Firestore as AdminFirestore } from 'firebase-admin/firestore';
+import type { Storage as AdminStorage } from 'firebase-admin/storage';
+
 let collection: typeof collectionFuncType;
 let doc: typeof docFuncType;
 let updateDoc: typeof updateDocFuncType;
@@ -46,7 +51,7 @@ export class FirestoreOrmRepository {
     static globalFirebaseStoages = {};
     static isReady = false;
 
-    constructor(protected firestore: Firestore) {
+    constructor(protected firestore: Firestore | AdminFirestore) {
         import("firebase/firestore").then((module) => {
             collection = module.collection;
             doc = module.doc;
@@ -57,6 +62,25 @@ export class FirestoreOrmRepository {
             where = module.where;
             getDocs = module.getDocs;
             FirestoreOrmRepository.isReady = true;
+        }).catch(() => {
+            // If Firebase client SDK fails, it might be Admin SDK
+            console.log("Attempting to load Firebase Admin SDK modules...");
+            Promise.resolve().then(async () => {
+                try {
+                    const adminFirestore = await import('firebase-admin/firestore');
+                    collection = adminFirestore.collection;
+                    doc = adminFirestore.doc;
+                    updateDoc = adminFirestore.updateDoc;
+                    setDoc = adminFirestore.setDoc;
+                    query = adminFirestore.query;
+                    documentId = adminFirestore.documentId;
+                    where = adminFirestore.where;
+                    getDocs = adminFirestore.getDocs;
+                    FirestoreOrmRepository.isReady = true;
+                } catch (err) {
+                    console.error("Failed to load Firebase modules:", err);
+                }
+            });
         });
         import('axios').then((module) => {
             axios = module.default;
@@ -68,7 +92,7 @@ export class FirestoreOrmRepository {
      * @param firestore - The Firestore instance.
      * @param key - The key to identify the global connection (optional).
      */
-    static initGlobalConnection(firestore: Firestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+    static initGlobalConnection(firestore: Firestore | AdminFirestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         this.globalFirestores[key] = new FirestoreOrmRepository(firestore);
         if (this.globalWait[key]) {
             this.globalWait[key](this.globalFirestores[key]);
@@ -91,11 +115,30 @@ export class FirestoreOrmRepository {
     }
 
     /**
+     * Initializes Firebase Admin and sets up a global connection for Firestore ORM.
+     * @param adminApp - The Firebase Admin app instance.
+     * @param key - The key to identify the global connection (optional).
+     * @returns The provided Firebase Admin app instance.
+     */
+    static initializeAdminApp(adminApp: AdminApp, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+        try {
+            // Dynamically import firebase-admin/firestore to avoid dependency requirements
+            const adminFirestore = require('firebase-admin/firestore');
+            const connection = adminFirestore.getFirestore(adminApp);
+            this.initGlobalConnection(connection, key);
+            return adminApp;
+        } catch (error) {
+            console.error("Error initializing Firebase Admin:", error);
+            throw error;
+        }
+    }
+
+    /**
      * Initializes a global storage for Firestore ORM.
      * @param storage - The Firebase storage instance.
      * @param key - The key to identify the global storage (optional).
      */
-    static initGlobalStorage(storage: FirebaseStorage, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+    static initGlobalStorage(storage: FirebaseStorage | AdminStorage, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         this.globalFirebaseStoages[key] = storage;
     }
 
@@ -116,7 +159,7 @@ export class FirestoreOrmRepository {
      * @returns The global Firebase storage instance.
      * @throws An error if the global Firebase storage is undefined.
      */
-    static getGlobalStorage(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): FirebaseStorage {
+    static getGlobalStorage(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): FirebaseStorage | AdminStorage {
         if (this.globalFirebaseStoages[key]) {
             return this.globalFirebaseStoages[key];
         } else {
@@ -242,7 +285,7 @@ export class FirestoreOrmRepository {
      * Retrieves the Firestore instance.
      * @returns The Firestore instance.
      */
-    getFirestore(): Firestore {
+    getFirestore(): Firestore | AdminFirestore {
         return this.firestore;
     }
 
