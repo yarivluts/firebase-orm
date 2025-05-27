@@ -11,8 +11,8 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "build:esm": "tsc -p tsconfig.esm.json",
+    "build": "tsc --skipLibCheck --noEmitOnError false -p tsconfig.build.json",
+    "build:esm": "tsc --skipLibCheck --noEmitOnError false -p tsconfig.esm.json",
     "build:full": "rm -rf dist && npm run build && npm run build:esm",
     "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged"
   },
