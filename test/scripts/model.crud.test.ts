@@ -1,59 +1,18 @@
-import * as firebase from "firebase";
-import 'firebase/storage';
-import { FirestoreOrmRepository, Field, BaseModel, Model } from "../../index";
-import { config } from "../config";
-
-// Create a test model for CRUD testing
-@Model({
-  reference_path: 'crud_test',
-  path_id: 'crud_test_id'
-})
-class CrudTest extends BaseModel {
-  @Field({
-    is_required: true,
-  })
-  public title!: string;
-
-  @Field({
-    is_required: false,
-  })
-  public description?: string;
-
-  @Field({
-    is_required: false,
-    field_name: 'created_date'
-  })
-  public createdDate?: string;
-
-  @Field({
-    is_required: false,
-  })
-  public isActive?: boolean;
-}
+import { initializeTestEnvironment, cleanupCollection, EXTENDED_TIMEOUT } from "../test-utils";
+import { CrudTestModel as CrudTest } from "../models/test-models";
 
 // Initialize Firebase for tests
-let firebaseApp: any;
-let connection: any;
-let storage: any;
+let testEnv: any;
 
 beforeAll(() => {
-  // Initialize Firebase with test config
-  firebaseApp = firebase.initializeApp(config.api.firebase);
-  connection = firebaseApp.firestore();
-  storage = firebaseApp.storage();
-
-  // Initialize the ORM
-  FirestoreOrmRepository.initGlobalConnection(connection);
-  FirestoreOrmRepository.initGlobalStorage(storage);
+  // Initialize Firebase and ORM with test utilities
+  testEnv = initializeTestEnvironment();
 });
 
 describe('Model CRUD Operations', () => {
   // Clean up test items before tests
   beforeEach(async () => {
-    const items = await CrudTest.getAll();
-    for (const item of items) {
-      await item.remove();
-    }
+    await cleanupCollection(CrudTest);
   });
 
   test('should create a new model instance', async () => {
@@ -70,7 +29,7 @@ describe('Model CRUD Operations', () => {
     // Check that the model has an ID after saving
     expect(model.getId()).toBeDefined();
     expect(typeof model.getId()).toBe('string');
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should read a model by ID', async () => {
     // Create a new model
@@ -89,7 +48,7 @@ describe('Model CRUD Operations', () => {
     // Check that the model was loaded correctly
     expect(loadedModel.title).toBe('Read Test');
     expect(loadedModel.description).toBe('Testing read operation');
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should update an existing model', async () => {
     // Create a model
@@ -113,7 +72,7 @@ describe('Model CRUD Operations', () => {
     // Check that the updates were saved
     expect(updatedModel.title).toBe('Updated Title');
     expect(updatedModel.description).toBe('Updated Description');
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should delete a model', async () => {
     // Create a model
@@ -137,7 +96,7 @@ describe('Model CRUD Operations', () => {
       // Expected to throw an error when trying to load a deleted model
       expect(error).toBeDefined();
     }
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should get all models', async () => {
     // Create multiple models
@@ -157,7 +116,7 @@ describe('Model CRUD Operations', () => {
     // Check that we can filter by a field
     const activeModels = await CrudTest.getAll([['isActive', '==', true]]);
     expect(activeModels.length).toBe(2);
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should initialize a model', async () => {
     // Create a model
@@ -177,7 +136,7 @@ describe('Model CRUD Operations', () => {
     expect(result).toBe(initializedModel);
     expect(initializedModel.title).toBe('Init Test');
     expect(initializedModel.description).toBe('Testing init method');
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should get a snapshot of the model', async () => {
     // Create a model
@@ -195,7 +154,7 @@ describe('Model CRUD Operations', () => {
     const data = snapshot.data();
     expect(data).toBeDefined();
     expect(data?.title).toBe('Snapshot Test');
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should batch save multiple models', async () => {
     // Create multiple models
@@ -217,7 +176,7 @@ describe('Model CRUD Operations', () => {
     // Get all models to verify they were saved
     const allModels = await CrudTest.getAll();
     expect(allModels.length).toBe(3);
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should handle empty results gracefully', async () => {
     // Query for non-existent models
@@ -227,5 +186,5 @@ describe('Model CRUD Operations', () => {
     
     // Check that the result is an empty array, not null
     expect(emptyResults).toEqual([]);
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 });

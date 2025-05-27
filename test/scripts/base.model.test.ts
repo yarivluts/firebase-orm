@@ -1,50 +1,12 @@
-import { BaseModel, Model, Field, FirestoreOrmRepository } from "../../index";
-import { config } from "../config";
-import * as firebase from "firebase";
-import 'firebase/storage';
-
-// Create a test model for testing purposes
-@Model({
-  reference_path: 'test_models',
-  path_id: 'test_id'
-})
-class TestModel extends BaseModel {
-  @Field({
-    is_required: true,
-  })
-  public requiredField!: string;
-
-  @Field({
-    is_required: false,
-  })
-  public optionalField?: string;
-
-  @Field({
-    is_required: true,
-    field_name: 'custom_field_name'
-  })
-  public customNameField!: string;
-
-  @Field({
-    is_text_indexing: true
-  })
-  public indexedField?: string;
-}
+import { initializeTestEnvironment, EXTENDED_TIMEOUT } from "../test-utils";
+import { TestModel } from "../models/test-models";
 
 // Initialize Firebase for tests
-let firebaseApp: any;
-let connection: any;
-let storage: any;
+let testEnv: any;
 
 beforeAll(() => {
-  // Initialize Firebase with test config
-  firebaseApp = firebase.initializeApp(config.api.firebase);
-  connection = firebaseApp.firestore();
-  storage = firebaseApp.storage();
-
-  // Initialize the ORM
-  FirestoreOrmRepository.initGlobalConnection(connection);
-  FirestoreOrmRepository.initGlobalStorage(storage);
+  // Initialize Firebase and ORM with test utilities
+  testEnv = initializeTestEnvironment();
 });
 
 describe('BaseModel Core Functionality', () => {

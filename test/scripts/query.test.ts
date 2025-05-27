@@ -1,59 +1,18 @@
-import * as firebase from "firebase";
-import 'firebase/storage';
-import { FirestoreOrmRepository, Field, BaseModel, Model } from "../../index";
-import { config } from "../config";
-
-// Create a test model for query testing
-@Model({
-  reference_path: 'test_items',
-  path_id: 'item_id'
-})
-class TestItem extends BaseModel {
-  @Field({
-    is_required: true,
-    is_text_indexing: true
-  })
-  public name!: string;
-
-  @Field({
-    is_required: false
-  })
-  public category?: string;
-
-  @Field({
-    is_required: false
-  })
-  public price?: number;
-
-  @Field({
-    is_required: false
-  })
-  public tags?: string[];
-}
+import { initializeTestEnvironment, cleanupCollection, EXTENDED_TIMEOUT } from "../test-utils";
+import { TestItem } from "../models/test-models";
 
 // Initialize Firebase for tests
-let firebaseApp: any;
-let connection: any;
-let storage: any;
+let testEnv: any;
 
 beforeAll(() => {
-  // Initialize Firebase with test config
-  firebaseApp = firebase.initializeApp(config.api.firebase);
-  connection = firebaseApp.firestore();
-  storage = firebaseApp.storage();
-
-  // Initialize the ORM
-  FirestoreOrmRepository.initGlobalConnection(connection);
-  FirestoreOrmRepository.initGlobalStorage(storage);
+  // Initialize Firebase and ORM with test utilities
+  testEnv = initializeTestEnvironment();
 });
 
 describe('Query Operations', () => {
   // Clean up test items before each test
   beforeEach(async () => {
-    const items = await TestItem.getAll();
-    for (const item of items) {
-      await item.remove();
-    }
+    await cleanupCollection(TestItem);
   });
 
   test('should create and retrieve test items', async () => {
@@ -79,7 +38,7 @@ describe('Query Operations', () => {
     // Check if items were created
     const allItems = await TestItem.getAll();
     expect(allItems.length).toBe(3);
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should query items with simple where clause', async () => {
     // Create test items
@@ -109,7 +68,7 @@ describe('Query Operations', () => {
     const expensiveItems = await TestItem.query().where('price', '>', 20).get();
     expect(expensiveItems.length).toBe(1);
     expect(expensiveItems[0].name).toBe('Third Item');
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should query items with multiple where conditions', async () => {
     // Create test items
@@ -139,7 +98,7 @@ describe('Query Operations', () => {
     
     expect(results.length).toBe(1);
     expect(results[0].name).toBe('Second Product');
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should query items with orWhere', async () => {
     // Create test items
@@ -168,7 +127,7 @@ describe('Query Operations', () => {
       .get();
     
     expect(results.length).toBe(3);
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should query items with like operator', async () => {
     // Create test items
@@ -194,7 +153,7 @@ describe('Query Operations', () => {
     
     expect(results.length).toBe(1);
     expect(results[0].name).toBe('Apple iPhone');
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should query items with orderBy and limit', async () => {
     // Create test items
@@ -215,7 +174,7 @@ describe('Query Operations', () => {
     expect(results[0].price).toBe(50);
     expect(results[1].price).toBe(40);
     expect(results[2].price).toBe(30);
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should query with startAfter', async () => {
     // Create test items
@@ -244,7 +203,7 @@ describe('Query Operations', () => {
     expect(secondBatch.length).toBe(2);
     expect(secondBatch[0].price).toBe(300);
     expect(secondBatch[1].price).toBe(400);
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should find an item using findOne', async () => {
     // Create test item
@@ -258,7 +217,7 @@ describe('Query Operations', () => {
     
     expect(foundItem).not.toBeNull();
     expect(foundItem?.category).toBe('special');
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 
   test('should find multiple items using find', async () => {
     // Create test items
@@ -273,5 +232,5 @@ describe('Query Operations', () => {
     const foundItems = await TestItem.find('name', '==', 'Searchable Item');
     
     expect(foundItems.length).toBe(3);
-  }, 10000);
+  }, EXTENDED_TIMEOUT);
 });
