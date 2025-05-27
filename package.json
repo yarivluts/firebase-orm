@@ -40,12 +40,19 @@
     "@types/node": "^12.6.3",
     "@types/qs": "^6.5.3",
     "@types/ws": "^8.5.10",
+    "atob": "^2.1.2",
+    "axios": "^1.9.0",
+    "btoa": "^1.2.1",
+    "firebase": "^11.8.1",
     "firebase-admin": "^12.0.0",
     "jest": "^24.8.0",
     "jest-cli": "^24.8.0",
+    "moment": "^2.30.1",
+    "qs": "^6.14.0",
     "ts-jest": "^24.0.2",
     "tslint": "^5.15.0",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "ws": "^8.18.2"
   },
   "repository": {
     "type": "git",
