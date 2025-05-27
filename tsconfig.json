@@ -20,12 +20,14 @@
     "esModuleInterop": true,
     "emitDecoratorMetadata": true,
     "noEmitOnError": false,
-    "skipDefaultLibCheck": true
+    "skipDefaultLibCheck": true,
+    "suppressImplicitAnyIndexErrors": true
   },
   "include": [
     "index.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules", 
+    "test"
   ]
 }
