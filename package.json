@@ -12,7 +12,9 @@
   },
   "scripts": {
     "build": "rm -rf dist && bash scripts/build-dual-module.sh",
-    "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged"
+    "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged",
+    "lint": "tslint -p tsconfig.eslint.json",
+    "lint:fix": "tslint -p tsconfig.eslint.json --fix"
   },
   "peerDependencies": {
     "atob": "^2.1.2",
