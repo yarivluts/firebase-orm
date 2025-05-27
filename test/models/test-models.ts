@@ -89,3 +89,53 @@ export class TestItem extends BaseModel {
   })
   public tags?: string[];
 }
+
+/**
+ * Test model for storage operations
+ */
+@Model({
+  reference_path: 'storage_test',
+  path_id: 'storage_test_id'
+})
+export class StorageTestModel extends BaseModel {
+  @Field({
+    is_required: true,
+  })
+  public name!: string;
+
+  @Field({
+    is_required: false,
+    field_name: 'image_url'
+  })
+  public imageUrl?: string;
+
+  @Field({
+    is_required: false,
+    field_name: 'document_url'
+  })
+  public documentUrl?: string;
+}
+
+/**
+ * Test model for realtime operations
+ */
+@Model({
+  reference_path: 'realtime_test',
+  path_id: 'realtime_test_id'
+})
+export class RealtimeTestModel extends BaseModel {
+  @Field({
+    is_required: true,
+  })
+  public name!: string;
+
+  @Field({
+    is_required: false,
+  })
+  public status?: string;
+
+  @Field({
+    is_required: false,
+  })
+  public count?: number;
+}

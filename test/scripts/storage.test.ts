@@ -1,46 +1,12 @@
-import * as firebase from "firebase";
-import 'firebase/storage';
-import { FirestoreOrmRepository, Field, BaseModel, Model } from "../../index";
-import { config } from "../config";
-
-// Create a test model for storage testing
-@Model({
-  reference_path: 'storage_test',
-  path_id: 'storage_test_id'
-})
-class StorageTest extends BaseModel {
-  @Field({
-    is_required: true,
-  })
-  public name!: string;
-
-  @Field({
-    is_required: false,
-    field_name: 'image_url'
-  })
-  public imageUrl?: string;
-
-  @Field({
-    is_required: false,
-    field_name: 'document_url'
-  })
-  public documentUrl?: string;
-}
+import { initializeTestEnvironment, cleanupCollection, EXTENDED_TIMEOUT } from "../test-utils";
+import { StorageTestModel as StorageTest } from "../models/test-models";
 
 // Initialize Firebase for tests
-let firebaseApp: any;
-let connection: any;
-let storage: any;
+let testEnv: any;
 
 beforeAll(() => {
-  // Initialize Firebase with test config
-  firebaseApp = firebase.initializeApp(config.api.firebase);
-  connection = firebaseApp.firestore();
-  storage = firebaseApp.storage();
-
-  // Initialize the ORM
-  FirestoreOrmRepository.initGlobalConnection(connection);
-  FirestoreOrmRepository.initGlobalStorage(storage);
+  // Initialize Firebase and ORM with test utilities
+  testEnv = initializeTestEnvironment();
 });
 
 describe('Storage Operations', () => {
