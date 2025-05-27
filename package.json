@@ -2,10 +2,16 @@
   "name": "@arbel/firebase-orm",
   "version": "1.9.44",
   "description": "Firestore Orm",
-  "main": "dist/index.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "build:full": "rm -rf dist && npm run build",
+    "build": "rm -rf dist && bash scripts/build-dual-module.sh",
     "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged"
   },
   "peerDependencies": {
@@ -39,7 +45,7 @@
     "jest-cli": "^24.8.0",
     "ts-jest": "^24.0.2",
     "tslint": "^5.15.0",
-    "typescript": "^4.3.5"
+    "typescript": "^4.9.5"
   },
   "repository": {
     "type": "git",
