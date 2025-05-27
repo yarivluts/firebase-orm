@@ -133,6 +133,20 @@ and you have enabled the following settings in `tsconfig.json`:
 
 You may also need to enable `es6` in the `lib` section of compiler options, or install `es6-shim` from `@types`.
 
+##### Module Format Support
+
+The library supports both CommonJS (CJS) and ECMAScript Modules (ESM) formats:
+
+- For CommonJS environments (Node.js, older bundlers):
+  ```javascript
+  const { FirestoreOrmRepository } = require("@arbel/firebase-orm");
+  ```
+
+- For ESM environments (modern bundlers, TypeScript with ESM, Node.js with ESM):
+  ```javascript
+  import { FirestoreOrmRepository } from "@arbel/firebase-orm";
+  ```
+
 ## Quick Start
 
 1.Create global connection

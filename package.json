@@ -11,9 +11,7 @@
     }
   },
   "scripts": {
-    "build": "tsc --skipLibCheck --noEmitOnError false -p tsconfig.build.json",
-    "build:dual": "bash scripts/build-dual-module.sh",
-    "build:full": "rm -rf dist && npm run build",
+    "build": "rm -rf dist && bash scripts/build-dual-module.sh",
     "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged"
   },
   "peerDependencies": {
