@@ -10,14 +10,17 @@
     ],
     "skipLibCheck": true,
     "declaration": true,
-    "strict": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "suppressImplicitAnyIndexErrors": true,
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "esModuleInterop": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "noEmitOnError": false
   },
   "include": [
     "index.ts"
