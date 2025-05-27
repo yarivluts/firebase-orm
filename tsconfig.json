@@ -19,7 +19,8 @@
     "experimentalDecorators": true,
     "esModuleInterop": true,
     "emitDecoratorMetadata": true,
-    "noEmitOnError": false
+    "noEmitOnError": false,
+    "skipDefaultLibCheck": true
   },
   "include": [
     "index.ts"
