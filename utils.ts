@@ -1,4 +1,6 @@
 
+// Declare process for Node environment
+declare const process: any;
 
 export function printLog(...args: any) {
     const proc = typeof window !== 'undefined' ? window : process;

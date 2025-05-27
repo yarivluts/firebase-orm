@@ -33,6 +33,9 @@
   },
   "devDependencies": {
     "@arbel/node-xhr2": "^0.2.0",
+    "@firebase/app-types": "^0.9.3",
+    "@firebase/firestore-types": "^3.0.3",
+    "@firebase/storage-types": "^0.8.3",
     "@types/atob": "^2.1.4",
     "@types/axios": "^0.14.0",
     "@types/btoa": "^1.2.5",
