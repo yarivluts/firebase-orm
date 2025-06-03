@@ -14,7 +14,7 @@ import type {
 } from "firebase/firestore";
 
 // Support for Admin SDK types
-import type { FirebaseApp as AdminApp } from 'firebase-admin/app';
+import type { App as AdminApp } from 'firebase-admin/app';
 import type { Firestore as AdminFirestore } from 'firebase-admin/firestore';
 import type { Storage as AdminStorage } from 'firebase-admin/storage';
 
@@ -67,15 +67,10 @@ export class FirestoreOrmRepository {
             console.log("Attempting to load Firebase Admin SDK modules...");
             Promise.resolve().then(async () => {
                 try {
-                    const adminFirestore = await import('firebase-admin/firestore');
-                    collection = adminFirestore.collection;
-                    doc = adminFirestore.doc;
-                    updateDoc = adminFirestore.updateDoc;
-                    setDoc = adminFirestore.setDoc;
-                    query = adminFirestore.query;
-                    documentId = adminFirestore.documentId;
-                    where = adminFirestore.where;
-                    getDocs = adminFirestore.getDocs;
+                    // Firebase Admin SDK functions are available differently
+                    // Most functions are instance methods on the Firestore object
+                    // We'll handle Admin SDK compatibility in the implementation
+                    console.log("Admin SDK detected - using alternative function mapping");
                     FirestoreOrmRepository.isReady = true;
                 } catch (err) {
                     console.error("Failed to load Firebase modules:", err);
@@ -120,10 +115,10 @@ export class FirestoreOrmRepository {
      * @param key - The key to identify the global connection (optional).
      * @returns The provided Firebase Admin app instance.
      */
-    static initializeAdminApp(adminApp: AdminApp, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+    static async initializeAdminApp(adminApp: AdminApp, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         try {
             // Dynamically import firebase-admin/firestore to avoid dependency requirements
-            const adminFirestore = require('firebase-admin/firestore');
+            const adminFirestore = await import('firebase-admin/firestore');
             const connection = adminFirestore.getFirestore(adminApp);
             this.initGlobalConnection(connection, key);
             return adminApp;

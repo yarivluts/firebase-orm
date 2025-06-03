@@ -76,6 +76,7 @@ function lazyLoadFirebaseStorage() {
 // Declare global and window for cross-environment compatibility
 declare const global: any;
 declare const window: any;
+declare const Buffer: any;
 
 let globalVar = (typeof global !== 'undefined' ? global : window) as any;
 if (typeof atob === 'undefined') {
@@ -1603,7 +1604,7 @@ export class BaseModel implements ModelInterface {
           url: url,
           responseType: 'arraybuffer'
         });
-        var base64 = await (new Buffer(response.data, 'binary')).toString('base64');
+        var base64 = Buffer.from(response.data, 'binary').toString('base64');
         return await this.uploadString(
           base64,
           'base64',
