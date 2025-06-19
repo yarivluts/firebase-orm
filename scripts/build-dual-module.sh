@@ -12,6 +12,10 @@ npx tsc -p tsconfig.json --skipLibCheck --skipDefaultLibCheck --noEmitOnError fa
 echo "Building ESM version..."
 npx tsc -p tsconfig.json --skipLibCheck --skipDefaultLibCheck --noEmitOnError false --outDir dist/esm --module esnext --moduleResolution node
 
+# Fix ESM imports to add .js extensions
+echo "Fixing ESM imports..."
+node scripts/fix-esm-imports.js
+
 # Create package.json files for each directory
 echo "Creating package.json for CJS..."
 echo '{ "type": "commonjs" }' > dist/cjs/package.json
