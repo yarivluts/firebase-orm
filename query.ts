@@ -1,5 +1,5 @@
-import { ModelAllListOptions } from "./interfaces/model.alllist.options.interface.js";
-import { BaseModel } from "./base.model.js";
+import { ModelAllListOptions } from "./interfaces/model.alllist.options.interface";
+import { BaseModel } from "./base.model";
 
 import type { QuerySnapshot, CollectionReference, DocumentData, FieldPath, Query as FirestoreQuery, OrderByDirection, WhereFilterOp, } from "firebase/firestore";
 

@@ -1,19 +1,19 @@
-export * from './repository.js';
-export * from './query.js';
-export * from './base.model.js';
-export * from './decorators/model.js';
-export * from './decorators/field.js';
+export * from './repository';
+export * from './query';
+export * from './base.model';
+export * from './decorators/model';
+export * from './decorators/field';
 
 
 //Interfces
-export * from './interfaces/model.interface.js';
-export * from './interfaces/current.model.interface.js';
-export * from './interfaces/field.options.interface.js';
-export * from './interfaces/model.alllist.options.interface.js';
-export * from './interfaces/model.options.interface.js';
-export * from './interfaces/observe.load.model.interface.js';
-export * from './interfaces/observe.remove.model.interface.js';
-export * from './interfaces/observe.save.model.interface.js';
+export * from './interfaces/model.interface';
+export * from './interfaces/current.model.interface';
+export * from './interfaces/field.options.interface';
+export * from './interfaces/model.alllist.options.interface';
+export * from './interfaces/model.options.interface';
+export * from './interfaces/observe.load.model.interface';
+export * from './interfaces/observe.remove.model.interface';
+export * from './interfaces/observe.save.model.interface';
 /* 
 
 export { initializeApp } from 'firebase/app';

@@ -1,6 +1,6 @@
-import { BaseModel } from "../base.model.js";
-import { ModelInterface } from "./model.interface.js";
-import { ElasticSqlResponse } from "./elastic.sql.response.interface.js";
+import { BaseModel } from "../base.model";
+import { ModelInterface } from "./model.interface";
+import { ElasticSqlResponse } from "./elastic.sql.response.interface";
 
 export interface ElasticWhereSqlResponse {
   /**

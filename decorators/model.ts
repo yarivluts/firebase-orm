@@ -1,7 +1,7 @@
-import { ModelOptions } from "../interfaces/model.options.interface.js";
+import { ModelOptions } from "../interfaces/model.options.interface";
 
 
-import { BaseModel } from "../base.model.js";
+import { BaseModel } from "../base.model";
 
 function applyMixins(derivedCtor: any, baseCtors: any[]) {
   baseCtors.forEach(baseCtor => {

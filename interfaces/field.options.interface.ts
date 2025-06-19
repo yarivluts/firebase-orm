@@ -1,5 +1,5 @@
-import { BaseModel } from "../base.model.js";
-import { ModelInterface } from "./model.interface.js";
+import { BaseModel } from "../base.model";
+import { ModelInterface } from "./model.interface";
 
 export interface FieldOptions {
   /**
