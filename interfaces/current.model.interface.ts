@@ -1,5 +1,5 @@
-import { ModelInterface } from "./model.interface";
-import { FirestoreOrmRepository } from "../repository";
+import { ModelInterface } from "./model.interface.js";
+import { FirestoreOrmRepository } from "../repository.js";
 
 export interface CurrentModelInterface {
     currentModel : this & ModelInterface;

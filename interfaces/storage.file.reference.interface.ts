@@ -1,5 +1,5 @@
 
-import { OrmUploadTask } from "./upload.task.reference.interface";
+import { OrmUploadTask } from "./upload.task.reference.interface.js";
 
 import type { StringFormat, UploadMetadata, StorageReference as OriginStorageReference } from "firebase/storage";
 /**

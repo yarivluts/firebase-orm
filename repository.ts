@@ -29,9 +29,9 @@ let getDocs: typeof getDocsFuncType;
 
 import type { FirebaseOptions } from "firebase/app";
 import type { FirebaseStorage } from "firebase/storage";
-import { BaseModel } from "./base.model";
-import { ModelInterface } from "./interfaces/model.interface";
-import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface";
+import { BaseModel } from "./base.model.js";
+import { ModelInterface } from "./interfaces/model.interface.js";
+import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface.js";
 import * as qs from 'qs';
 
 let axios: any;

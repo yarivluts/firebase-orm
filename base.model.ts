@@ -3,15 +3,15 @@
  */
 
 
-import { ModelInterface } from "./interfaces/model.interface";
-import { FirestoreOrmRepository } from "./repository";
-import { Query, LIST_EVENTS } from "./query";
+import { ModelInterface } from "./interfaces/model.interface.js";
+import { FirestoreOrmRepository } from "./repository.js";
+import { Query, LIST_EVENTS } from "./query.js";
 import type { Moment } from "moment";
-import { StorageReference } from "./interfaces/storage.file.reference.interface";
-import { ElasticWhereSqlResponse } from "./interfaces/elastic.where.sql.response.interface";
-import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface";
-import { ModelAllListOptions } from './interfaces/model.alllist.options.interface';
-import { printLog } from './utils';
+import { StorageReference } from "./interfaces/storage.file.reference.interface.js";
+import { ElasticWhereSqlResponse } from "./interfaces/elastic.where.sql.response.interface.js";
+import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface.js";
+import { ModelAllListOptions } from './interfaces/model.alllist.options.interface.js';
+import { printLog } from './utils.js';
 let axios: typeof import('axios').default;
 
 function lazyLoadAxios() {

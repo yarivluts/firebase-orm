@@ -1,4 +1,4 @@
-import { FieldOptions } from "../interfaces/field.options.interface";
+import { FieldOptions } from "../interfaces/field.options.interface.js";
 
 export function Field(options?: FieldOptions): any {
   return (target: any, key: string) => {
