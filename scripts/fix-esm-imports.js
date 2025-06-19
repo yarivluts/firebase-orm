@@ -34,7 +34,10 @@ function addJsExtensionsToImports(filePath) {
     content = content.replace(pattern, (match, prefix, importPath, suffix) => {
       // Only add .js if the import doesn't already have an extension and it's a relative path
       if (importPath.startsWith('./') || importPath.startsWith('../')) {
-        if (!importPath.endsWith('.js') && !importPath.endsWith('.ts') && !importPath.endsWith('.json')) {
+        // Check if the import path already has a common file extension
+        // We allow transformation for paths that don't have known file extensions
+        const knownExtensions = /\.(js|ts|json|css|html|svg|png|jpg|jpeg|gif|woff|woff2|ttf|eot)$/i;
+        if (!knownExtensions.test(importPath)) {
           modified = true;
           return prefix + importPath + '.js' + suffix;
         }
