@@ -16,6 +16,10 @@ npx tsc -p tsconfig.json --skipLibCheck --skipDefaultLibCheck --noEmitOnError fa
 echo "Fixing ESM imports..."
 node scripts/fix-esm-imports.js
 
+# Validate that the ESM imports are correctly fixed
+echo "Validating ESM imports..."
+node scripts/validate-esm-imports.js
+
 # Create package.json files for each directory
 echo "Creating package.json for CJS..."
 echo '{ "type": "commonjs" }' > dist/cjs/package.json
