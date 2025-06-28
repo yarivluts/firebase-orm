@@ -68,84 +68,83 @@ export class FirestoreOrmRepository {
         const isAdminSDK = this.isAdminFirestore(firestore);
         
         if (isAdminSDK) {
-            // For Admin SDK, create simple wrapper functions
+            // For Admin SDK, create comprehensive wrapper functions
             console.log("Admin SDK detected - setting up compatibility functions");
-            collection = ((parent: any, collectionId: string) => {
-                if (parent === this.firestore) {
-                    return (this.firestore as any).collection(collectionId);
-                }
-                return parent.collection(collectionId);
-            }) as any;
-            
-            doc = ((parent: any, docId?: string) => {
-                if (arguments.length === 1) {
-                    return parent.doc();
-                }
-                if (parent === this.firestore) {
-                    return (this.firestore as any).doc(docId);
-                }
-                return parent.doc(docId);
-            }) as any;
-            
-            updateDoc = ((docRef: any, data: any) => docRef.update(data)) as any;
-            setDoc = ((docRef: any, data: any, options?: any) => {
-                return options ? docRef.set(data, options) : docRef.set(data);
-            }) as any;
-            
-            query = ((ref: any, ...constraints: any[]) => {
-                // For now, just return the reference - Admin SDK doesn't need the query wrapper
-                return ref;
-            }) as any;
-            
-            documentId = (() => '__name__') as any; // Admin SDK uses '__name__' for document ID
-            where = ((field: string, op: string, value: any) => ({ field, op, value })) as any;
-            getDocs = ((ref: any) => ref.get()) as any;
-            
+            this.setupAdminSDKCompatibility();
             FirestoreOrmRepository.isReady = true;
         } else {
             // For Client SDK, import the functions from firebase/firestore
-            import("firebase/firestore").then((module) => {
-                collection = module.collection;
-                doc = module.doc;
-                updateDoc = module.updateDoc;
-                setDoc = module.setDoc;
-                query = module.query;
-                documentId = module.documentId;
-                where = module.where;
-                getDocs = module.getDocs;
-                FirestoreOrmRepository.isReady = true;
-            }).catch(() => {
-                // If Firebase client SDK fails, try Admin SDK setup as fallback
-                console.log("Client SDK import failed, checking if Admin SDK is available...");
-                if (this.isAdminFirestore(firestore)) {
-                    console.log("Falling back to Admin SDK compatibility mode");
-                    // Set up the same Admin SDK compatibility as above
-                    collection = ((parent: any, collectionId: string) => {
-                        if (parent === this.firestore) {
-                            return (this.firestore as any).collection(collectionId);
-                        }
-                        return parent.collection(collectionId);
-                    }) as any;
-                    
-                    doc = ((parent: any, docId?: string) => {
-                        if (arguments.length === 1) {
-                            return parent.doc();
-                        }
-                        if (parent === this.firestore) {
-                            return (this.firestore as any).doc(docId);
-                        }
-                        return parent.doc(docId);
-                    }) as any;
-                    
-                    FirestoreOrmRepository.isReady = true;
-                } else {
-                    console.error("Failed to load Firebase modules and no Admin SDK detected");
-                }
-            });
+            this.setupClientSDKCompatibility();
         }
         
         import('axios').then((module) => {
             axios = module.default;
+        });
+    }
+
+    private setupAdminSDKCompatibility(): void {
+        const firestore = this.firestore as any;
+
+        collection = ((parent: any, collectionId: string) => {
+            if (parent === this.firestore) {
+                return firestore.collection(collectionId);
+            }
+            return parent.collection(collectionId);
+        }) as any;
+        
+        doc = ((parent: any, docId?: string) => {
+            if (arguments.length === 1) {
+                return parent.doc();
+            }
+            if (parent === this.firestore) {
+                return firestore.doc(docId);
+            }
+            return parent.doc(docId);
+        }) as any;
+        
+        updateDoc = ((docRef: any, data: any) => docRef.update(data)) as any;
+        setDoc = ((docRef: any, data: any, options?: any) => {
+            return options ? docRef.set(data, options) : docRef.set(data);
+        }) as any;
+        
+        query = ((ref: any, ...constraints: any[]) => {
+            let result = ref;
+            for (const constraint of constraints) {
+                if (constraint && typeof constraint.apply === 'function') {
+                    result = constraint.apply(result);
+                }
+            }
+            return result;
+        }) as any;
+        
+        documentId = (() => '__name__') as any;
+        where = ((field: string, op: string, value: any) => ({
+            apply: (ref: any) => ref.where(field, op, value)
+        })) as any;
+        getDocs = ((ref: any) => ref.get()) as any;
+    }
+
+    private setupClientSDKCompatibility(): void {
+        import("firebase/firestore").then((module) => {
+            collection = module.collection;
+            doc = module.doc;
+            updateDoc = module.updateDoc;
+            setDoc = module.setDoc;
+            query = module.query;
+            documentId = module.documentId;
+            where = module.where;
+            getDocs = module.getDocs;
+            FirestoreOrmRepository.isReady = true;
+        }).catch(() => {
+            // If Firebase client SDK fails, try Admin SDK setup as fallback
+            console.log("Client SDK import failed, checking if Admin SDK is available...");
+            if (this.isAdminFirestore(this.firestore)) {
+                console.log("Falling back to Admin SDK compatibility mode");
+                this.setupAdminSDKCompatibility();
+                FirestoreOrmRepository.isReady = true;
+            } else {
+                console.error("Failed to load Firebase modules and no Admin SDK detected");
+            }
         });
     }
 
