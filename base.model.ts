@@ -42,7 +42,7 @@ async function getDocument(path: any): Promise<DocumentSnapshot<DocumentData>> {
   // Convert path to ref if it is a string
   if (typeof path === 'string') {
     const { doc } = await import('firebase/firestore');
-    path = doc(FirestoreOrmRepository.getGlobalConnection().getFirestore(), path);
+    path = doc(FirestoreOrmRepository.getGlobalConnection().getFirestore() as any, path);
   }
   return await getDoc(path);
 }
