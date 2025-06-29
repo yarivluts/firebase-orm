@@ -560,7 +560,7 @@ export class Query<T> {
     
     const res = [and(...this.whereList.filter((op) => {
       return op.type == 'where' || op.type == 'or';
-    }, or(...this.orWhereList))), ...this.orderByList, ...this.ops];
+    }), or(...this.orWhereList)), ...this.orderByList, ...this.ops];
 
     return res;
   }
