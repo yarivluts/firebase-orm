@@ -31,6 +31,12 @@ import { BaseModel } from '../../base.model';
 class TestModel extends BaseModel {
   name: string = '';
   
+  constructor() {
+    super();
+    this['referencePath'] = 'test_collection';
+    this['pathId'] = 'test_id';
+  }
+  
   static getCollectionName(): string {
     return 'test_collection';
   }
