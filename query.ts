@@ -558,9 +558,14 @@ export class Query<T> {
     // Ensure query functions are loaded before using them
     ensureQueryFunctionsLoaded();
     
-    const res = [and(...this.whereList.filter((op) => {
-      return op.type == 'where' || op.type == 'or';
-    }), or(...this.orWhereList)), ...this.orderByList, ...this.ops];
+    const res = [
+      and(...this.whereList.filter((op) => {
+        return op.type == 'where' || op.type == 'or';
+      })),
+      or(...this.orWhereList),
+      ...this.orderByList,
+      ...this.ops
+    ];
 
     return res;
   }
