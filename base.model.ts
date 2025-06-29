@@ -258,6 +258,28 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
+   * Refreshes text indexing for all fields marked with is_text_indexing.
+   * This method recreates the text index for fields that have values but missing text indices.
+   */
+  refreshTextIndexing(): void {
+    var that: any = this;
+    
+    // Get text indexing fields from the prototype
+    if (that.textIndexingFields) {
+      for (var fieldKey in that.textIndexingFields) {
+        var fieldName = this.getFieldName(fieldKey);
+        var textIndexFieldName = 'text_index_' + fieldName;
+        var fieldValue = this.data[fieldName];
+        
+        // If field has value but text index is missing or empty, recreate it
+        if (fieldValue && (!this.data[textIndexFieldName] || !Array.isArray(this.data[textIndexFieldName]))) {
+          this.data[textIndexFieldName] = this.parseTextIndexingFields(fieldValue + '');
+        }
+      }
+    }
+  }
+
+  /**
    * Gets the ID of the object.
    * @returns The ID of the object.
    */
@@ -1703,6 +1725,10 @@ export class BaseModel implements ModelInterface {
       return this;
     }
     this.initAutoTime();
+    
+    // Recreate text indexing if it doesn't exist
+    this.refreshTextIndexing();
+    
     if (this.getRepository()) {
       await this.getRepository().save(this, customId);
     } else {
