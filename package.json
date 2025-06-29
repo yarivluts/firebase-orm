@@ -61,12 +61,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/yariv.luts/firestore-orm.git"
+    "url": "https://github.com/yarivluts/firebase-orm"
   },
   "author": "Yariv Luts",
   "license": "ISC",
   "bugs": {
-    "url": "https://gitlab.com/yariv.luts/firestore-orm/issues"
+    "url": "https://github.com/yarivluts/firebase-orm/issues"
   },
-  "homepage": "https://gitlab.com/yariv.luts/firestore-orm#readme"
+  "homepage": "https://yarivluts.github.io/firebase-orm/"
 }
