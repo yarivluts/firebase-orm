@@ -571,6 +571,7 @@ export class Query<T> {
   }
 
   getFirestoreQuery() {
+    ensureQueryFunctionsLoaded();
     if (this.isCollectionGroup_) {
       return query(collectionGroup(this.model.getRepository().getFirestore() as any, this.model.getCollectionName()), ...this.getCurrentQueryArray());
     } else {
