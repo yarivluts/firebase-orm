@@ -30,27 +30,64 @@ function lazyLoadAxios() {
 import * as qs from 'qs';
 
 import type { CollectionReference, DocumentData, DocumentReference, DocumentSnapshot, FieldPath, OrderByDirection, Timestamp, WhereFilterOp } from 'firebase/firestore';
-async function deleteDocument(path: any): Promise<void> {
 
-  const { deleteDoc } = await import('firebase/firestore');
-  await deleteDoc(path);
+/**
+ * Check if we're using Admin SDK
+ */
+function isAdminFirestore(firestore: any): boolean {
+    return typeof firestore.collection === 'function' && 
+           typeof firestore.doc === 'function' &&
+           (firestore._settings !== undefined || firestore.toJSON !== undefined);
+}
+
+async function deleteDocument(path: any): Promise<void> {
+    const connection = FirestoreOrmRepository.getGlobalConnection();
+    const firestore = connection.getFirestore();
+    
+    if (isAdminFirestore(firestore)) {
+        // Admin SDK - path is already a DocumentReference with delete method
+        await path.delete();
+    } else {
+        // Client SDK - use deleteDoc function
+        const { deleteDoc } = await import('firebase/firestore');
+        await deleteDoc(path);
+    }
 }
 
 async function getDocument(path: any): Promise<DocumentSnapshot<DocumentData>> {
-
-  const { getDoc } = await import('firebase/firestore');
-  // Convert path to ref if it is a string
-  if (typeof path === 'string') {
-    const { doc } = await import('firebase/firestore');
-    path = doc(FirestoreOrmRepository.getGlobalConnection().getFirestore(), path);
-  }
-  return await getDoc(path);
+    const connection = FirestoreOrmRepository.getGlobalConnection();
+    const firestore = connection.getFirestore();
+    
+    if (isAdminFirestore(firestore)) {
+        // Admin SDK - path is already a DocumentReference with get method
+        if (typeof path === 'string') {
+            const docRef = (firestore as any).doc(path);
+            return await docRef.get();
+        }
+        return await path.get();
+    } else {
+        // Client SDK - use getDoc function
+        const { getDoc, doc } = await import('firebase/firestore');
+        // Convert path to ref if it is a string
+        if (typeof path === 'string') {
+            path = doc(firestore as any, path);
+        }
+        return await getDoc(path);
+    }
 }
 
 async function onDocumentSnapshot(path: any, callback: (snapshot: DocumentSnapshot<DocumentData>) => void): Promise<() => void> {
-
-  const { onSnapshot } = await import('firebase/firestore');
-  return onSnapshot(path, callback);
+    const connection = FirestoreOrmRepository.getGlobalConnection();
+    const firestore = connection.getFirestore();
+    
+    if (isAdminFirestore(firestore)) {
+        // Admin SDK - path is already a DocumentReference with onSnapshot method
+        return path.onSnapshot(callback);
+    } else {
+        // Client SDK - use onSnapshot function
+        const { onSnapshot } = await import('firebase/firestore');
+        return onSnapshot(path, callback);
+    }
 }
 
 import type { StringFormat, UploadMetadata, UploadTask } from 'firebase/storage';

@@ -51,7 +51,80 @@ export class FirestoreOrmRepository {
     static globalFirebaseStoages = {};
     static isReady = false;
 
+    /**
+     * Determines if the provided Firestore instance is from Admin SDK
+     * @param firestore - The Firestore instance to check
+     * @returns true if it's Admin SDK, false if it's Client SDK
+     */
+    private isAdminFirestore(firestore: any): boolean {
+        // Admin SDK Firestore has instance methods and specific properties
+        return typeof firestore.collection === 'function' && 
+               typeof firestore.doc === 'function' &&
+               (firestore._settings !== undefined || firestore.toJSON !== undefined);
+    }
+
     constructor(protected firestore: Firestore | AdminFirestore) {
+        // Detect if we're using Admin SDK or Client SDK
+        const isAdminSDK = this.isAdminFirestore(firestore);
+        
+        if (isAdminSDK) {
+            // For Admin SDK, create comprehensive wrapper functions
+            console.log("Admin SDK detected - setting up compatibility functions");
+            this.setupAdminSDKCompatibility();
+            FirestoreOrmRepository.isReady = true;
+        } else {
+            // For Client SDK, import the functions from firebase/firestore
+            this.setupClientSDKCompatibility();
+        }
+        
+        import('axios').then((module) => {
+            axios = module.default;
+        });
+    }
+
+    private setupAdminSDKCompatibility(): void {
+        const firestore = this.firestore as any;
+
+        collection = ((parent: any, collectionId: string) => {
+            if (parent === this.firestore) {
+                return firestore.collection(collectionId);
+            }
+            return parent.collection(collectionId);
+        }) as any;
+        
+        doc = ((parent: any, docId?: string) => {
+            if (arguments.length === 1) {
+                return parent.doc();
+            }
+            if (parent === this.firestore) {
+                return firestore.doc(docId);
+            }
+            return parent.doc(docId);
+        }) as any;
+        
+        updateDoc = ((docRef: any, data: any) => docRef.update(data)) as any;
+        setDoc = ((docRef: any, data: any, options?: any) => {
+            return options ? docRef.set(data, options) : docRef.set(data);
+        }) as any;
+        
+        query = ((ref: any, ...constraints: any[]) => {
+            let result = ref;
+            for (const constraint of constraints) {
+                if (constraint && typeof constraint.apply === 'function') {
+                    result = constraint.apply(result);
+                }
+            }
+            return result;
+        }) as any;
+        
+        documentId = (() => '__name__') as any;
+        where = ((field: string, op: string, value: any) => ({
+            apply: (ref: any) => ref.where(field, op, value)
+        })) as any;
+        getDocs = ((ref: any) => ref.get()) as any;
+    }
+
+    private setupClientSDKCompatibility(): void {
         import("firebase/firestore").then((module) => {
             collection = module.collection;
             doc = module.doc;
@@ -63,22 +136,15 @@ export class FirestoreOrmRepository {
             getDocs = module.getDocs;
             FirestoreOrmRepository.isReady = true;
         }).catch(() => {
-            // If Firebase client SDK fails, it might be Admin SDK
-            console.log("Attempting to load Firebase Admin SDK modules...");
-            Promise.resolve().then(async () => {
-                try {
-                    // Firebase Admin SDK functions are available differently
-                    // Most functions are instance methods on the Firestore object
-                    // We'll handle Admin SDK compatibility in the implementation
-                    console.log("Admin SDK detected - using alternative function mapping");
-                    FirestoreOrmRepository.isReady = true;
-                } catch (err) {
-                    console.error("Failed to load Firebase modules:", err);
-                }
-            });
-        });
-        import('axios').then((module) => {
-            axios = module.default;
+            // If Firebase client SDK fails, try Admin SDK setup as fallback
+            console.log("Client SDK import failed, checking if Admin SDK is available...");
+            if (this.isAdminFirestore(this.firestore)) {
+                console.log("Falling back to Admin SDK compatibility mode");
+                this.setupAdminSDKCompatibility();
+                FirestoreOrmRepository.isReady = true;
+            } else {
+                console.error("Failed to load Firebase modules and no Admin SDK detected");
+            }
         });
     }
 

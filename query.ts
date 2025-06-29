@@ -1,5 +1,6 @@
 import { ModelAllListOptions } from "./interfaces/model.alllist.options.interface";
 import { BaseModel } from "./base.model";
+import { FirestoreOrmRepository } from "./repository";
 
 import type { QuerySnapshot, CollectionReference, DocumentData, FieldPath, Query as FirestoreQuery, OrderByDirection, WhereFilterOp, } from "firebase/firestore";
 
@@ -13,56 +14,161 @@ export enum WHERE_FILTER_OP {
   NOT_EQUAL = "<>"
 }
 
-
 let endAt: typeof import("firebase/firestore").endAt;
-
 let endBefore: typeof import("firebase/firestore").endBefore;
-
 let getCountFromServer: typeof import("firebase/firestore").getCountFromServer;
-
 let getDocs: typeof import("firebase/firestore").getDocs;
-
 let limit: typeof import("firebase/firestore").limit;
-
 let onSnapshot: typeof import("firebase/firestore").onSnapshot;
-
 let or: typeof import("firebase/firestore").or;
-
 let and: typeof import("firebase/firestore").and;
-
 let orderBy: typeof import("firebase/firestore").orderBy;
-
 let query: typeof import("firebase/firestore").query;
-
 let startAfter: typeof import("firebase/firestore").startAfter;
-
 let startAt: typeof import("firebase/firestore").startAt;
-
 let where: typeof import("firebase/firestore").where;
-
 let collectionGroup: typeof import("firebase/firestore").collectionGroup;
 
+/**
+ * Check if we're using Admin SDK
+ */
+function isAdminFirestore(firestore: any): boolean {
+    return typeof firestore.collection === 'function' && 
+           typeof firestore.doc === 'function' &&
+           (firestore._settings !== undefined || firestore.toJSON !== undefined);
+}
+
+/**
+ * Setup Admin SDK compatibility for query functions
+ */
+function setupAdminSDKQueryCompatibility(): void {
+    console.log("Setting up Admin SDK query compatibility");
+    
+    endAt = ((...values: any[]) => ({
+        apply: (ref: any) => ref.endAt(...values)
+    })) as any;
+    
+    endBefore = ((...values: any[]) => ({
+        apply: (ref: any) => ref.endBefore(...values)
+    })) as any;
+    
+    getCountFromServer = ((query: any) => {
+        console.warn("getCountFromServer not directly supported in Admin SDK - returning approximate count");
+        return query.get().then((snapshot: any) => ({
+            data: () => ({ count: snapshot.size })
+        }));
+    }) as any;
+    
+    getDocs = ((query: any) => query.get()) as any;
+    
+    limit = ((limitCount: number) => ({
+        apply: (ref: any) => ref.limit(limitCount)
+    })) as any;
+    
+    onSnapshot = ((query: any, callback: any) => query.onSnapshot(callback)) as any;
+    
+    or = ((...queries: any[]) => ({
+        apply: (ref: any) => {
+            console.warn("OR queries not directly supported in Admin SDK - using first query only");
+            return queries.length > 0 ? queries[0].apply(ref) : ref;
+        }
+    })) as any;
+    
+    and = ((...queries: any[]) => ({
+        apply: (ref: any) => {
+            let result = ref;
+            for (const query of queries) {
+                if (query && typeof query.apply === 'function') {
+                    result = query.apply(result);
+                }
+            }
+            return result;
+        }
+    })) as any;
+    
+    orderBy = ((field: string, direction?: 'asc' | 'desc') => ({
+        apply: (ref: any) => ref.orderBy(field, direction)
+    })) as any;
+    
+    query = ((ref: any, ...constraints: any[]) => {
+        let result = ref;
+        for (const constraint of constraints) {
+            if (constraint && typeof constraint.apply === 'function') {
+                result = constraint.apply(result);
+            }
+        }
+        return result;
+    }) as any;
+    
+    startAfter = ((...values: any[]) => ({
+        apply: (ref: any) => ref.startAfter(...values)
+    })) as any;
+    
+    startAt = ((...values: any[]) => ({
+        apply: (ref: any) => ref.startAt(...values)
+    })) as any;
+    
+    where = ((field: string, op: string, value: any) => ({
+        apply: (ref: any) => ref.where(field, op, value)
+    })) as any;
+    
+    collectionGroup = ((collectionId: string) => {
+        const connection = FirestoreOrmRepository.getGlobalConnection();
+        const firestore = connection.getFirestore() as any;
+        return firestore.collectionGroup(collectionId);
+    }) as any;
+}
+
+/**
+ * Setup Client SDK compatibility for query functions
+ */
+async function setupClientSDKQueryCompatibility(): Promise<void> {
+    try {
+        const module = await import("firebase/firestore");
+        endAt = module.endAt;
+        endBefore = module.endBefore;
+        getCountFromServer = module.getCountFromServer;
+        getDocs = module.getDocs;
+        limit = module.limit;
+        onSnapshot = module.onSnapshot;
+        or = module.or;
+        and = module.and;
+        orderBy = module.orderBy;
+        query = module.query;
+        startAfter = module.startAfter;
+        startAt = module.startAt;
+        where = module.where;
+        collectionGroup = module.collectionGroup;
+    } catch (error) {
+        console.warn("Failed to load Client SDK, trying Admin SDK compatibility");
+        setupAdminSDKQueryCompatibility();
+    }
+}
+
+/**
+ * Initialize query functions based on detected SDK
+ */
 async function lazyLoadFirestoreImports() {
   if (!!endAt) {
     return;
   }
 
-  const module = await import("firebase/firestore");
-  endAt = module.endAt;
-  endBefore = module.endBefore;
-  getCountFromServer = module.getCountFromServer;
-  getDocs = module.getDocs;
-  limit = module.limit;
-  onSnapshot = module.onSnapshot;
-  or = module.or;
-  and = module.and;
-  orderBy = module.orderBy;
-  query = module.query;
-  startAfter = module.startAfter;
-  startAt = module.startAt;
-  where = module.where;
-  collectionGroup = module.collectionGroup;
+  // Check if we can detect the SDK type from a global connection
+  try {
+    const connection = FirestoreOrmRepository.getGlobalConnection();
+    const firestore = connection.getFirestore();
+    
+    if (isAdminFirestore(firestore)) {
+        setupAdminSDKQueryCompatibility();
+    } else {
+        await setupClientSDKQueryCompatibility();
+    }
+  } catch (error) {
+    // No global connection yet, try to load Client SDK first
+    await setupClientSDKQueryCompatibility();
+  }
 }
+
 lazyLoadFirestoreImports();
 
 /**
@@ -405,7 +511,7 @@ export class Query<T> {
 
   getFirestoreQuery() {
     if (this.isCollectionGroup_) {
-      return query(collectionGroup(this.model.getRepository().getFirestore(), this.model.getCollectionName()), ...this.getCurrentQueryArray());
+      return query(collectionGroup(this.model.getRepository().getFirestore() as any, this.model.getCollectionName()), ...this.getCurrentQueryArray());
     } else {
       return query(this.current, ...this.getCurrentQueryArray());
     }
