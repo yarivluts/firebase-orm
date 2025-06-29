@@ -249,7 +249,7 @@ describe('Field Decorator', () => {
     expect(data.ignoredField).toBeUndefined();
   }, 10000);
 
-  test('should recreate text indexing on save if missing', async () => {
+  test('should recreate text indexing manually when missing', async () => {
     // Create model and set text field
     const model = new FieldTest();
     model.requiredField = 'required value';
@@ -262,7 +262,8 @@ describe('Field Decorator', () => {
     // Verify text index is missing
     expect(data['text_index_textIndexedField']).toBeUndefined();
     
-    // Save should recreate the text index
+    // Manually refresh text indexing before saving
+    model.refreshTextIndexing();
     await model.save();
     
     // Check that text index was recreated

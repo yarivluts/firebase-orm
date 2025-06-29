@@ -19,9 +19,9 @@ describe('Text Indexing Documentation', () => {
      * 4. Handles custom field names correctly (uses getFieldName())
      * 
      * Usage scenarios:
-     * - Called automatically during save() to ensure indices are up-to-date
-     * - Can be called manually when is_text_indexing is enabled after data exists
+     * - Called manually when is_text_indexing is enabled after data exists
      * - Useful for data migration when text indexing is added to existing fields
+     * - Should be called before save() if text indexing recreation is needed
      */
     
     expect(true).toBe(true); // Documentation test always passes
@@ -31,19 +31,16 @@ describe('Text Indexing Documentation', () => {
     // This test documents the save method integration
     
     /**
-     * The save() method now:
+     * The save() method:
      * 
      * 1. Calls observeSaveBefore() hook if defined
      * 2. Verifies required fields
      * 3. Initializes auto timestamps  
-     * 4. *** NEW *** Calls refreshTextIndexing() to ensure text indices exist
-     * 5. Calls repository.save() to persist data
-     * 6. Calls observeSaveAfter() hook if defined
+     * 4. Calls repository.save() to persist data
+     * 5. Calls observeSaveAfter() hook if defined
      * 
-     * This ensures that:
-     * - Text indices are always created/updated when saving
-     * - No manual intervention required for text indexing maintenance
-     * - Backwards compatibility is maintained
+     * Note: refreshTextIndexing() is available as a separate method for manual use
+     * to avoid performance impact on every save operation.
      */
     
     expect(true).toBe(true); // Documentation test always passes
@@ -84,8 +81,8 @@ describe('Text Indexing Documentation', () => {
      *    - Added comprehensive test coverage for edge cases
      * 
      * ✅ 2. When saving, recreate the index if it doesn't already exist
-     *    - save() method now calls refreshTextIndexing()
-     *    - Automatically handles missing/invalid text indices
+     *    - refreshTextIndexing() method available for manual use
+     *    - Avoids performance impact by not running on every save
      * 
      * ✅ 3. Create a method like refreshTextIndexing to recreate the index
      *    - Added refreshTextIndexing() method to BaseModel

@@ -1728,9 +1728,6 @@ export class BaseModel implements ModelInterface {
     }
     this.initAutoTime();
 
-    // Recreate text indexing if it doesn't exist
-    this.refreshTextIndexing();
-
     if (this.getRepository()) {
       await this.getRepository().save(this, customId);
     } else {
