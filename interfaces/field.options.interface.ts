@@ -25,4 +25,14 @@ export interface FieldOptions {
    * Init as object
    */
   init_as_object?: Object;
+
+  /**
+   * Default value for the field
+   */
+  defaultValue?: any;
+
+  /**
+   * Whether to ignore this field when saving
+   */
+  ignore_field?: boolean;
 }

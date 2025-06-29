@@ -128,7 +128,10 @@ describe('Field Decorator', () => {
     
     // Check that the text indexing metadata is added
     expect(data.textIndexedField).toBe('This is indexed text');
-    expect(data.textIndexedField__t).toBe('this is indexed text');
+    expect(data['text_index_textIndexedField']).toBeDefined();
+    expect(Array.isArray(data['text_index_textIndexedField'])).toBe(true);
+    expect(data['text_index_textIndexedField']).toContain('this is indexed text');
+    expect(data['text_index_textIndexedField']).toContain('~~~this is indexed text~~~');
   }, 10000);
 
   test('should handle default values', async () => {
@@ -245,4 +248,89 @@ describe('Field Decorator', () => {
     // Check that the ignored field is not saved
     expect(data.ignoredField).toBeUndefined();
   }, 10000);
+
+  test('should recreate text indexing manually when missing', async () => {
+    // Create model and set text field
+    const model = new FieldTest();
+    model.requiredField = 'required value';
+    model.textIndexedField = 'Test Content';
+    
+    // Manually remove the text index to simulate missing index
+    const data = model.getData();
+    delete data['text_index_textIndexedField'];
+    
+    // Verify text index is missing
+    expect(data['text_index_textIndexedField']).toBeUndefined();
+    
+    // Manually refresh text indexing before saving
+    model.refreshTextIndexing();
+    await model.save();
+    
+    // Check that text index was recreated
+    const updatedData = model.getData();
+    expect(updatedData['text_index_textIndexedField']).toBeDefined();
+    expect(Array.isArray(updatedData['text_index_textIndexedField'])).toBe(true);
+    expect(updatedData['text_index_textIndexedField']).toContain('test content');
+  }, 10000);
+
+  test('should have refreshTextIndexing method', () => {
+    const model = new FieldTest();
+    
+    // Check that refreshTextIndexing method exists
+    expect(typeof model.refreshTextIndexing).toBe('function');
+  });
+
+  test('should refresh text indexing manually', () => {
+    // Create model and set text field  
+    const model = new FieldTest();
+    model.requiredField = 'required value';
+    model.textIndexedField = 'Manual Refresh Test';
+    
+    // Manually remove the text index
+    const data = model.getData();
+    delete data['text_index_textIndexedField'];
+    
+    // Verify text index is missing
+    expect(data['text_index_textIndexedField']).toBeUndefined();
+    
+    // Call refreshTextIndexing manually
+    model.refreshTextIndexing();
+    
+    // Check that text index was recreated
+    const updatedData = model.getData();
+    expect(updatedData['text_index_textIndexedField']).toBeDefined();
+    expect(Array.isArray(updatedData['text_index_textIndexedField'])).toBe(true);
+    expect(updatedData['text_index_textIndexedField']).toContain('manual refresh test');
+  });
+
+  test('should handle empty text fields in refreshTextIndexing', () => {
+    const model = new FieldTest();
+    model.requiredField = 'required value';
+    
+    // Don't set textIndexedField, leave it undefined
+    
+    // Call refreshTextIndexing
+    model.refreshTextIndexing();
+    
+    // Check that no text index is created for empty field
+    const data = model.getData();
+    expect(data['text_index_textIndexedField']).toBeUndefined();
+  });
+
+  test('should not overwrite existing valid text index in refreshTextIndexing', () => {
+    const model = new FieldTest();
+    model.requiredField = 'required value';
+    model.textIndexedField = 'Existing Content';
+    
+    // Get initial text index
+    const initialData = model.getData();
+    const initialTextIndex = initialData['text_index_textIndexedField'];
+    
+    // Call refreshTextIndexing (should not overwrite existing valid index)
+    model.refreshTextIndexing();
+    
+    // Check that text index remains the same
+    const updatedData = model.getData();
+    expect(updatedData['text_index_textIndexedField']).toEqual(initialTextIndex);
+  });
 });
