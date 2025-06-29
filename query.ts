@@ -558,16 +558,66 @@ export class Query<T> {
     // Ensure query functions are loaded before using them
     ensureQueryFunctionsLoaded();
     
-    const res = [
-      and(...this.whereList.filter((op) => {
+    // Check if we're using Admin SDK
+    const connection = FirestoreOrmRepository.getGlobalConnection();
+    const firestore = connection.getFirestore();
+    const isAdminSDK = isAdminFirestore(firestore);
+    
+    if (isAdminSDK) {
+      // For Admin SDK, we can use simple chaining without complex and/or nesting
+      const res = [];
+      
+      // Add individual where constraints
+      const whereConstraints = this.whereList.filter((op) => {
         return op.type == 'where' || op.type == 'or';
-      })),
-      or(...this.orWhereList),
-      ...this.orderByList,
-      ...this.ops
-    ];
+      });
+      res.push(...whereConstraints);
+      
+      // Add or constraints
+      res.push(...this.orWhereList);
+      
+      // Add other constraints
+      res.push(...this.orderByList);
+      res.push(...this.ops);
+      
+      return res;
+    } else {
+      // For Client SDK, use proper and/or nesting for Firebase v9+ compatibility
+      const whereConstraints = this.whereList.filter((op) => {
+        return op.type == 'where' || op.type == 'or';
+      });
+      
+      const res = [];
+      
+      // Combine and/or constraints properly for Firebase v9+ compatibility
+      if (whereConstraints.length > 0 && this.orWhereList.length > 0) {
+        // If we have both where and or constraints, wrap them in a single and()
+        res.push(and(
+          and(...whereConstraints),
+          or(...this.orWhereList)
+        ));
+      } else if (whereConstraints.length > 0) {
+        // Only where constraints
+        if (whereConstraints.length === 1) {
+          res.push(whereConstraints[0]);
+        } else {
+          res.push(and(...whereConstraints));
+        }
+      } else if (this.orWhereList.length > 0) {
+        // Only or constraints
+        if (this.orWhereList.length === 1) {
+          res.push(this.orWhereList[0]);
+        } else {
+          res.push(or(...this.orWhereList));
+        }
+      }
+      
+      // Add other constraints (orderBy, limit, etc.)
+      res.push(...this.orderByList);
+      res.push(...this.ops);
 
-    return res;
+      return res;
+    }
   }
 
   getFirestoreQuery() {
