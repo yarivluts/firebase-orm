@@ -57,6 +57,11 @@ export class FirestoreOrmRepository {
      * @returns true if it's Admin SDK, false if it's Client SDK
      */
     private isAdminFirestore(firestore: any): boolean {
+        // Handle null/undefined values gracefully
+        if (!firestore) {
+            return false;
+        }
+        
         // Admin SDK Firestore has instance methods and specific properties
         return typeof firestore.collection === 'function' && 
                typeof firestore.doc === 'function' &&
