@@ -124,7 +124,7 @@ describe('Admin SDK Compatibility Bug Fixes', () => {
       const testQuery = TestModel.query();
       testQuery.getFirestoreQuery();
       
-      expect(consoleSpy).toHaveBeenCalledWith('Setting up Admin SDK query compatibility');
+      expect(consoleSpy).toHaveBeenCalledWith('Admin SDK detected - setting up compatibility functions');
     } finally {
       consoleSpy.mockRestore();
     }
