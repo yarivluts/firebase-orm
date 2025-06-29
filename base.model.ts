@@ -2111,6 +2111,6 @@ export class BaseModel implements ModelInterface {
    * @returns The JSON representation of the model instance.
    */
   toJSON() {
-    return this.getData()
+    return this.getData(true)
   }
 }
