@@ -175,7 +175,7 @@ lazyLoadFirestoreImports();
  * Ensure query functions are loaded before use
  */
 function ensureQueryFunctionsLoaded(): void {
-  if (!or) {
+  if (!getDocs || !or) {
     // Functions not loaded yet, try to load them synchronously
     try {
       const connection = FirestoreOrmRepository.getGlobalConnection();
@@ -200,6 +200,13 @@ function ensureQueryFunctionsLoaded(): void {
  * Setup fallback query functions for cases where Client SDK hasn't loaded yet
  */
 function setupFallbackQueryFunctions(): void {
+  if (!getDocs) {
+    getDocs = ((query: any) => {
+      console.warn("getDocs using fallback implementation - assuming Admin SDK");
+      return query.get();
+    }) as any;
+  }
+  
   if (!or) {
     or = ((...queries: any[]) => ({
       apply: (ref: any) => {
