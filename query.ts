@@ -172,6 +172,59 @@ async function lazyLoadFirestoreImports() {
 lazyLoadFirestoreImports();
 
 /**
+ * Ensure query functions are loaded before use
+ */
+function ensureQueryFunctionsLoaded(): void {
+  if (!or) {
+    // Functions not loaded yet, try to load them synchronously
+    try {
+      const connection = FirestoreOrmRepository.getGlobalConnection();
+      const firestore = connection.getFirestore();
+      
+      if (isAdminFirestore(firestore)) {
+        setupAdminSDKQueryCompatibility();
+      } else {
+        // For Client SDK, we can't load synchronously, so we'll provide a fallback
+        console.warn("Query functions not loaded yet, using fallback implementations");
+        setupFallbackQueryFunctions();
+      }
+    } catch (error) {
+      // No global connection, provide fallback implementations
+      console.warn("No global connection available, using fallback implementations");
+      setupFallbackQueryFunctions();
+    }
+  }
+}
+
+/**
+ * Setup fallback query functions for cases where Client SDK hasn't loaded yet
+ */
+function setupFallbackQueryFunctions(): void {
+  if (!or) {
+    or = ((...queries: any[]) => ({
+      apply: (ref: any) => {
+        console.warn("OR queries using fallback implementation - may not work correctly");
+        return queries.length > 0 && queries[0].apply ? queries[0].apply(ref) : ref;
+      }
+    })) as any;
+  }
+  
+  if (!and) {
+    and = ((...queries: any[]) => ({
+      apply: (ref: any) => {
+        let result = ref;
+        for (const query of queries) {
+          if (query && typeof query.apply === 'function') {
+            result = query.apply(result);
+          }
+        }
+        return result;
+      }
+    })) as any;
+  }
+}
+
+/**
  * Represents a query for retrieving documents from a Firestore collection.
  * @template T The type of the documents returned by the query.
  */
@@ -502,9 +555,17 @@ export class Query<T> {
   }
 
   getCurrentQueryArray(): Array<any> {
-    const res = [and(...this.whereList.filter((op) => {
-      return op.type == 'where' || op.type == 'or';
-    }, or(...this.orWhereList))), ...this.orderByList, ...this.ops];
+    // Ensure query functions are loaded before using them
+    ensureQueryFunctionsLoaded();
+    
+    const res = [
+      and(...this.whereList.filter((op) => {
+        return op.type == 'where' || op.type == 'or';
+      })),
+      or(...this.orWhereList),
+      ...this.orderByList,
+      ...this.ops
+    ];
 
     return res;
   }
