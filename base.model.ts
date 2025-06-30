@@ -262,12 +262,12 @@ export class BaseModel implements ModelInterface {
    * This method recreates the text index for fields that have values but missing text indices.
    */
   refreshTextIndexing(): void {
-    const that: any = this;
+    const modelPrototype = Object.getPrototypeOf(this);
 
     // Get text indexing fields from the prototype
-    if (that.textIndexingFields) {
-      for (const fieldKey in that.textIndexingFields) {
-        if (that.textIndexingFields.hasOwnProperty(fieldKey)) {
+    if (modelPrototype && modelPrototype.textIndexingFields) {
+      for (const fieldKey in modelPrototype.textIndexingFields) {
+        if (modelPrototype.textIndexingFields.hasOwnProperty(fieldKey)) {
           const fieldName = this.getFieldName(fieldKey);
           const textIndexFieldName = 'text_index_' + fieldName;
           const fieldValue = this.data[fieldName];
