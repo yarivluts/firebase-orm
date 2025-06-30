@@ -50,6 +50,9 @@ export class FirestoreOrmRepository {
     static elasticSearchConnections = {};
     static globalFirebaseStoages = {};
     static isReady = false;
+    static readyPromises: { [key: string]: Promise<FirestoreOrmRepository> } = {};
+
+    private setupPromise: Promise<void>;
 
     /**
      * Determines if the provided Firestore instance is from Admin SDK
@@ -77,9 +80,10 @@ export class FirestoreOrmRepository {
             console.log("Admin SDK detected - setting up compatibility functions");
             this.setupAdminSDKCompatibility();
             FirestoreOrmRepository.isReady = true;
+            this.setupPromise = Promise.resolve();
         } else {
             // For Client SDK, import the functions from firebase/firestore
-            this.setupClientSDKCompatibility();
+            this.setupPromise = this.setupClientSDKCompatibility();
         }
         
         import('axios').then((module) => {
@@ -129,8 +133,9 @@ export class FirestoreOrmRepository {
         getDocs = ((ref: any) => ref.get()) as any;
     }
 
-    private setupClientSDKCompatibility(): void {
-        import("firebase/firestore").then((module) => {
+    private async setupClientSDKCompatibility(): Promise<void> {
+        try {
+            const module = await import("firebase/firestore");
             collection = module.collection;
             doc = module.doc;
             updateDoc = module.updateDoc;
@@ -140,7 +145,7 @@ export class FirestoreOrmRepository {
             where = module.where;
             getDocs = module.getDocs;
             FirestoreOrmRepository.isReady = true;
-        }).catch(() => {
+        } catch (error) {
             // If Firebase client SDK fails, try Admin SDK setup as fallback
             console.log("Client SDK import failed, checking if Admin SDK is available...");
             if (this.isAdminFirestore(this.firestore)) {
@@ -149,20 +154,31 @@ export class FirestoreOrmRepository {
                 FirestoreOrmRepository.isReady = true;
             } else {
                 console.error("Failed to load Firebase modules and no Admin SDK detected");
+                throw error;
             }
-        });
+        }
     }
 
     /**
      * Initializes a global connection for Firestore ORM.
      * @param firestore - The Firestore instance.
      * @param key - The key to identify the global connection (optional).
+     * @returns A promise that resolves when the connection is fully initialized.
      */
-    static initGlobalConnection(firestore: Firestore | AdminFirestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
-        this.globalFirestores[key] = new FirestoreOrmRepository(firestore);
-        if (this.globalWait[key]) {
-            this.globalWait[key](this.globalFirestores[key]);
-        }
+    static initGlobalConnection(firestore: Firestore | AdminFirestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): Promise<FirestoreOrmRepository> {
+        const repository = new FirestoreOrmRepository(firestore);
+        this.globalFirestores[key] = repository;
+        
+        // Create a promise that resolves when the repository is ready
+        const readyPromise = repository.setupPromise.then(() => {
+            if (this.globalWait[key]) {
+                this.globalWait[key](repository);
+            }
+            return repository;
+        });
+        
+        this.readyPromises[key] = readyPromise;
+        return readyPromise;
     }
 
     /**
@@ -176,7 +192,7 @@ export class FirestoreOrmRepository {
         const firebaseApp = app.initializeApp(options, name);
         const { getFirestore } = await import('firebase/firestore');
         const connection = getFirestore(firebaseApp);
-        this.initGlobalConnection(connection);
+        await this.initGlobalConnection(connection);
         return firebaseApp;
     }
 
@@ -191,7 +207,7 @@ export class FirestoreOrmRepository {
             // Dynamically import firebase-admin/firestore to avoid dependency requirements
             const adminFirestore = await import('firebase-admin/firestore');
             const connection = adminFirestore.getFirestore(adminApp);
-            this.initGlobalConnection(connection, key);
+            await this.initGlobalConnection(connection, key);
             return adminApp;
         } catch (error) {
             console.error("Error initializing Firebase Admin:", error);
@@ -267,15 +283,25 @@ export class FirestoreOrmRepository {
      * @returns A promise that resolves to the global Firestore connection.
      */
     static waitForGlobalConnection(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): Promise<FirestoreOrmRepository> {
-        if (this.globalWait[key]) {
-            return this.globalWait[key];
+        if (this.readyPromises[key]) {
+            return this.readyPromises[key];
+        }
+        if (this.globalFirestores[key]) {
+            return Promise.resolve(this.globalFirestores[key]);
         }
         return new Promise((resolve) => {
-            if (this.globalFirestores[key]) {
-                resolve(this.globalFirestores[key]);
-            }
             this.globalWait[key] = resolve;
         });
+    }
+
+    /**
+     * Returns a promise that resolves when the global connection is ready.
+     * This method provides a clean way to ensure initialization is complete.
+     * @param key - The key to identify the global connection (optional).
+     * @returns A promise that resolves when the connection is ready.
+     */
+    static ready(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): Promise<FirestoreOrmRepository> {
+        return this.waitForGlobalConnection(key);
     }
 
     /**
