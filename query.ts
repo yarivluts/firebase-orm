@@ -542,14 +542,40 @@ export class Query<T> {
   async get(
   ): Promise<Array<BaseModel & T>> {
     await this.initBeforeFetch();
-    const list = await getDocs(this.getFirestoreQuery());
+    const query = this.getFirestoreQuery();
+    
+    // Check SDK type and use appropriate method
+    const connection = FirestoreOrmRepository.getGlobalConnection();
+    const firestore = connection.getFirestore();
+    const isAdminSDK = isAdminFirestore(firestore);
+    
+    let list;
+    if (isAdminSDK) {
+      list = await (query as any).get(); // Admin SDK
+    } else {
+      list = await getDocs(query); // Client SDK
+    }
+    
     return this.parse(list);
   }
 
   async getRowList(
   ): Promise<QuerySnapshot<DocumentData, DocumentData>> {
     await this.initBeforeFetch();
-    const list = await getDocs(this.getFirestoreQuery());
+    const query = this.getFirestoreQuery();
+    
+    // Check SDK type and use appropriate method
+    const connection = FirestoreOrmRepository.getGlobalConnection();
+    const firestore = connection.getFirestore();
+    const isAdminSDK = isAdminFirestore(firestore);
+    
+    let list;
+    if (isAdminSDK) {
+      list = await (query as any).get(); // Admin SDK
+    } else {
+      list = await getDocs(query); // Client SDK
+    }
+    
     return list;
   }
   
@@ -650,8 +676,20 @@ export class Query<T> {
   ): Promise<BaseModel | null> {
     await this.initBeforeFetch();
     this.limit(1);
+    const query = this.getFirestoreQuery();
+    
+    // Check SDK type and use appropriate method
+    const connection = FirestoreOrmRepository.getGlobalConnection();
+    const firestore = connection.getFirestore();
+    const isAdminSDK = isAdminFirestore(firestore);
+    
     let list;
-    list = await getDocs(this.getFirestoreQuery());
+    if (isAdminSDK) {
+      list = await (query as any).get(); // Admin SDK
+    } else {
+      list = await getDocs(query); // Client SDK
+    }
+    
     var res = this.parse(list);
     if (res.length > 0) {
       return res[0];
