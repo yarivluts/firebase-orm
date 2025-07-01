@@ -209,4 +209,58 @@ describe('Fix Verification - refreshTextIndexing Bug Fix', () => {
     expect(Array.isArray(normalData['text_index_title'])).toBe(true);
     expect(normalData['text_index_title']).toContain('normal title');
   });
+
+  test('should work with normal set and save workflow without explicit refreshTextIndexing call', async () => {
+    const model = new TestableFixVerificationModel();
+    
+    console.log('🔍 DEBUG: Testing normal set and save workflow...');
+    
+    // Set values normally - this should automatically create text indices via the setter
+    model.name = "Auto Index Name";
+    model.title = "Auto Index Title";
+    
+    console.log('🔍 DEBUG: After setting values:', model.getDataObject());
+    
+    // Verify text indices were created automatically by the setter
+    const dataAfterSet = model.getDataObject();
+    expect(dataAfterSet['text_index_name']).toBeDefined();
+    expect(Array.isArray(dataAfterSet['text_index_name'])).toBe(true);
+    expect(dataAfterSet['text_index_name']).toContain('auto index name');
+    
+    expect(dataAfterSet['text_index_title']).toBeDefined();
+    expect(Array.isArray(dataAfterSet['text_index_title'])).toBe(true);
+    expect(dataAfterSet['text_index_title']).toContain('auto index title');
+    
+    // Mock the save operation since we don't have a real Firestore connection
+    const originalSave = model.save;
+    let saveWasCalled = false;
+    let savedData: any = null;
+    
+    model.save = jest.fn().mockImplementation(async function(this: any, customId?: string) {
+      saveWasCalled = true;
+      savedData = { ...this.getDataObject() }; // Capture the data that would be saved
+      return this;
+    });
+    
+    // Save the model - this should work with automatically created text indices
+    await model.save();
+    
+    console.log('🔍 DEBUG: Save was called:', saveWasCalled);
+    console.log('🔍 DEBUG: Data that would be saved:', savedData);
+    
+    // Verify save was called and the data includes proper text indices
+    expect(saveWasCalled).toBe(true);
+    expect(savedData).toBeDefined();
+    expect(savedData['name']).toBe('Auto Index Name');
+    expect(savedData['title']).toBe('Auto Index Title');
+    expect(savedData['text_index_name']).toBeDefined();
+    expect(Array.isArray(savedData['text_index_name'])).toBe(true);
+    expect(savedData['text_index_name']).toContain('auto index name');
+    expect(savedData['text_index_title']).toBeDefined();
+    expect(Array.isArray(savedData['text_index_title'])).toBe(true);
+    expect(savedData['text_index_title']).toContain('auto index title');
+    
+    // Restore original save method
+    model.save = originalSave;
+  });
 });
