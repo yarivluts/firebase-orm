@@ -270,7 +270,15 @@ export class BaseModel implements ModelInterface {
         if (modelPrototype.textIndexingFields.hasOwnProperty(fieldKey)) {
           const fieldName = this.getFieldName(fieldKey);
           const textIndexFieldName = 'text_index_' + fieldName;
-          const fieldValue = this.data[fieldName];
+          
+          // Get field value from multiple sources
+          let fieldValue = this.data[fieldName];
+          if (!fieldValue && typeof this[fieldKey] !== 'undefined') {
+            fieldValue = this[fieldKey];
+          }
+          if (!fieldValue && typeof this[this.getAliasName(fieldName)] !== 'undefined') {
+            fieldValue = this[this.getAliasName(fieldName)];
+          }
 
           // If field has value but text index is missing or empty, recreate it
           if (fieldValue && (!this.data[textIndexFieldName] || !Array.isArray(this.data[textIndexFieldName]))) {
