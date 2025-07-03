@@ -311,7 +311,7 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
-   * Gets one relation.
+   * Gets one relation (legacy method - use loadBelongsTo instead).
    * @param model - The model to get the relation from.
    * @returns A promise that resolves to the related model.
    */
@@ -322,16 +322,164 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
-   * Gets many relations.
+   * Gets many relations (legacy method - use loadHasMany instead).
+   * For backward compatibility, this method assumes the target model 
+   * has a foreign key field that matches this model's pathId.
    * @param model - The model to get the relations from.
    * @returns A promise that resolves to an array of related models.
    */
   async getManyRel<T>(model: { new(): T }): Promise<Array<T & BaseModel>> {
     var object: any = this.getModel(model);
     var that: any = this;
+    // Fixed logic: look for records where the foreign key equals this model's ID
     return await object
-      .where(object['pathId'], "==", that[object['pathId']])
+      .where(that.pathId, "==", that.getId())
       .get();
+  }
+
+  /**
+   * Load a belongsTo relationship
+   * @param relationshipName - The name of the relationship property
+   */
+  async loadBelongsTo<T>(relationshipName: string): Promise<T & BaseModel> {
+    const relationships = (this as any).relationships;
+    if (!relationships || !relationships[relationshipName]) {
+      throw new Error(`Relationship '${relationshipName}' not found`);
+    }
+
+    const relationship = relationships[relationshipName];
+    if (relationship.type !== 'belongsTo') {
+      throw new Error(`Relationship '${relationshipName}' is not a belongsTo relationship`);
+    }
+
+    const localValue = (this as any)[relationship.localKey];
+    if (!localValue) {
+      throw new Error(`Local key '${relationship.localKey}' has no value`);
+    }
+
+    const relatedModel = this.getModel(relationship.model);
+    return (await relatedModel.load(localValue)) as T & BaseModel;
+  }
+
+  /**
+   * Load a hasOne relationship  
+   * @param relationshipName - The name of the relationship property
+   */
+  async loadHasOne<T>(relationshipName: string): Promise<T & BaseModel> {
+    const relationships = (this as any).relationships;
+    if (!relationships || !relationships[relationshipName]) {
+      throw new Error(`Relationship '${relationshipName}' not found`);
+    }
+
+    const relationship = relationships[relationshipName];
+    if (relationship.type !== 'hasOne') {
+      throw new Error(`Relationship '${relationshipName}' is not a hasOne relationship`);
+    }
+
+    const relatedModel = this.getModel(relationship.model);
+    const results = await (relatedModel as any)
+      .where(relationship.foreignKey, "==", this.getId())
+      .get();
+
+    if (results.length === 0) {
+      throw new Error(`No related record found for hasOne relationship '${relationshipName}'`);
+    }
+
+    return results[0] as T & BaseModel;
+  }
+
+  /**
+   * Load a hasMany relationship
+   * @param relationshipName - The name of the relationship property
+   */
+  async loadHasMany<T>(relationshipName: string): Promise<Array<T & BaseModel>> {
+    const relationships = (this as any).relationships;
+    if (!relationships || !relationships[relationshipName]) {
+      throw new Error(`Relationship '${relationshipName}' not found`);
+    }
+
+    const relationship = relationships[relationshipName];
+    if (relationship.type !== 'hasMany') {
+      throw new Error(`Relationship '${relationshipName}' is not a hasMany relationship`);
+    }
+
+    const relatedModel = this.getModel(relationship.model);
+    return (await (relatedModel as any)
+      .where(relationship.foreignKey, "==", this.getId())
+      .get()) as Array<T & BaseModel>;
+  }
+
+  /**
+   * Load a belongsToMany relationship
+   * @param relationshipName - The name of the relationship property
+   */
+  async loadBelongsToMany<T>(relationshipName: string): Promise<Array<T & BaseModel>> {
+    const relationships = (this as any).relationships;
+    if (!relationships || !relationships[relationshipName]) {
+      throw new Error(`Relationship '${relationshipName}' not found`);
+    }
+
+    const relationship = relationships[relationshipName];
+    if (relationship.type !== 'belongsToMany') {
+      throw new Error(`Relationship '${relationshipName}' is not a belongsToMany relationship`);
+    }
+
+    // Get junction table records
+    const junctionModel = this.getModel(relationship.through);
+    const junctionRecords = await (junctionModel as any)
+      .where(relationship.thisKey, "==", this.getId())
+      .get();
+
+    // Get the related model IDs
+    const relatedIds = junctionRecords.map((record: any) => record[relationship.otherKey]);
+    
+    // Load all related models
+    const relatedModel = this.getModel(relationship.model);
+    const results: Array<T & BaseModel> = [];
+    
+    for (const id of relatedIds) {
+      const related = this.getModel(relationship.model);
+      await related.load(id);
+      results.push(related as T & BaseModel);
+    }
+
+    return results;
+  }
+
+  /**
+   * Load all defined relationships or specific ones
+   */
+  async loadWithRelationships(relationshipNames?: string[]): Promise<this> {
+    const relationships = (this as any).relationships;
+    if (!relationships) {
+      return this;
+    }
+
+    const names = relationshipNames || Object.keys(relationships);
+    
+    for (const name of names) {
+      const relationship = relationships[name];
+      try {
+        switch (relationship.type) {
+          case 'belongsTo':
+            (this as any)[name] = await this.loadBelongsTo(name);
+            break;
+          case 'hasOne':
+            (this as any)[name] = await this.loadHasOne(name);
+            break;
+          case 'hasMany':
+            (this as any)[name] = await this.loadHasMany(name);
+            break;
+          case 'belongsToMany':
+            (this as any)[name] = await this.loadBelongsToMany(name);
+            break;
+        }
+      } catch (error) {
+        console.warn(`Failed to load relationship '${name}':`, error);
+      }
+    }
+
+    return this;
   }
 
   /**

@@ -1,6 +1,13 @@
 import * as firebase from "firebase";
 import 'firebase/storage';
-import { FirestoreOrmRepository, Field, BaseModel, Model } from "../../index";
+import { 
+  FirestoreOrmRepository, 
+  Field, 
+  BaseModel, 
+  Model, 
+  BelongsTo, 
+  HasMany 
+} from "../../index";
 import { config } from "../config";
 
 // Define related models for testing relationships
@@ -18,6 +25,13 @@ class Category extends BaseModel {
     is_required: false,
   })
   public description?: string;
+
+  // One-to-many: Category has many products
+  @HasMany({
+    model: RelProduct,
+    foreignKey: 'category_id'
+  })
+  public products?: RelProduct[];
 }
 
 @Model({
@@ -40,6 +54,13 @@ class RelProduct extends BaseModel {
     field_name: 'category_id'
   })
   public categoryId?: string;
+
+  // Many-to-one: Product belongs to category
+  @BelongsTo({
+    model: Category,
+    localKey: 'categoryId'
+  })
+  public category?: Category;
 }
 
 @Model({
@@ -115,6 +136,45 @@ describe('Model Relationships and Complex Data', () => {
       await category.remove();
     }
   });
+
+  test('should handle one-to-many relationships with new decorators', async () => {
+    // Create a category
+    const category = new Category();
+    category.name = 'Electronics';
+    category.description = 'Electronic devices and gadgets';
+    await category.save();
+    
+    // Create products in that category
+    const product1 = new RelProduct();
+    product1.name = 'Smartphone';
+    product1.price = 699;
+    product1.categoryId = category.getId();
+    await product1.save();
+    
+    const product2 = new RelProduct();
+    product2.name = 'Laptop';
+    product2.price = 1299;
+    product2.categoryId = category.getId();
+    await product2.save();
+    
+    // Load category with products using new relationship methods
+    const categoryWithProducts = new Category();
+    await categoryWithProducts.load(category.getId());
+    const products = await categoryWithProducts.loadHasMany('products');
+    
+    // Check that we found the products in the category
+    expect(products.length).toBe(2);
+    expect(products.map(p => p.name).sort()).toEqual(['Laptop', 'Smartphone']);
+    
+    // Test the reverse relationship - product belongs to category
+    const productWithCategory = new RelProduct();
+    await productWithCategory.load(product1.getId());
+    const loadedCategory = await productWithCategory.loadBelongsTo('category');
+    
+    expect(loadedCategory).toBeDefined();
+    expect(loadedCategory.name).toBe('Electronics');
+    expect(loadedCategory.getId()).toBe(category.getId());
+  }, 15000);
 
   test('should handle one-to-many relationships', async () => {
     // Create a category

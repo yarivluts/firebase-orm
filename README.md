@@ -7,6 +7,7 @@ Firebase ORM supports only Active Record pattern for now.
 Some Arbel Firebase Orm features:
 
 - supports ActiveRecord
+- comprehensive relationship support (one-to-one, one-to-many, many-to-many)
 - allow to specify the Firestore database sturcture as Orm
 - easy way to keep the Firestore nosql sturcture orginazied and easy to managed
 - fetching list and data in real-time (Firesotre feature)
@@ -157,6 +158,206 @@ import { FirestoreOrmRepository } from "@arbel/firebase-orm";
 
 var firebaseApp = FirestoreOrmRepository.initializeApp(config);
 
+```
+
+## Relationships
+
+Firebase ORM supports one-to-one, one-to-many, and many-to-many relationships through decorators.
+
+### One-to-One Relationships
+
+#### BelongsTo (model has foreign key)
+
+```typescript
+import { Field, BaseModel, Model, BelongsTo } from "@arbel/firebase-orm";
+
+@Model({
+  reference_path: 'user_profiles',
+  path_id: 'profile_id'
+})
+class UserProfile extends BaseModel {
+  @Field({ is_required: true, field_name: 'user_id' })
+  public userId!: string;
+
+  @Field({ is_required: false })
+  public bio?: string;
+
+  // Belongs to one user
+  @BelongsTo({
+    model: User,
+    localKey: 'userId'
+  })
+  public user?: User;
+}
+
+// Load the relationship
+const profile = new UserProfile();
+await profile.load('profile-id');
+const user = await profile.loadBelongsTo('user');
+```
+
+#### HasOne (other model has foreign key)
+
+```typescript
+@Model({
+  reference_path: 'users',
+  path_id: 'user_id'
+})
+class User extends BaseModel {
+  @Field({ is_required: true })
+  public name!: string;
+
+  // Has one profile
+  @HasOne({
+    model: UserProfile,
+    foreignKey: 'user_id'
+  })
+  public profile?: UserProfile;
+}
+
+// Load the relationship
+const user = new User();
+await user.load('user-id');
+const profile = await user.loadHasOne('profile');
+```
+
+### One-to-Many Relationships
+
+```typescript
+@Model({
+  reference_path: 'posts',
+  path_id: 'post_id'
+})
+class Post extends BaseModel {
+  @Field({ is_required: true })
+  public title!: string;
+
+  @Field({ is_required: true, field_name: 'author_id' })
+  public authorId!: string;
+
+  // Belongs to one user
+  @BelongsTo({
+    model: User,
+    localKey: 'authorId'
+  })
+  public author?: User;
+}
+
+@Model({
+  reference_path: 'users',
+  path_id: 'user_id'
+})
+class User extends BaseModel {
+  @Field({ is_required: true })
+  public name!: string;
+
+  // Has many posts
+  @HasMany({
+    model: Post,
+    foreignKey: 'author_id'
+  })
+  public posts?: Post[];
+}
+
+// Load the relationships
+const user = new User();
+await user.load('user-id');
+const posts = await user.loadHasMany('posts');
+
+const post = new Post();
+await post.load('post-id');
+const author = await post.loadBelongsTo('author');
+```
+
+### Many-to-Many Relationships
+
+Many-to-many relationships require a junction table:
+
+```typescript
+// Junction table
+@Model({
+  reference_path: 'user_roles',
+  path_id: 'user_role_id'
+})
+class UserRole extends BaseModel {
+  @Field({ is_required: true, field_name: 'user_id' })
+  public userId!: string;
+
+  @Field({ is_required: true, field_name: 'role_id' })
+  public roleId!: string;
+}
+
+@Model({
+  reference_path: 'users',
+  path_id: 'user_id'
+})
+class User extends BaseModel {
+  @Field({ is_required: true })
+  public name!: string;
+
+  // Many-to-many: User belongs to many roles
+  @BelongsToMany({
+    model: Role,
+    through: UserRole,
+    thisKey: 'user_id',
+    otherKey: 'role_id'
+  })
+  public roles?: Role[];
+}
+
+@Model({
+  reference_path: 'roles',
+  path_id: 'role_id'
+})
+class Role extends BaseModel {
+  @Field({ is_required: true })
+  public name!: string;
+
+  // Many-to-many: Role belongs to many users
+  @BelongsToMany({
+    model: User,
+    through: UserRole,
+    thisKey: 'role_id',
+    otherKey: 'user_id'
+  })
+  public users?: User[];
+}
+
+// Load the relationships
+const user = new User();
+await user.load('user-id');
+const roles = await user.loadBelongsToMany('roles');
+
+const role = new Role();
+await role.load('role-id');
+const users = await role.loadBelongsToMany('users');
+```
+
+### Loading Multiple Relationships
+
+You can load all relationships at once:
+
+```typescript
+const user = new User();
+await user.load('user-id');
+await user.loadWithRelationships(['profile', 'posts', 'roles']);
+
+// Now you can access the loaded relationships
+console.log(user.profile);
+console.log(user.posts);
+console.log(user.roles);
+```
+
+### Legacy Relationship Methods
+
+For backward compatibility, the original relationship methods are still available:
+
+```typescript
+// Load one related model (assumes foreign key pattern)
+const relatedModel = await model.getOneRel(RelatedModel);
+
+// Load many related models (assumes foreign key pattern)  
+const relatedModels = await model.getManyRel(RelatedModel);
 ```
 
 ## Usage with Firebase Admin
