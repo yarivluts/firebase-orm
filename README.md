@@ -15,49 +15,124 @@ Some Arbel Firebase Orm features:
 
 And more...
 
+## 📚 Documentation
+
+For comprehensive guides and examples, visit our **[Documentation](./docs/README.md)**:
+
+### Getting Started
+- **[Installation & Setup](./docs/installation.md)** - Get Firebase ORM running in your project
+- **[Quick Start Guide](./docs/quick-start.md)** - Build your first app in minutes
+- **[Basic Concepts](./docs/basic-concepts.md)** - Core concepts and patterns
+
+### Framework Integration
+- **[Angular](./docs/frameworks/angular.md)** - Services, components, and dependency injection
+- **[Next.js](./docs/frameworks/nextjs.md)** - SSR, SSG, client-side, and API routes
+- **[Nuxt.js](./docs/frameworks/nuxtjs.md)** - Vue.js with SSR/SSG support
+- **[React](./docs/frameworks/react.md)** - Hooks, context, and state management
+- **[Vue.js](./docs/frameworks/vue.md)** - Composables and reactive data
+- **[Node.js](./docs/frameworks/nodejs.md)** - Express APIs and backend services
+
+### Core Features
+- **[Models & Fields](./docs/models-and-fields.md)** - Model definitions and field types
+- **[Relationships](./docs/relationships.md)** - One-to-one, one-to-many, many-to-many
+- **[Querying Data](./docs/querying.md)** - Advanced queries and filtering
+- **[Real-time Features](./docs/realtime.md)** - Live data updates and subscriptions
+
+### Advanced Topics
+- **[Firebase Storage](./docs/advanced/storage.md)** - File uploads and management
+- **[Elasticsearch Integration](./docs/advanced/elasticsearch.md)** - Full-text search
+- **[Performance Optimization](./docs/advanced/performance.md)** - Scaling best practices
+- **[Security & Rules](./docs/advanced/security.md)** - Authentication and authorization
+
+## 🚀 Quick Example
+
 With Firebase ORM your models look like this:
 
 ```typescript
 import { Field, BaseModel, Model } from "@arbel/firebase-orm";
 
 @Model({
-  reference_path: "websites/:website_id/members",
-  path_id: "member_id"
+  reference_path: "users",
+  path_id: "user_id"
 })
-export class Member extends BaseModel {
-  @Field({
-    is_required: true
-  })
+export class User extends BaseModel {
+  @Field({ is_required: true })
   public name!: string;
 
-  @Field({
-    is_required: true,
-    field_name: "photo_url"
-  })
-  public photoUrl!: string;
+  @Field({ is_required: true })
+  public email!: string;
+
+  @Field({ field_name: "created_at" })
+  public createdAt?: string;
 }
 ```
 
 And your domain logic looks like this:
 
 ```typescript
-const member = new Member();
-member.name = "Timber";
-member.photoUrl = "https://www.example.com/image.png";
-member.save()
+// Create a new user
+const user = new User();
+user.name = "John Doe";
+user.email = "john@example.com";
+user.createdAt = new Date().toISOString();
+await user.save();
 
-//To access the data in hierarchy
-//Get the website google from the database
-const google = await Website.findOne('domain','==','www.google.com');
+// Query users
+const activeUsers = await User.query()
+  .where('isActive', '==', true)
+  .orderBy('createdAt', 'desc')
+  .limit(10)
+  .get();
 
-//Get the linkes under google website
-const links = await google.getModel(Link).getAll();
+// Real-time updates
+const unsubscribe = User.onList((user) => {
+  console.log('User updated:', user.name);
+});
 
-//Using sql to find links inside google model
-const list = await google.sql("select * from links where name = 'some link'");
+// Relationships
+const posts = await user.loadHasMany('posts');
+console.log(`${user.name} has ${posts.length} posts`);
+```
 
+## 🏃‍♂️ Quick Start
 
-//Get all members
+1. **Install Firebase ORM**
+   ```bash
+   npm install @arbel/firebase-orm firebase moment --save
+   ```
+
+2. **Initialize Firebase**
+   ```typescript
+   import { initializeApp } from 'firebase/app';
+   import { getFirestore } from 'firebase/firestore';
+   import { FirestoreOrmRepository } from '@arbel/firebase-orm';
+
+   const app = initializeApp(firebaseConfig);
+   const firestore = getFirestore(app);
+   FirestoreOrmRepository.initGlobalConnection(firestore);
+   ```
+
+3. **Create your first model**
+   ```typescript
+   @Model({ reference_path: 'users', path_id: 'user_id' })
+   export class User extends BaseModel {
+     @Field({ is_required: true })
+     public name!: string;
+   }
+   ```
+
+4. **Start building!**
+   ```typescript
+   const user = new User();
+   user.name = 'John Doe';
+   await user.save();
+   ```
+
+👉 **[Continue with the full Quick Start Guide](./docs/quick-start.md)**
+
+---
+
+*The following examples show additional features from the original codebase:*
 const allMembers = await Member.getAll();
 
 //Get all members with age > 3 and weight > 30
