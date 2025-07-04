@@ -119,6 +119,35 @@ export interface ModelInterface {
   getManyRel<T>(model: { new(): T }): Promise<Array<T & BaseModel>>;
 
   /**
+   * Load a belongsTo relationship
+   * @param relationshipName - The name of the relationship property
+   */
+  loadBelongsTo<T>(relationshipName: string): Promise<T & BaseModel>;
+
+  /**
+   * Load a hasOne relationship  
+   * @param relationshipName - The name of the relationship property
+   */
+  loadHasOne<T>(relationshipName: string): Promise<T & BaseModel>;
+
+  /**
+   * Load a hasMany relationship
+   * @param relationshipName - The name of the relationship property
+   */
+  loadHasMany<T>(relationshipName: string): Promise<Array<T & BaseModel>>;
+
+  /**
+   * Load a belongsToMany relationship
+   * @param relationshipName - The name of the relationship property
+   */
+  loadBelongsToMany<T>(relationshipName: string): Promise<Array<T & BaseModel>>;
+
+  /**
+   * Load all defined relationships
+   */
+  loadWithRelationships(relationshipNames?: string[]): Promise<this>;
+
+  /**
    * Init the current model by firestore object
    * @param doc 
    * @return Current model
