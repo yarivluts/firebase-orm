@@ -22,6 +22,7 @@ Welcome to the Firebase ORM documentation! This documentation is organized into 
 - [React Integration](./frameworks/react.md) - Client-side React applications
 - [Vue.js Integration](./frameworks/vue.md) - Vue.js applications
 - [Node.js Integration](./frameworks/nodejs.md) - Backend applications
+- [Firebase Functions Integration](./firebase-functions.md) - Server-side functions and triggers
 
 ### Advanced Topics
 - [Firebase Storage](./advanced/storage.md) - File uploads and management
@@ -38,6 +39,9 @@ Welcome to the Firebase ORM documentation! This documentation is organized into 
 ## Quick Links
 
 - **New to Firebase ORM?** Start with [Installation & Setup](./installation.md)
+- **Why use Firebase ORM?** Learn about the [Benefits & Importance](./basic-concepts.md#why-use-firebase-orm)
+- **Complex data structures?** Check out [Complex Reference Paths](./basic-concepts.md#complex-reference-paths)
+- **Building server-side functions?** See [Firebase Functions Integration](./firebase-functions.md)
 - **Coming from another ORM?** Check out [Basic Concepts](./basic-concepts.md)
 - **Need framework-specific help?** Visit the [Framework Integration](./frameworks/) section
 - **Having issues?** Check [Troubleshooting](./guides/troubleshooting.md)

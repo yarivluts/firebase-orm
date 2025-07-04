@@ -6,12 +6,16 @@ Firebase ORM supports only Active Record pattern for now.
 
 Some Arbel Firebase Orm features:
 
-- supports ActiveRecord
-- comprehensive relationship support (one-to-one, one-to-many, many-to-many)
-- allow to specify the Firestore database sturcture as Orm
-- easy way to keep the Firestore nosql sturcture orginazied and easy to managed
-- fetching list and data in real-time (Firesotre feature)
-- store created time and updated time automaticly
+- 🚀 **ActiveRecord Pattern** - Intuitive object-oriented database interaction
+- 🔗 **Comprehensive Relationships** - One-to-one, one-to-many, many-to-many with lazy loading
+- 🏗️ **Hierarchical Data Structure** - Complex reference paths for nested collections (`websites/:website_id/members`)
+- 🛡️ **Type Safety** - Full TypeScript support with compile-time validation
+- ⚡ **Real-time Updates** - Live data synchronization with automatic model hydration
+- 🔍 **Advanced Querying** - Chainable queries with text search and indexing capabilities
+- 🔧 **Cross-Platform** - Same API works in browser, Node.js, and Firebase Functions
+- 📊 **Performance Optimized** - Lazy loading, caching, and efficient relationship handling
+- 🛠️ **Lifecycle Hooks** - beforeSave, afterSave, beforeDestroy, afterDestroy
+- 📝 **Automatic Timestamps** - created_at and updated_at fields managed automatically
 
 And more...
 
@@ -31,6 +35,7 @@ For comprehensive guides and examples, visit our **[Documentation](./docs/README
 - **[React](./docs/frameworks/react.md)** - Hooks, context, and state management
 - **[Vue.js](./docs/frameworks/vue.md)** - Composables and reactive data
 - **[Node.js](./docs/frameworks/nodejs.md)** - Express APIs and backend services
+- **[Firebase Functions](./docs/firebase-functions.md)** - Server-side functions, triggers, and APIs
 
 ### Core Features
 - **[Models & Fields](./docs/models-and-fields.md)** - Model definitions and field types
@@ -51,6 +56,7 @@ With Firebase ORM your models look like this:
 ```typescript
 import { Field, BaseModel, Model } from "@arbel/firebase-orm";
 
+// Simple model
 @Model({
   reference_path: "users",
   path_id: "user_id"
@@ -65,6 +71,22 @@ export class User extends BaseModel {
   @Field({ field_name: "created_at" })
   public createdAt?: string;
 }
+
+// Complex hierarchical model
+@Model({
+  reference_path: "websites/:website_id/members",  // Nested structure
+  path_id: "member_id"
+})
+export class Member extends BaseModel {
+  @Field({ is_required: true })
+  public name!: string;
+
+  @Field({ field_name: "photo_url" })
+  public photoUrl!: string;
+
+  @Field({ is_required: false })
+  public role?: string;
+}
 ```
 
 And your domain logic looks like this:
@@ -76,6 +98,11 @@ user.name = "John Doe";
 user.email = "john@example.com";
 user.createdAt = new Date().toISOString();
 await user.save();
+
+// Work with hierarchical data
+const website = await Website.findOne('domain', '==', 'www.google.com');
+const members = await website.getModel(Member).getAll();
+console.log(`${website.domain} has ${members.length} members`);
 
 // Query users
 const activeUsers = await User.query()
@@ -92,6 +119,11 @@ const unsubscribe = User.onList((user) => {
 // Relationships
 const posts = await user.loadHasMany('posts');
 console.log(`${user.name} has ${posts.length} posts`);
+
+// Text search
+const searchResults = await User.query()
+  .like('name', '%john%')
+  .get();
 ```
 
 ## 🏃‍♂️ Quick Start
