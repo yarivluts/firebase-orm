@@ -472,7 +472,7 @@ export class UserService {
       throw new Error('User not found');
     }
 
-    Object.assign(user, updates);
+    user.initFromData(updates);
     user.updatedAt = new Date().toISOString();
     await user.save();
 
@@ -621,7 +621,7 @@ export class PostService {
 
     const wasPublished = post.status === PostStatus.PUBLISHED;
     
-    Object.assign(post, updates);
+    post.initFromData(updates);
     post.updatedAt = new Date().toISOString();
 
     // Set published date if status changed to published

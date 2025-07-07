@@ -253,7 +253,7 @@ export function useFirebaseORM<T extends any>(
   const createItem = async (itemData: Partial<T>) => {
     try {
       const item = new ModelClass();
-      Object.assign(item, itemData);
+      item.initFromData(itemData);
       await (item as any).save();
 
       if (!options.realtime) {
@@ -272,7 +272,7 @@ export function useFirebaseORM<T extends any>(
     try {
       const item = new ModelClass();
       await (item as any).load(id);
-      Object.assign(item, updates);
+      item.initFromData(updates);
       await (item as any).save();
 
       if (!options.realtime) {
@@ -457,7 +457,7 @@ export const useUserStore = defineStore('user', {
     async createUser(userData: Partial<User>) {
       try {
         const user = new User();
-        Object.assign(user, userData);
+        user.initFromData(userData);
         user.createdAt = new Date().toISOString();
         await user.save();
 
@@ -474,7 +474,7 @@ export const useUserStore = defineStore('user', {
       try {
         const user = new User();
         await user.load(id);
-        Object.assign(user, updates);
+        user.initFromData(updates);
         await user.save();
 
         const index = this.users.findIndex(u => u.getId() === id);

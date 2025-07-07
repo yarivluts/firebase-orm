@@ -908,7 +908,7 @@ export class UserService {
   static async createUser(userData: CreateUserData): Promise<User> {
     // Business logic
     const user = new User();
-    Object.assign(user, userData);
+    user.initFromData(userData);
     
     // Validation
     await this.validateUserData(user);

@@ -682,7 +682,7 @@ export const batchUpdateProducts = functions.https.onCall(async (data, context) 
 
   // Update all products
   products.forEach(product => {
-    Object.assign(product, updates);
+    product.initFromData(updates);
     product.updatedAt = new Date().toISOString();
   });
 

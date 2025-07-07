@@ -244,7 +244,7 @@ export function UsersList({ initialUsers }: UsersListProps) {
     // Convert initial data to User instances
     const userInstances = initialUsers.map(userData => {
       const user = new User();
-      Object.assign(user, userData);
+      user.initFromData(userData);
       return user;
     });
     setUsers(userInstances);
@@ -273,7 +273,7 @@ export function UsersList({ initialUsers }: UsersListProps) {
     setLoading(true);
     try {
       const user = new User();
-      Object.assign(user, userData);
+      user.initFromData(userData);
       user.createdAt = new Date().toISOString();
       await user.save();
       // Real-time listener will update the UI automatically
@@ -724,7 +724,7 @@ export function useFirebaseORM<T extends any>(
   const createItem = useCallback(async (itemData: Partial<T>) => {
     try {
       const item = new ModelClass();
-      Object.assign(item, itemData);
+      item.initFromData(itemData);
       await (item as any).save();
       
       if (!options.realtime) {
@@ -743,7 +743,7 @@ export function useFirebaseORM<T extends any>(
     try {
       const item = new ModelClass();
       await (item as any).load(id);
-      Object.assign(item, updates);
+      item.initFromData(updates);
       await (item as any).save();
       
       if (!options.realtime) {

@@ -766,7 +766,7 @@ export function useFirebaseORM<T extends any>(
   const createItem = async (itemData: Partial<T>) => {
     try {
       const item = new ModelClass();
-      Object.assign(item, itemData);
+      item.initFromData(itemData);
       await (item as any).save();
       
       if (!options.realtime) {
@@ -785,7 +785,7 @@ export function useFirebaseORM<T extends any>(
     try {
       const item = new ModelClass();
       await (item as any).load(id);
-      Object.assign(item, updates);
+      item.initFromData(updates);
       await (item as any).save();
       
       if (!options.realtime) {

@@ -188,7 +188,7 @@ export class UserService {
 
   private async saveUser(userData: Partial<User>): Promise<User> {
     const user = new User();
-    Object.assign(user, userData);
+    user.initFromData(userData);
     user.createdAt = new Date().toISOString();
     await user.save();
     return user;
@@ -202,7 +202,7 @@ export class UserService {
   private async updateUserAsync(id: string, updates: Partial<User>): Promise<User> {
     const user = new User();
     await user.load(id);
-    Object.assign(user, updates);
+    user.initFromData(updates);
     await user.save();
     return user;
   }

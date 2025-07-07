@@ -323,7 +323,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const createUser = async (userData: Partial<User>): Promise<User> => {
     try {
       const user = new User();
-      Object.assign(user, userData);
+      user.initFromData(userData);
       user.createdAt = new Date().toISOString();
       await user.save();
       
@@ -341,7 +341,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const user = new User();
       await user.load(id);
-      Object.assign(user, updates);
+      user.initFromData(updates);
       await user.save();
       
       dispatch({ type: 'UPDATE_USER', payload: user });
@@ -464,7 +464,7 @@ export function useFirebaseORM<T extends any>(
   const createItem = useCallback(async (itemData: Partial<T>) => {
     try {
       const item = new ModelClass();
-      Object.assign(item, itemData);
+      item.initFromData(itemData);
       await (item as any).save();
 
       if (!options.realtime) {
@@ -483,7 +483,7 @@ export function useFirebaseORM<T extends any>(
     try {
       const item = new ModelClass();
       await (item as any).load(id);
-      Object.assign(item, updates);
+      item.initFromData(updates);
       await (item as any).save();
 
       if (!options.realtime) {
@@ -1235,7 +1235,7 @@ export const createUser = createAsyncThunk(
   'users/createUser',
   async (userData: Partial<User>) => {
     const user = new User();
-    Object.assign(user, userData);
+    user.initFromData(userData);
     user.createdAt = new Date().toISOString();
     await user.save();
     return user;
@@ -1247,7 +1247,7 @@ export const updateUser = createAsyncThunk(
   async ({ id, updates }: { id: string; updates: Partial<User> }) => {
     const user = new User();
     await user.load(id);
-    Object.assign(user, updates);
+    user.initFromData(updates);
     await user.save();
     return user;
   }
