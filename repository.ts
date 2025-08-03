@@ -56,6 +56,7 @@ export class FirestoreOrmRepository {
         auto_lower_case_field_name: false,
         auto_path_id: false
     };
+    static usedPathIds = new Set<string>();
 
     private setupPromise: Promise<void>;
 
@@ -355,6 +356,26 @@ export class FirestoreOrmRepository {
      */
     static getGlobalConfig(): GlobalConfig {
         return { ...this.globalConfig };
+    }
+
+    /**
+     * Registers a path_id and validates it's unique globally.
+     * @param pathId - The path_id to register.
+     * @param modelName - The name of the model for error reporting.
+     * @throws An error if the path_id is already in use.
+     */
+    static registerPathId(pathId: string, modelName: string): void {
+        if (this.usedPathIds.has(pathId)) {
+            throw new Error(`Path ID '${pathId}' is already in use by another model. Each model must have a unique path_id. Model '${modelName}' cannot use this path_id.`);
+        }
+        this.usedPathIds.add(pathId);
+    }
+
+    /**
+     * Clears all registered path_ids. Useful for testing.
+     */
+    static clearRegisteredPathIds(): void {
+        this.usedPathIds.clear();
     }
 
     /**

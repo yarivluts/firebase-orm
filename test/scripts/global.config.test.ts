@@ -36,6 +36,8 @@ describe('Global Configuration', () => {
       auto_lower_case_field_name: false,
       auto_path_id: false
     });
+    // Clear registered path_ids before each test
+    FirestoreOrmRepository.clearRegisteredPathIds();
   });
 
   test('should set and get global configuration', () => {
@@ -76,6 +78,8 @@ describe('Auto Lower Case Field Names', () => {
       auto_lower_case_field_name: false,
       auto_path_id: false
     });
+    // Clear registered path_ids before each test
+    FirestoreOrmRepository.clearRegisteredPathIds();
   });
 
   test('should use original field names when auto_lower_case_field_name is disabled', () => {
@@ -166,6 +170,8 @@ describe('Auto Path ID', () => {
       auto_lower_case_field_name: false,
       auto_path_id: false
     });
+    // Clear registered path_ids before each test
+    FirestoreOrmRepository.clearRegisteredPathIds();
   });
 
   test('should throw error when path_id is missing and auto_path_id is disabled', () => {
@@ -308,5 +314,168 @@ describe('Combined Functionality', () => {
     expect(cart.getFieldName('cartItem')).toBe('cart_item');
     expect(cart.getFieldName('totalPrice')).toBe('total_price');
     expect(cart.getFieldName('someField')).toBe('custom_field');
+  });
+});
+
+describe('Path ID Uniqueness Validation', () => {
+  beforeEach(() => {
+    // Reset global config before each test
+    FirestoreOrmRepository.setGlobalConfig({
+      auto_lower_case_field_name: false,
+      auto_path_id: false
+    });
+    // Clear registered path_ids before each test
+    FirestoreOrmRepository.clearRegisteredPathIds();
+  });
+
+  test('should throw error when explicit path_ids are duplicated', () => {
+    // First model with path_id should work
+    @Model({
+      reference_path: 'users',
+      path_id: 'user_id'
+    })
+    class User extends BaseModel {
+      @Field({ is_required: true })
+      public name!: string;
+    }
+
+    // Second model with same path_id should throw error
+    expect(() => {
+      @Model({
+        reference_path: 'admins',
+        path_id: 'user_id' // Duplicate path_id
+      })
+      class Admin extends BaseModel {
+        @Field({ is_required: true })
+        public role!: string;
+      }
+    }).toThrow("Path ID 'user_id' is already in use by another model. Each model must have a unique path_id. Model 'Admin' cannot use this path_id.");
+  });
+
+  test('should throw error when auto-generated path_ids conflict', () => {
+    FirestoreOrmRepository.setGlobalConfig({
+      auto_path_id: true
+    });
+
+    // First model should work
+    @Model({
+      reference_path: 'users'
+    })
+    class User extends BaseModel {
+      @Field({ is_required: true })
+      public name!: string;
+    }
+
+    // Second model with same class name pattern should throw error
+    expect(() => {
+      @Model({
+        reference_path: 'other_users'
+        // This would auto-generate 'user_id' which conflicts
+      })
+      class User extends BaseModel {
+        @Field({ is_required: true })
+        public email!: string;
+      }
+    }).toThrow("Path ID 'user_id' is already in use by another model. Each model must have a unique path_id. Model 'User' cannot use this path_id.");
+  });
+
+  test('should throw error when explicit path_id conflicts with auto-generated', () => {
+    FirestoreOrmRepository.setGlobalConfig({
+      auto_path_id: true
+    });
+
+    // First model with auto-generated path_id
+    @Model({
+      reference_path: 'users'
+    })
+    class User extends BaseModel {
+      @Field({ is_required: true })
+      public name!: string;
+    }
+
+    // Second model with explicit path_id that conflicts with auto-generated
+    expect(() => {
+      @Model({
+        reference_path: 'products',
+        path_id: 'user_id' // Conflicts with auto-generated 'user_id' from User class
+      })
+      class Product extends BaseModel {
+        @Field({ is_required: true })
+        public title!: string;
+      }
+    }).toThrow("Path ID 'user_id' is already in use by another model. Each model must have a unique path_id. Model 'Product' cannot use this path_id.");
+  });
+
+  test('should allow different path_ids without conflict', () => {
+    // Multiple models with different path_ids should work fine
+    expect(() => {
+      @Model({
+        reference_path: 'users',
+        path_id: 'user_id'
+      })
+      class User extends BaseModel {
+        @Field({ is_required: true })
+        public name!: string;
+      }
+
+      @Model({
+        reference_path: 'products',
+        path_id: 'product_id'
+      })
+      class Product extends BaseModel {
+        @Field({ is_required: true })
+        public title!: string;
+      }
+
+      @Model({
+        reference_path: 'orders',
+        path_id: 'order_id'
+      })
+      class Order extends BaseModel {
+        @Field({ is_required: true })
+        public total!: number;
+      }
+    }).not.toThrow();
+  });
+
+  test('should work correctly with complex auto-generated path_ids', () => {
+    FirestoreOrmRepository.setGlobalConfig({
+      auto_path_id: true
+    });
+
+    expect(() => {
+      @Model({
+        reference_path: 'user_profiles'
+      })
+      class UserProfile extends BaseModel {
+        @Field({ is_required: true })
+        public bio!: string;
+      }
+
+      @Model({
+        reference_path: 'shopping_carts'
+      })
+      class ShoppingCart extends BaseModel {
+        @Field({ is_required: true })
+        public items!: string[];
+      }
+
+      @Model({
+        reference_path: 'http_requests'
+      })
+      class HTTPRequest extends BaseModel {
+        @Field({ is_required: true })
+        public url!: string;
+      }
+    }).not.toThrow();
+
+    // Verify the path_ids are what we expect
+    const profile = new UserProfile();
+    const cart = new ShoppingCart();
+    const request = new HTTPRequest();
+
+    expect(profile.pathId).toBe('user_profile_id');
+    expect(cart.pathId).toBe('shopping_cart_id');
+    expect(request.pathId).toBe('h_t_t_p_request_id');
   });
 });

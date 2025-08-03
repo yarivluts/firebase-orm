@@ -35,6 +35,9 @@ export function Model(options: ModelOptions): any {
       throw new Error(`Model '${constructor.name}' must have a path_id defined in @Model decorator or enable auto_path_id in global configuration`);
     }
 
+    // Validate path_id uniqueness
+    FirestoreOrmRepository.registerPathId(pathId, constructor.name);
+
     return class extends constructor {
       get referencePath() {
 
