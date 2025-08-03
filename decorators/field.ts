@@ -1,4 +1,6 @@
 import { FieldOptions } from "../interfaces/field.options.interface";
+import { FirestoreOrmRepository } from "../repository";
+import { toSnakeCase } from "../utils/case-conversion";
 
 export function Field(options?: FieldOptions): any {
   return (target: any, key: string) => {
@@ -28,31 +30,42 @@ export function Field(options?: FieldOptions): any {
     if (!target.internalFields) {
       target.internalFields = [];
     }
+
+    // Determine the field name to use
+    let fieldName: string;
     if (options && options.field_name) {
-      target.aliasFieldsMapper[key] = options.field_name;
+      // User explicitly provided field_name - use it as-is
+      fieldName = options.field_name;
+    } else {
+      // Check global config for auto lower case conversion
+      const globalConfig = FirestoreOrmRepository.getGlobalConfig();
+      if (globalConfig.auto_lower_case_field_name) {
+        fieldName = toSnakeCase(key);
+      } else {
+        fieldName = key;
+      }
     }
 
-    if (options && options.field_name) {
-      target.reverseAliasFieldsMapper[options.field_name] = key;
+    // Set up field name mapping if different from property name
+    if (fieldName !== key) {
+      target.aliasFieldsMapper[key] = fieldName;
+      target.reverseAliasFieldsMapper[fieldName] = key;
     }
-
 
     target.fields[key] = options;
 
     if (options && options.is_required) {
       target.requiredFields.push(key);
     }
-    var field_name =
-      options && options.field_name ? options.field_name : key;
 
     if (!target.storedFields) {
       target.storedFields = [];
     }
-    target.storedFields.push(field_name);
+    target.storedFields.push(fieldName);
 
     if (options && options.is_text_indexing) {
       target.textIndexingFields[key] = key;
-      target['storedFields'].push('text_index_' + field_name);
+      target['storedFields'].push('text_index_' + fieldName);
     }
 
     var update = Object.defineProperty(target, key, {

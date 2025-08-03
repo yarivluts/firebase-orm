@@ -4,9 +4,10 @@ export interface ModelOptions {
    */
   reference_path: string;
   /**
-   * Path Id - unique code for model id inside the refernce path - for example account_id
+   * Path Id - unique code for model id inside the reference path - for example account_id
+   * If not provided and auto_path_id is enabled globally, it will be generated from the class name
    */
-  path_id: string;
+  path_id?: string;
   /**
    * 
    */

@@ -32,6 +32,7 @@ import type { FirebaseStorage } from "firebase/storage";
 import { BaseModel } from "./base.model";
 import { ModelInterface } from "./interfaces/model.interface";
 import { ElasticSqlResponse } from "./interfaces/elastic.sql.response.interface";
+import { GlobalConfig } from "./interfaces/global.config.interface";
 import * as qs from 'qs';
 
 let axios: any;
@@ -51,6 +52,10 @@ export class FirestoreOrmRepository {
     static globalFirebaseStoages = {};
     static isReady = false;
     static readyPromises: { [key: string]: Promise<FirestoreOrmRepository> } = {};
+    static globalConfig: GlobalConfig = {
+        auto_lower_case_field_name: false,
+        auto_path_id: false
+    };
 
     private setupPromise: Promise<void>;
 
@@ -334,6 +339,22 @@ export class FirestoreOrmRepository {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Sets the global configuration for the ORM.
+     * @param config - The global configuration options.
+     */
+    static setGlobalConfig(config: Partial<GlobalConfig>) {
+        this.globalConfig = { ...this.globalConfig, ...config };
+    }
+
+    /**
+     * Gets the current global configuration.
+     * @returns The current global configuration.
+     */
+    static getGlobalConfig(): GlobalConfig {
+        return { ...this.globalConfig };
     }
 
     /**
