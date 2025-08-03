@@ -98,7 +98,17 @@ export class FirestoreOrmRepository {
             if (parent === this.firestore) {
                 return firestore.collection(collectionId);
             }
-            return parent.collection(collectionId);
+            // Check if parent has a collection method
+            if (parent && typeof parent.collection === 'function') {
+                return parent.collection(collectionId);
+            }
+            // If parent doesn't have collection method, check if it's a document path and construct manually
+            if (parent && parent.path) {
+                // For Admin SDK, we can construct the path manually
+                return firestore.collection(`${parent.path}/${collectionId}`);
+            }
+            // Final fallback - this should not happen in normal Admin SDK usage
+            throw new Error(`Cannot access collection '${collectionId}' from parent object. Parent does not have a collection method and no path property found.`);
         }) as any;
         
         doc = ((parent: any, docId?: string) => {

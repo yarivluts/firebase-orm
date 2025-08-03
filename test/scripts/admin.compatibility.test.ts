@@ -11,7 +11,11 @@ describe('Admin SDK Collection Function Compatibility', () => {
       type: 'collection',
       doc: jest.fn((id?: string) => ({
         id: id || 'auto-generated',
-        type: 'document'
+        type: 'document',
+        collection: jest.fn((subName: string) => ({
+          id: subName,
+          type: 'subcollection'
+        }))
       }))
     })),
     doc: jest.fn((path: string) => ({
