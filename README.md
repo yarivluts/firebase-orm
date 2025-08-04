@@ -127,6 +127,46 @@ const searchResults = await User.query()
   .get();
 ```
 
+## 🔄 Generic ORM Alias Functions
+
+Firebase ORM now supports familiar ORM method names used in other popular frameworks, making it easier for developers coming from different ORMs:
+
+```typescript
+// Static Methods (Class-level operations)
+const users = await User.all();                    // Alias for getAll()
+const user = await User.first('email', '==', 'john@example.com'); // Alias for findOne()
+const newUser = await User.create({               // Create and save in one step
+  name: 'John Doe',
+  email: 'john@example.com'
+});
+await User.update('status', '==', 'pending', {status: 'active'}); // Update matching docs
+await User.destroy('status', '==', 'inactive');   // Remove matching docs
+
+// Instance Methods (Object-level operations)
+const user = new User();
+user.name = 'John Doe';
+await user.create();                               // Alias for save()
+await user.update({name: 'John Smith'});          // Update and save
+await user.destroy();                             // Alias for remove()
+await user.delete();                              // Alternative alias for remove()
+```
+
+### Available Alias Methods
+
+| Original Method | Alias Method | Description |
+|-----------------|--------------|-------------|
+| `Model.getAll()` | `Model.all()` | Get all documents |
+| `Model.findOne()` | `Model.first()` | Find first matching document |
+| N/A | `Model.create(data)` | Create and save new instance |
+| N/A | `Model.update(field, op, value, data)` | Update matching documents |
+| N/A | `Model.destroy(field, op, value)` | Remove matching documents |
+| `instance.save()` | `instance.create()` | Save instance (alias) |
+| N/A | `instance.update(data?)` | Update and save instance |
+| `instance.remove()` | `instance.destroy()` | Remove instance |
+| `instance.remove()` | `instance.delete()` | Remove instance (alternative) |
+
+All original methods remain available for backward compatibility.
+
 ## 🏃‍♂️ Quick Start
 
 1. **Install Firebase ORM**

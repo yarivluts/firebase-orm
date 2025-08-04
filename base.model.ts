@@ -1895,6 +1895,55 @@ export class BaseModel implements ModelInterface {
     return this;
   }
 
+  // ===========================
+  // Generic ORM Instance Alias Functions
+  // ===========================
+
+  /**
+   * Alias for save() - Persists the current instance to the database.
+   * Common alias used in many ORM frameworks for creating new records.
+   * 
+   * @param {string} [customId] - Optional custom ID for the document.
+   * @returns {Promise<this>} A promise that resolves to the current instance after creation.
+   */
+  async create(customId?: string): Promise<this> {
+    return await this.save(customId);
+  }
+
+  /**
+   * Alias for save() - Updates the current instance in the database.
+   * Common alias used in many ORM frameworks for updating existing records.
+   * 
+   * @param {Partial<this>} [updateData] - Optional data to update the instance with before saving.
+   * @returns {Promise<this>} A promise that resolves to the current instance after update.
+   */
+  async update(updateData?: Partial<this>): Promise<this> {
+    if (updateData) {
+      Object.assign(this, updateData);
+    }
+    return await this.save();
+  }
+
+  /**
+   * Alias for remove() - Destroys the current instance in the database.
+   * Common alias used in many ORM frameworks.
+   * 
+   * @returns {Promise<boolean>} A promise that resolves to true if the destruction was successful.
+   */
+  async destroy(): Promise<boolean> {
+    return await this.remove();
+  }
+
+  /**
+   * Alias for remove() - Deletes the current instance from the database.
+   * Common alias used in many ORM frameworks.
+   * 
+   * @returns {Promise<boolean>} A promise that resolves to true if the deletion was successful.
+   */
+  async delete(): Promise<boolean> {
+    return await this.remove();
+  }
+
   getReferencePath(): string {
     return this['referencePath'];
   }
@@ -1961,6 +2010,131 @@ export class BaseModel implements ModelInterface {
     value: any): Promise<T | null> {
     var that: any = this;
     return await that.where(fieldPath, opStr, value).getOne();
+  }
+
+  // ===========================
+  // Generic ORM Alias Functions
+  // ===========================
+
+  /**
+   * Alias for getAll() - Gets all documents from the collection.
+   * Common alias used in many ORM frameworks.
+   * 
+   * @template T - The type of the document to be returned.
+   * @param {Array<any>} [whereArr] - An array of where conditions.
+   * @param {{ fieldPath: string | FieldPath; directionStr?: OrderByDirection }} [orderBy] - The ordering specification.
+   * @param {number} [limit] - The maximum number of documents to retrieve.
+   * @param {{ [key: string]: string }} [params] - Additional parameters for the query.
+   * @returns {Promise<Array<T>>} - A promise that resolves to an array of documents.
+   */
+  static async all<T>(this: { new(): T },
+    whereArr?: Array<any>,
+    orderBy?: {
+      fieldPath: string | FieldPath;
+      directionStr?: OrderByDirection;
+    },
+    limit?: number,
+    params?: { [key: string]: string }
+  ): Promise<Array<T>> {
+    var that: any = this;
+    return await that.getAll(whereArr, orderBy, limit, params);
+  }
+
+  /**
+   * Alias for findOne() - Finds the first document that matches the specified criteria.
+   * Common alias used in many ORM frameworks.
+   * 
+   * @template T - The type of the document to be returned.
+   * @param {string} fieldPath - The field path to query on.
+   * @param {WhereFilterOp} opStr - The operator to use for the query.
+   * @param {any} value - The value to compare against.
+   * @returns {Promise<T | null>} A promise that resolves to the first matching document, or null if no document is found.
+   */
+  static async first<T>(this: { new(): T }, fieldPath: string,
+    opStr: WhereFilterOp,
+    value: any): Promise<T | null> {
+    var that: any = this;
+    return await that.findOne(fieldPath, opStr, value);
+  }
+
+  /**
+   * Creates a new instance of the model with the given data and saves it to the database.
+   * Common alias used in many ORM frameworks.
+   * 
+   * @template T - The type of the document to be created.
+   * @param {Partial<T>} data - The data to populate the new instance with.
+   * @param {string} [customId] - Optional custom ID for the document.
+   * @returns {Promise<T>} A promise that resolves to the created and saved instance.
+   */
+  static async create<T>(this: { new(): T }, data: Partial<T>, customId?: string): Promise<T> {
+    const instance = new this() as T & BaseModel;
+    
+    // Populate the instance with the provided data
+    Object.assign(instance, data);
+    
+    // Save the instance to the database
+    await instance.save(customId);
+    
+    return instance;
+  }
+
+  /**
+   * Updates documents in the collection that match the specified criteria.
+   * Common alias used in many ORM frameworks.
+   * 
+   * @template T - The type of the document to be updated.
+   * @param {string} fieldPath - The field path to query on.
+   * @param {WhereFilterOp} opStr - The operator to use for the query.
+   * @param {any} value - The value to compare against.
+   * @param {Partial<T>} updateData - The data to update the matching documents with.
+   * @returns {Promise<Array<T>>} A promise that resolves to an array of updated documents.
+   */
+  static async update<T>(this: { new(): T }, 
+    fieldPath: string,
+    opStr: WhereFilterOp,
+    value: any,
+    updateData: Partial<T>): Promise<Array<T>> {
+    var that: any = this;
+    const instances = await that.find(fieldPath, opStr, value);
+    const updatedInstances: Array<T> = [];
+    
+    for (const instance of instances) {
+      // Update the instance with new data
+      Object.assign(instance, updateData);
+      // Save the updated instance
+      await (instance as any).save();
+      updatedInstances.push(instance);
+    }
+    
+    return updatedInstances;
+  }
+
+  /**
+   * Alias for find() followed by remove() - Destroys documents that match the specified criteria.
+   * Common alias used in many ORM frameworks.
+   * 
+   * @template T - The type of the document to be destroyed.
+   * @param {string} fieldPath - The field path to query on.
+   * @param {WhereFilterOp} opStr - The operator to use for the query.
+   * @param {any} value - The value to compare against.
+   * @returns {Promise<boolean>} A promise that resolves to true if all documents were successfully destroyed.
+   */
+  static async destroy<T>(this: { new(): T }, 
+    fieldPath: string,
+    opStr: WhereFilterOp,
+    value: any): Promise<boolean> {
+    var that: any = this;
+    const instances = await that.find(fieldPath, opStr, value);
+    let allDestroyed = true;
+    
+    for (const instance of instances) {
+      const destroyed = await (instance as any).remove();
+      if (!destroyed) {
+        allDestroyed = false;
+      }
+    }
+    
+    return allDestroyed;
   }
 
 
