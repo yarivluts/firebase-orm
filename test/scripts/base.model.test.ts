@@ -1,5 +1,5 @@
 import { initializeTestEnvironment, EXTENDED_TIMEOUT } from "../test-utils";
-import { TestModel } from "../models/test-models";
+import { TestModel, PathParamTestModel } from "../models/test-models";
 
 // Initialize Firebase for tests
 let testEnv: any;
@@ -61,7 +61,7 @@ describe('BaseModel Core Functionality', () => {
     model.requiredField = 'test value';
     model.customNameField = 'custom field';
     
-    const data = model.getData();
+    const data = model.getData() as any;
     
     expect(data.requiredField).toBe('test value');
     expect(data.custom_field_name).toBe('custom field');
@@ -90,5 +90,90 @@ describe('BaseModel Core Functionality', () => {
     expect(requiredFields).toContain('customNameField');
     expect(requiredFields).not.toContain('optionalField');
     expect(requiredFields).not.toContain('indexedField');
+  });
+});
+
+describe('BaseModel Path Parameters Functionality', () => {
+  test('setPathParams should store path parameters in Map', () => {
+    const model = new PathParamTestModel();
+    
+    // Set path parameters using the new function
+    model.setPathParams('userId', 'user123');
+    model.setPathParams('postId', 'post456');
+    
+    // Verify the parameters are stored in the Map
+    const pathParams = model.getPathParams();
+    expect(pathParams.has('userId')).toBe(true);
+    expect(pathParams.has('postId')).toBe(true);
+    expect(pathParams.get('userId')).toBe('user123');
+    expect(pathParams.get('postId')).toBe('post456');
+  });
+
+  test('setPathParams should return the model instance for chaining', () => {
+    const model = new PathParamTestModel();
+    
+    // Test method chaining
+    const result = model.setPathParams('userId', 'user123').setPathParams('postId', 'post456');
+    
+    expect(result).toBe(model);
+    const pathParams = model.getPathParams();
+    expect(pathParams.get('userId')).toBe('user123');
+    expect(pathParams.get('postId')).toBe('post456');
+  });
+
+  test('getPathListParams should prioritize pathParams over instance properties', () => {
+    const model = new PathParamTestModel();
+    
+    // Set instance properties first
+    model.userId = 'instanceUser123';
+    model.postId = 'instancePost456';
+    
+    // Override with pathParams
+    model.setPathParams('userId', 'paramUser999');
+    model.setPathParams('postId', 'paramPost888');
+    
+    const pathParams = model.getPathListParams();
+    
+    // Should use pathParams values, not instance property values
+    expect(pathParams.userId).toBe('paramUser999');
+    expect(pathParams.postId).toBe('paramPost888');
+  });
+
+  test('getPathListParams should fallback to instance properties when pathParams not set', () => {
+    const model = new PathParamTestModel();
+    
+    // Set only instance properties
+    model.userId = 'instanceUser123';
+    model.postId = 'instancePost456';
+    
+    const pathParams = model.getPathListParams();
+    
+    // Should use instance property values
+    expect(pathParams.userId).toBe('instanceUser123');
+    expect(pathParams.postId).toBe('instancePost456');
+  });
+
+  test('getPathList should prioritize pathParams over instance properties', () => {
+    const model = new PathParamTestModel();
+    
+    // Set instance properties first
+    model.userId = 'instanceUser123';
+    model.postId = 'instancePost456';
+    
+    // Override with pathParams
+    model.setPathParams('userId', 'paramUser999');
+    model.setPathParams('postId', 'paramPost888');
+    
+    const pathList = model.getPathList();
+    
+    // Verify pathList structure and values
+    expect(Array.isArray(pathList)).toBe(true);
+    if (Array.isArray(pathList)) {
+      // Check that the path list contains our pathParams values
+      const pathValues = pathList.map(item => item.value);
+      expect(pathValues).toContain('paramUser999');
+      expect(pathValues).toContain('paramPost888');
+      expect(pathValues).toContain('comments');
+    }
   });
 });

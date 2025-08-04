@@ -200,6 +200,7 @@ export class BaseModel implements ModelInterface {
   protected data: any = {};
   protected currentQueryListener!: any;
   protected modelType!: any;
+  protected pathParams: Map<string, any> = new Map();
 
   constructor() {
     getMoment();
@@ -227,6 +228,26 @@ export class BaseModel implements ModelInterface {
     if (!this['aliasFieldsMapper']) {
       this['aliasFieldsMapper'] = [];
     }
+  }
+
+  /**
+   * Sets path parameters for the model.
+   * Manages the pathParams map property that will be used in getPathList, etc.
+   * @param key - The parameter key
+   * @param value - The parameter value
+   * @returns The updated model instance
+   */
+  setPathParams(key: string, value: any): this {
+    this.pathParams.set(key, value);
+    return this;
+  }
+
+  /**
+   * Gets the current path parameters map.
+   * @returns The pathParams Map
+   */
+  getPathParams(): Map<string, any> {
+    return this.pathParams;
   }
 
   /**
@@ -2322,7 +2343,9 @@ export class BaseModel implements ModelInterface {
       if (subPath.search(":") != -1) {
         subPath = subPath.replace(":", "");
         var value;
-        if (that[subPath]) {
+        if (that.pathParams.has(subPath)) {
+          value = that.pathParams.get(subPath);
+        } else if (that[subPath]) {
           value = that[subPath];
         } else if (FirestoreOrmRepository.getGlobalPath(subPath)) {
           value = FirestoreOrmRepository.getGlobalPath(subPath);
@@ -2378,7 +2401,9 @@ export class BaseModel implements ModelInterface {
     for (var i = 0; i < keys.length; i++) {
       var subPath = keys[i];
       var value;
-      if (that[subPath]) {
+      if (that.pathParams.has(subPath)) {
+        value = that.pathParams.get(subPath);
+      } else if (that[subPath]) {
         value = that[subPath];
       } else if (FirestoreOrmRepository.getGlobalPath(subPath)) {
         value = FirestoreOrmRepository.getGlobalPath(subPath);

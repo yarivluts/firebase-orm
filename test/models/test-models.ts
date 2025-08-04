@@ -139,3 +139,25 @@ export class RealtimeTestModel extends BaseModel {
   })
   public count?: number;
 }
+
+/**
+ * Test model for path parameter functionality
+ */
+@Model({
+  reference_path: 'users/:userId/posts/:postId/comments',
+  path_id: 'comment_id'
+})
+export class PathParamTestModel extends BaseModel {
+  userId?: string;
+  postId?: string;
+
+  @Field({
+    is_required: true,
+  })
+  public content!: string;
+
+  @Field({
+    is_required: false,
+  })
+  public author?: string;
+}
