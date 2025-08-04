@@ -1,5 +1,6 @@
 import { ModelOptions } from "../interfaces/model.options.interface";
-
+import { FirestoreOrmRepository } from "../repository";
+import { classNameToPathId } from "../utils/case-conversion";
 
 import { BaseModel } from "../base.model";
 
@@ -18,13 +19,32 @@ export function Model(options: ModelOptions): any {
       applyMixins(constructor, [BaseModel]);
     }
 
+    // Get global configuration
+    const globalConfig = FirestoreOrmRepository.getGlobalConfig();
+    
+    // Determine path_id to use
+    let pathId: string;
+    if (options.path_id) {
+      // User explicitly provided path_id - use it
+      pathId = options.path_id;
+    } else if (globalConfig.auto_path_id) {
+      // Auto generate path_id from class name
+      pathId = classNameToPathId(constructor.name);
+    } else {
+      // No path_id provided and auto_path_id is not enabled - throw error
+      throw new Error(`Model '${constructor.name}' must have a path_id defined in @Model decorator or enable auto_path_id in global configuration`);
+    }
+
+    // Validate path_id uniqueness
+    FirestoreOrmRepository.registerPathId(pathId, constructor.name);
+
     return class extends constructor {
       get referencePath() {
 
         return (this as any)._referencePath ? (this as any)._referencePath : options.reference_path;
       }
       get pathId() {
-        return options.path_id;
+        return pathId;
       }
       set pathId(value: string) {
 

@@ -42,6 +42,7 @@ For comprehensive guides and examples, visit our **[Documentation](./docs/README
 - **[Relationships](./docs/relationships.md)** - One-to-one, one-to-many, many-to-many
 - **[Querying Data](./docs/querying.md)** - Advanced queries and filtering
 - **[Real-time Features](./docs/realtime.md)** - Live data updates and subscriptions
+- **[Global Configuration](./docs/global-configuration.md)** - Auto field naming and path_id generation
 
 ### Advanced Topics
 - **[Firebase Storage](./docs/advanced/storage.md)** - File uploads and management
@@ -133,7 +134,7 @@ const searchResults = await User.query()
    npm install @arbel/firebase-orm firebase moment --save
    ```
 
-2. **Initialize Firebase**
+2. **Initialize Firebase and configure global settings**
    ```typescript
    import { initializeApp } from 'firebase/app';
    import { getFirestore } from 'firebase/firestore';
@@ -142,21 +143,31 @@ const searchResults = await User.query()
    const app = initializeApp(firebaseConfig);
    const firestore = getFirestore(app);
    FirestoreOrmRepository.initGlobalConnection(firestore);
+
+   // Configure global settings for automatic field naming and path_id generation
+   FirestoreOrmRepository.setGlobalConfig({
+     auto_lower_case_field_name: true, // cartItem → cart_item
+     auto_path_id: true                // User class → user_id
+   });
    ```
 
 3. **Create your first model**
    ```typescript
-   @Model({ reference_path: 'users', path_id: 'user_id' })
+   @Model({ reference_path: 'users' })  // path_id auto-generated as 'user_id'
    export class User extends BaseModel {
      @Field({ is_required: true })
-     public name!: string;
+     public firstName!: string;  // Stored as 'first_name' in database
+
+     @Field({ is_required: true })
+     public emailAddress!: string;  // Stored as 'email_address' in database
    }
    ```
 
 4. **Start building!**
    ```typescript
    const user = new User();
-   user.name = 'John Doe';
+   user.firstName = 'John';
+   user.emailAddress = 'john@example.com';
    await user.save();
    ```
 
@@ -217,6 +228,57 @@ var unsubscribe = Member.onModeList({
 unsubscribe();
 
 ```
+
+## 📋 Best Practices
+
+### Naming Conventions
+
+Firebase ORM works best with consistent naming conventions:
+
+**✅ Recommended:**
+- **Collection names**: Use lowercase with underscores (`users`, `user_profiles`, `shopping_carts`)
+- **Field names**: Use camelCase in TypeScript with auto conversion enabled (`firstName`, `emailAddress`, `cartItems`)
+- **Model classes**: Use PascalCase (`User`, `UserProfile`, `ShoppingCart`)
+
+**❌ Avoid:**
+- Mixed case collection names (`userProfiles`, `ShoppingCarts`)
+- Snake_case in TypeScript properties (use camelCase instead)
+- Inconsistent naming patterns
+
+### Global Configuration Setup
+
+For new projects, enable global configuration for consistency:
+
+```typescript
+FirestoreOrmRepository.setGlobalConfig({
+  auto_lower_case_field_name: true,  // Automatic camelCase → snake_case conversion
+  auto_path_id: true                 // Automatic path_id generation from class names
+});
+```
+
+### Model Structure
+
+```typescript
+// ✅ Good: Clean, consistent structure with global config
+@Model({
+  reference_path: 'user_profiles'  // Lowercase with underscores
+})
+export class UserProfile extends BaseModel {
+  @Field({ is_required: true })
+  public firstName!: string;       // Auto-converted to first_name
+
+  @Field({ is_required: true })
+  public lastName!: string;        // Auto-converted to last_name
+
+  @Field({ 
+    is_required: false,
+    field_name: 'avatar_url'       // Explicit naming when needed
+  })
+  public profileImage?: string;
+}
+```
+
+👉 **[See complete Global Configuration guide](./docs/global-configuration.md)**
 
 ## Installation
 

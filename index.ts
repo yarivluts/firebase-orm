@@ -16,6 +16,10 @@ export * from './interfaces/relationship.options.interface';
 export * from './interfaces/observe.load.model.interface';
 export * from './interfaces/observe.remove.model.interface';
 export * from './interfaces/observe.save.model.interface';
+export * from './interfaces/global.config.interface';
+
+//Utils
+export * from './utils/case-conversion';
 /* 
 
 export { initializeApp } from 'firebase/app';
