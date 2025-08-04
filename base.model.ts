@@ -514,7 +514,9 @@ export class BaseModel implements ModelInterface {
     var that: any = this;
     for (var i = 0; i < keys.length; i++) {
       var key = keys[i];
-      if (that[key]) {
+      if (that.pathParams.has(key)) {
+        object[key] = that.pathParams.get(key);
+      } else if (that[key]) {
         object[key] = that[key];
       } else if (key == that.pathId && that.getId()) {
         object[key] = that.getId();
@@ -533,7 +535,9 @@ export class BaseModel implements ModelInterface {
     var that: any = this;
     for (var i = 0; i < keys.length; i++) {
       var key = keys[i];
-      if (that[key]) {
+      if (that.pathParams.has(key)) {
+        object[key] = that.pathParams.get(key);
+      } else if (that[key]) {
         object[key] = that[key];
       } else if (key == that.pathId && that.getId()) {
         object[key] = that.getId();
