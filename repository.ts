@@ -495,6 +495,12 @@ export class FirestoreOrmRepository {
      */
     async load(object: any, id: string, params: { [key: string]: string; } = {}): Promise<ModelInterface> {
         await this.ensureSetupComplete();
+        
+        // Validate Firebase query functions are available
+        if (typeof getDocs !== 'function' || typeof query !== 'function' || typeof where !== 'function' || typeof documentId !== 'function') {
+            throw new Error('Firebase query functions not initialized. Repository setup is not complete. Ensure initGlobalConnection is awaited.');
+        }
+        
         for (let key in params) {
             let value = params[key];
             object[key] = value;
@@ -530,6 +536,12 @@ export class FirestoreOrmRepository {
      */
     async save(model: any, customId?: string) {
         await this.ensureSetupComplete();
+        
+        // Validate Firebase update/set functions are available
+        if (typeof updateDoc !== 'function' || typeof setDoc !== 'function') {
+            throw new Error('Firebase update/set functions not initialized. Repository setup is not complete. Ensure initGlobalConnection is awaited.');
+        }
+        
         var object: ModelInterface = model;
         var ref = await this.getDocReferenceByModelAsync(object, object.getId() ?? customId);
         if (!ref) {
