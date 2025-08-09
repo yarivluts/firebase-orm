@@ -587,23 +587,57 @@ export class BaseModel implements ModelInterface {
    * @returns The repository reference.
    */
   getRepositoryReference(): DocumentReference<DocumentData> | CollectionReference<DocumentData> | null {
-    return this.getRepository().getCollectionReferenceByModel(this);
+    try {
+      return this.getRepository().getCollectionReferenceByModel(this);
+    } catch (error) {
+      console.warn('Repository reference not available, setup may not be complete:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Gets the repository reference for the model (async version).
+   * @returns The repository reference.
+   */
+  async getRepositoryReferenceAsync(): Promise<DocumentReference<DocumentData> | CollectionReference<DocumentData> | null> {
+    return await this.getRepository().getCollectionReferenceByModelAsync(this);
   }
 
   /**
    * Gets the document repository reference for the model.
    * @returns The document repository reference.
    */
-  getDocRepositoryReference(): DocumentReference<DocumentData> {
-    return this.getRepository().getDocReferenceByModel(this) as DocumentReference<DocumentData>;
+  getDocRepositoryReference(): DocumentReference<DocumentData> | null {
+    try {
+      return this.getRepository().getDocReferenceByModel(this);
+    } catch (error) {
+      console.warn('Document repository reference not available, setup may not be complete:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Gets the document repository reference for the model (async version).
+   * @returns The document repository reference.
+   */
+  async getDocRepositoryReferenceAsync(): Promise<DocumentReference<DocumentData> | null> {
+    return await this.getRepository().getDocReferenceByModelAsync(this);
   }
 
   /**
    * Gets the document reference for the model.
    * @returns The document reference.
    */
-  getDocReference(): DocumentReference<DocumentData> {
+  getDocReference(): DocumentReference<DocumentData> | null {
     return this.getDocRepositoryReference();
+  }
+
+  /**
+   * Gets the document reference for the model (async version).
+   * @returns The document reference.
+   */
+  async getDocReferenceAsync(): Promise<DocumentReference<DocumentData> | null> {
+    return await this.getDocRepositoryReferenceAsync();
   }
 
   /**
@@ -766,7 +800,7 @@ export class BaseModel implements ModelInterface {
       if (that.observeRemoveBefore) {
         that.observeRemoveBefore();
       }
-      const ref = this.getDocReference();
+      const ref = await this.getDocReferenceAsync();
       await deleteDocument(ref);
       if (that.observeRemoveAfter) {
         that.observeRemoveAfter();
@@ -1785,7 +1819,7 @@ export class BaseModel implements ModelInterface {
     await lazyLoadFirebaseStorage();
     var that = this;
     var uniqueId = this.getId() ? this.getId() : this.makeId(20);
-    var path = this.getDocReference().path + '/' + uniqueId + '/' + target;
+    var path = (await this.getDocReferenceAsync())?.path + '/' + uniqueId + '/' + target;
     //printLog('path ----- ', path);
     var storage = FirestoreOrmRepository.getGlobalStorage();
     var storageRef = ref(storage);
@@ -1973,8 +2007,9 @@ export class BaseModel implements ModelInterface {
     return this['referencePath'];
   }
 
-  getDocRefPath(): string {
-    return this.getDocReference().path;
+  async getDocRefPath(): Promise<string | undefined> {
+    const ref = await this.getDocReferenceAsync();
+    return ref?.path;
   }
 
 
@@ -2182,9 +2217,13 @@ export class BaseModel implements ModelInterface {
    * Retrieves a snapshot of the document associated with this model.
    * @returns A promise that resolves with the document snapshot.
    */
-  getSnapshot(): Promise<DocumentSnapshot> {
+  async getSnapshot(): Promise<DocumentSnapshot> {
+    const docRef = await this.getDocReferenceAsync();
+    if (!docRef) {
+      throw new Error("Document reference is not available");
+    }
     return new Promise((resolve, reject) => {
-      onDocumentSnapshot(this.getDocReference(), (doc) => {
+      onDocumentSnapshot(docRef, (doc) => {
         if (doc) {
           resolve(doc);
         } else {

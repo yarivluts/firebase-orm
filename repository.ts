@@ -379,13 +379,30 @@ export class FirestoreOrmRepository {
     }
 
     /**
-     * Retrieves the collection or document reference based on the model object.
+     * Ensures the repository setup is complete before using Firebase functions.
+     * @returns A promise that resolves when setup is complete.
+     */
+    private async ensureSetupComplete(): Promise<void> {
+        if (this.setupPromise) {
+            await this.setupPromise;
+        }
+    }
+
+    /**
+     * Retrieves the collection or document reference based on the model object (synchronous version).
+     * This method will throw an error if the setup is not complete.
+     * Use getCollectionReferenceByModelAsync for proper async handling.
      * @param object - The model object.
      * @param isDoc - Indicates whether the reference should be a document reference (optional, default: false).
      * @param customId - The custom ID for the document reference (optional).
      * @returns The collection or document reference, or null if the path cannot be determined.
      */
     getCollectionReferenceByModel(object: any, isDoc: boolean = false, customId?: string): DocumentReference<DocumentData> | CollectionReference<DocumentData> | null {
+        // Check if functions are available
+        if (typeof collection !== 'function') {
+            throw new Error('Firebase functions not initialized. Repository setup is not complete. Use async methods or ensure initGlobalConnection is awaited.');
+        }
+        
         var current: any = this.firestore;
         var pathList: any = object.getPathList();
         const id = customId ?? object.getId();
@@ -416,13 +433,35 @@ export class FirestoreOrmRepository {
     }
 
     /**
-     * Retrieves the document reference based on the model object.
+     * Retrieves the collection or document reference based on the model object (async version).
+     * @param object - The model object.
+     * @param isDoc - Indicates whether the reference should be a document reference (optional, default: false).
+     * @param customId - The custom ID for the document reference (optional).
+     * @returns The collection or document reference, or null if the path cannot be determined.
+     */
+    async getCollectionReferenceByModelAsync(object: any, isDoc: boolean = false, customId?: string): Promise<DocumentReference<DocumentData> | CollectionReference<DocumentData> | null> {
+        await this.ensureSetupComplete();
+        return this.getCollectionReferenceByModel(object, isDoc, customId);
+    }
+
+    /**
+     * Retrieves the document reference based on the model object (synchronous version).
      * @param object - The model object.
      * @param customId - The custom ID for the document reference (optional).
      * @returns The document reference, or null if the path cannot be determined.
      */
     getDocReferenceByModel(object: any, customId?: string): DocumentReference<DocumentData> | null {
         return this.getCollectionReferenceByModel(object, true, customId) as DocumentReference<DocumentData> | null;
+    }
+
+    /**
+     * Retrieves the document reference based on the model object (async version).
+     * @param object - The model object.
+     * @param customId - The custom ID for the document reference (optional).
+     * @returns The document reference, or null if the path cannot be determined.
+     */
+    async getDocReferenceByModelAsync(object: any, customId?: string): Promise<DocumentReference<DocumentData> | null> {
+        return await this.getCollectionReferenceByModelAsync(object, true, customId) as DocumentReference<DocumentData> | null;
     }
 
     /**
@@ -455,11 +494,18 @@ export class FirestoreOrmRepository {
      * @returns A promise that resolves to the model object.
      */
     async load(object: any, id: string, params: { [key: string]: string; } = {}): Promise<ModelInterface> {
+        await this.ensureSetupComplete();
+        
+        // Validate Firebase query functions are available
+        if (typeof getDocs !== 'function' || typeof query !== 'function' || typeof where !== 'function' || typeof documentId !== 'function') {
+            throw new Error('Firebase query functions not initialized. Repository setup is not complete. Ensure initGlobalConnection is awaited.');
+        }
+        
         for (let key in params) {
             let value = params[key];
             object[key] = value;
         }
-        var ref = this.getCollectionReferenceByModel(object) as CollectionReference<DocumentData>;
+        var ref = await this.getCollectionReferenceByModelAsync(object) as CollectionReference<DocumentData>;
         if (!ref) {
             console.error("Can't load the model " + object.getReferencePath() + " , please set all values");
             return object;
@@ -489,8 +535,15 @@ export class FirestoreOrmRepository {
      * @returns A promise that resolves to the saved model object.
      */
     async save(model: any, customId?: string) {
+        await this.ensureSetupComplete();
+        
+        // Validate Firebase update/set functions are available
+        if (typeof updateDoc !== 'function' || typeof setDoc !== 'function') {
+            throw new Error('Firebase update/set functions not initialized. Repository setup is not complete. Ensure initGlobalConnection is awaited.');
+        }
+        
         var object: ModelInterface = model;
-        var ref = this.getDocReferenceByModel(object, object.getId() ?? customId);
+        var ref = await this.getDocReferenceByModelAsync(object, object.getId() ?? customId);
         if (!ref) {
             console.error("Can't save the model " + object.getReferencePath() + " , please set all values");
             return false;
