@@ -138,9 +138,20 @@ if (user) {
   console.log(user.name);  // Data is already loaded!
 }
 
+// ✨ NEW: Load nested models with path parameters
+const member = await Member.init(memberId, { website_id: websiteId });
+if (member) {
+  console.log(member.name);
+}
+
 // Traditional pattern (still supported)
 const user = new User();
 await user.load(userId);
+
+// Traditional pattern for nested models (still supported)
+const member = new Member();
+member.setPathParams('website_id', websiteId);
+await member.load(memberId);
 
 // For creating new instances, use the constructor
 const newUser = new User();
@@ -153,6 +164,7 @@ await newUser.save();
 - 🎯 One line instead of two for loading data
 - 🔍 More intuitive - "initialize a User with this ID"
 - 🛡️ Returns null if not found (easier error handling)
+- 🗂️ Easy path parameters for nested collections
 - ✅ Fully compatible with existing code
 
 ## 🔄 Generic ORM Alias Functions

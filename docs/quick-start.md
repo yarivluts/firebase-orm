@@ -224,6 +224,48 @@ const unsubscribeUser = user.on(() => {
 // unsubscribeUser();
 ```
 
+## Working with Nested Collections
+
+Firebase ORM supports hierarchical data structures with nested collections:
+
+```typescript
+// Define a nested model
+@Model({
+  reference_path: 'websites/:website_id/members',
+  path_id: 'member_id'
+})
+export class Member extends BaseModel {
+  @Field({ is_required: true })
+  public name!: string;
+
+  @Field({ field_name: 'photo_url' })
+  public photoUrl!: string;
+}
+
+// Load a member using the simplified init pattern ⚡
+const member = await Member.init(memberId, { website_id: websiteId });
+if (member) {
+  console.log(member.name);
+}
+
+// Traditional pattern (still supported)
+const member2 = new Member();
+member2.setPathParams('website_id', websiteId);
+await member2.load(memberId);
+
+// Create a new member in a nested collection
+const newMember = new Member();
+newMember.setPathParams('website_id', websiteId);
+newMember.name = 'John Doe';
+newMember.photoUrl = 'https://example.com/photo.jpg';
+await newMember.save();
+```
+
+**Key Points:**
+- Use `:parameter_name` syntax in `reference_path` to define path parameters
+- Pass path parameters as the second argument to `init()`
+- Use `setPathParams()` when creating new instances with the constructor
+
 ## Working with Relationships
 
 Define relationships between models:

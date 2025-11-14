@@ -771,10 +771,16 @@ export class BaseModel implements ModelInterface {
    * Provides a simpler alternative to the `new Model(); await model.load(id)` pattern.
    * 
    * @example
-   * // Load existing model - RECOMMENDED
+   * // Load a simple model
    * const user = await User.init(userId);
    * if (user) {
    *   console.log(user.name);
+   * }
+   * 
+   * // Load a nested model with path parameters
+   * const member = await Member.init(memberId, { website_id: websiteId });
+   * if (member) {
+   *   console.log(member.name);
    * }
    * 
    * // For creating new instances, use the constructor
@@ -783,20 +789,25 @@ export class BaseModel implements ModelInterface {
    * await newUser.save();
    * 
    * @param id - The ID of the model to load. This parameter is required.
-   * @param params - Additional parameters for initializing the model.
+   * @param pathParams - Path parameters for nested collections (e.g., { website_id: 'abc123' }).
    * @returns A promise that resolves to the loaded model, or null if the model is not found.
    */
   static async init<T>(this: { new(): T },
     id: string,
-    params: { [key: string]: string } = {}
+    pathParams: { [key: string]: string } = {}
   ): Promise<(T & BaseModel) | null> {
     var object: BaseModel & T = (new this()) as BaseModel & T;
+    
+    // Set path parameters if provided
+    for (const key in pathParams) {
+      object.setPathParams(key, pathParams[key]);
+    }
     
     // Load the model from the database
     object.setId(id as string);
     
     if (object.getRepository()) {
-      var res: any = await object.getRepository().load(object, object.getId() as string, params);
+      var res: any = await object.getRepository().load(object, object.getId() as string, pathParams);
       // Return null if the model doesn't exist in the database
       if (res && !res.isExist()) {
         return null;
