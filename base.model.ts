@@ -768,26 +768,46 @@ export class BaseModel implements ModelInterface {
 
   /**
    * Initializes the model with the specified ID.
-   * @param id - The ID of the model to initialize.
+   * Provides a simpler alternative to the `new Model(); await model.load(id)` pattern.
+   * 
+   * @example
+   * // Load existing model
+   * const user = await User.init(userId);
+   * 
+   * // Create new model instance (without loading)
+   * const newUser = await User.init();
+   * newUser.name = "John";
+   * await newUser.save();
+   * 
+   * @param id - The ID of the model to initialize. If omitted, returns a new empty instance.
    * @param params - Additional parameters for initializing the model.
-   * @returns A promise that resolves to the initialized model.
+   * @returns A promise that resolves to the initialized model, or null if the model is not found.
    */
   static async init<T>(this: { new(): T },
     id?: string,
     params: { [key: string]: string } = {}
-  ): Promise<T | null> {
+  ): Promise<(T & BaseModel) | null> {
     var object: BaseModel & T = (new this()) as BaseModel & T;
-    var res: any;
-    if (id) {
-      object.setId(id as string);
+    
+    // If no ID provided, just return a new instance without loading
+    if (!id) {
+      return object;
     }
-
+    
+    // If ID provided, load the model from the database
+    object.setId(id as string);
+    
     if (object.getRepository()) {
-      res = await object.getRepository().load(object, object.getId() as string, params);
+      var res: any = await object.getRepository().load(object, object.getId() as string, params);
+      // Return null if the model doesn't exist in the database
+      if (res && !res.isExist()) {
+        return null;
+      }
+      return res as (T & BaseModel);
     } else {
       console.error("No repository!");
+      return null;
     }
-    return res;
   }
 
   /**
