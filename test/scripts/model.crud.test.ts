@@ -158,28 +158,26 @@ describe('Model CRUD Operations', () => {
     expect(loadedModel?.getId()).toBe(id);
   }, EXTENDED_TIMEOUT);
 
-  test('should initialize a model with static init method (without ID)', async () => {
-    // Initialize without ID should return a new empty instance
-    const newModel = await CrudTest.init();
+  test('should create new instances using constructor (not init)', async () => {
+    // For creating new instances, use the constructor
+    const newModel = new CrudTest();
     
     // Check that we got a new instance
     expect(newModel).toBeDefined();
-    expect(newModel?.getId()).toBeUndefined();
+    expect(newModel.getId()).toBeUndefined();
     
     // Should be able to set properties and save
-    if (newModel) {
-      newModel.title = 'New Model from Init';
-      newModel.description = 'Created without ID';
-      await newModel.save();
-      
-      // Verify it was saved
-      expect(newModel.getId()).toBeDefined();
-      
-      // Load it again to verify
-      const reloaded = await CrudTest.init(newModel.getId());
-      expect(reloaded?.title).toBe('New Model from Init');
-      expect(reloaded?.description).toBe('Created without ID');
-    }
+    newModel.title = 'New Model from Constructor';
+    newModel.description = 'Created with new keyword';
+    await newModel.save();
+    
+    // Verify it was saved
+    expect(newModel.getId()).toBeDefined();
+    
+    // Load it again to verify using init
+    const reloaded = await CrudTest.init(newModel.getId());
+    expect(reloaded?.title).toBe('New Model from Constructor');
+    expect(reloaded?.description).toBe('Created with new keyword');
   }, EXTENDED_TIMEOUT);
 
   test('should return null when trying to init with non-existent ID', async () => {

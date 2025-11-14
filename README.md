@@ -129,31 +129,30 @@ const searchResults = await User.query()
 
 ## ⚡ Simplified Init Pattern
 
-Firebase ORM provides a convenient `init()` method that simplifies model initialization:
+Firebase ORM provides a convenient `init()` method that simplifies loading existing models:
 
 ```typescript
 // ✨ NEW: Simple one-liner to load existing data
 const user = await User.init(userId);
-console.log(user.name);  // Data is already loaded!
+if (user) {
+  console.log(user.name);  // Data is already loaded!
+}
 
 // Traditional pattern (still supported)
 const user = new User();
 await user.load(userId);
 
-// Create a new instance without loading
-const newUser = await User.init();
+// For creating new instances, use the constructor
+const newUser = new User();
 newUser.name = "Jane Doe";
 newUser.email = "jane@example.com";
 await newUser.save();
-
-// Both patterns work - use what feels more natural!
 ```
 
 **Benefits of `init()`:**
-- 🎯 One line instead of two
+- 🎯 One line instead of two for loading data
 - 🔍 More intuitive - "initialize a User with this ID"
-- 🛡️ Returns null if not found (instead of throwing)
-- 📝 Works with or without an ID
+- 🛡️ Returns null if not found (easier error handling)
 - ✅ Fully compatible with existing code
 
 ## 🔄 Generic ORM Alias Functions

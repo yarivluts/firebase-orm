@@ -767,34 +767,32 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
-   * Initializes the model with the specified ID.
+   * Initializes and loads the model with the specified ID.
    * Provides a simpler alternative to the `new Model(); await model.load(id)` pattern.
    * 
    * @example
-   * // Load existing model
+   * // Load existing model - RECOMMENDED
    * const user = await User.init(userId);
+   * if (user) {
+   *   console.log(user.name);
+   * }
    * 
-   * // Create new model instance (without loading)
-   * const newUser = await User.init();
+   * // For creating new instances, use the constructor
+   * const newUser = new User();
    * newUser.name = "John";
    * await newUser.save();
    * 
-   * @param id - The ID of the model to initialize. If omitted, returns a new empty instance.
+   * @param id - The ID of the model to load. This parameter is required.
    * @param params - Additional parameters for initializing the model.
-   * @returns A promise that resolves to the initialized model, or null if the model is not found.
+   * @returns A promise that resolves to the loaded model, or null if the model is not found.
    */
   static async init<T>(this: { new(): T },
-    id?: string,
+    id: string,
     params: { [key: string]: string } = {}
   ): Promise<(T & BaseModel) | null> {
     var object: BaseModel & T = (new this()) as BaseModel & T;
     
-    // If no ID provided, just return a new instance without loading
-    if (!id) {
-      return object;
-    }
-    
-    // If ID provided, load the model from the database
+    // Load the model from the database
     object.setId(id as string);
     
     if (object.getRepository()) {
