@@ -127,6 +127,46 @@ const searchResults = await User.query()
   .get();
 ```
 
+## ⚡ Simplified Init Pattern
+
+Firebase ORM provides a convenient `init()` method that simplifies loading existing models:
+
+```typescript
+// ✨ NEW: Simple one-liner to load existing data
+const user = await User.init(userId);
+if (user) {
+  console.log(user.name);  // Data is already loaded!
+}
+
+// ✨ NEW: Load nested models with path parameters
+const member = await Member.init(memberId, { website_id: websiteId });
+if (member) {
+  console.log(member.name);
+}
+
+// Traditional pattern (still supported)
+const user = new User();
+await user.load(userId);
+
+// Traditional pattern for nested models (still supported)
+const member = new Member();
+member.setPathParams('website_id', websiteId);
+await member.load(memberId);
+
+// For creating new instances, use the constructor
+const newUser = new User();
+newUser.name = "Jane Doe";
+newUser.email = "jane@example.com";
+await newUser.save();
+```
+
+**Benefits of `init()`:**
+- 🎯 One line instead of two for loading data
+- 🔍 More intuitive - "initialize a User with this ID"
+- 🛡️ Returns null if not found (easier error handling)
+- 🗂️ Easy path parameters for nested collections
+- ✅ Fully compatible with existing code
+
 ## 🔄 Generic ORM Alias Functions
 
 Firebase ORM now supports familiar ORM method names used in other popular frameworks, making it easier for developers coming from different ORMs:

@@ -767,27 +767,56 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
-   * Initializes the model with the specified ID.
-   * @param id - The ID of the model to initialize.
-   * @param params - Additional parameters for initializing the model.
-   * @returns A promise that resolves to the initialized model.
+   * Initializes and loads the model with the specified ID.
+   * Provides a simpler alternative to the `new Model(); await model.load(id)` pattern.
+   * 
+   * @example
+   * // Load a simple model
+   * const user = await User.init(userId);
+   * if (user) {
+   *   console.log(user.name);
+   * }
+   * 
+   * // Load a nested model with path parameters
+   * const member = await Member.init(memberId, { website_id: websiteId });
+   * if (member) {
+   *   console.log(member.name);
+   * }
+   * 
+   * // For creating new instances, use the constructor
+   * const newUser = new User();
+   * newUser.name = "John";
+   * await newUser.save();
+   * 
+   * @param id - The ID of the model to load. This parameter is required.
+   * @param pathParams - Path parameters for nested collections (e.g., { website_id: 'abc123' }).
+   * @returns A promise that resolves to the loaded model, or null if the model is not found.
    */
   static async init<T>(this: { new(): T },
-    id?: string,
-    params: { [key: string]: string } = {}
-  ): Promise<T | null> {
+    id: string,
+    pathParams: { [key: string]: string } = {}
+  ): Promise<(T & BaseModel) | null> {
     var object: BaseModel & T = (new this()) as BaseModel & T;
-    var res: any;
-    if (id) {
-      object.setId(id as string);
+    
+    // Set path parameters if provided
+    for (const key in pathParams) {
+      object.setPathParams(key, pathParams[key]);
     }
-
+    
+    // Load the model from the database
+    object.setId(id as string);
+    
     if (object.getRepository()) {
-      res = await object.getRepository().load(object, object.getId() as string, params);
+      var res: any = await object.getRepository().load(object, object.getId() as string, pathParams);
+      // Return null if the model doesn't exist in the database
+      if (res && !res.isExist()) {
+        return null;
+      }
+      return res as (T & BaseModel);
     } else {
       console.error("No repository!");
+      return null;
     }
-    return res;
   }
 
   /**

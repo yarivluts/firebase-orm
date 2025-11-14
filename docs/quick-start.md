@@ -122,10 +122,18 @@ console.log('User created with ID:', user.getId());
 const allUsers = await User.getAll();
 console.log('All users:', allUsers);
 
-// Get a specific user by ID
-const specificUser = new User();
-await specificUser.load('user-id-here');
-console.log('User:', specificUser.name);
+// Get a specific user by ID - SIMPLIFIED PATTERN ⚡
+const specificUser = await User.init('user-id-here');
+if (specificUser) {
+  console.log('User:', specificUser.name);
+} else {
+  console.log('User not found');
+}
+
+// Alternative traditional pattern (still supported)
+const traditionalUser = new User();
+await traditionalUser.load('user-id-here');
+console.log('User:', traditionalUser.name);
 
 // Find users with conditions
 const johnUsers = await User.query()
@@ -138,29 +146,31 @@ console.log('Users named John:', johnUsers);
 ### Updating Records
 
 ```typescript
-// Load an existing user
-const user = new User();
-await user.load('user-id-here');
+// Load an existing user - SIMPLIFIED PATTERN ⚡
+const user = await User.init('user-id-here');
 
-// Update properties
-user.name = 'John Smith';
-user.bio = 'Senior Software Developer';
+if (user) {
+  // Update properties
+  user.name = 'John Smith';
+  user.bio = 'Senior Software Developer';
 
-// Save changes
-await user.save();
+  // Save changes
+  await user.save();
 
-console.log('User updated!');
+  console.log('User updated!');
+}
 ```
 
 ### Deleting Records
 
 ```typescript
-// Load and delete a user
-const user = new User();
-await user.load('user-id-here');
-await user.destroy();
+// Load and delete a user - SIMPLIFIED PATTERN ⚡
+const user = await User.init('user-id-here');
 
-console.log('User deleted!');
+if (user) {
+  await user.destroy();
+  console.log('User deleted!');
+}
 ```
 
 ## Advanced Querying
@@ -213,6 +223,48 @@ const unsubscribeUser = user.on(() => {
 // unsubscribe();
 // unsubscribeUser();
 ```
+
+## Working with Nested Collections
+
+Firebase ORM supports hierarchical data structures with nested collections:
+
+```typescript
+// Define a nested model
+@Model({
+  reference_path: 'websites/:website_id/members',
+  path_id: 'member_id'
+})
+export class Member extends BaseModel {
+  @Field({ is_required: true })
+  public name!: string;
+
+  @Field({ field_name: 'photo_url' })
+  public photoUrl!: string;
+}
+
+// Load a member using the simplified init pattern ⚡
+const member = await Member.init(memberId, { website_id: websiteId });
+if (member) {
+  console.log(member.name);
+}
+
+// Traditional pattern (still supported)
+const member2 = new Member();
+member2.setPathParams('website_id', websiteId);
+await member2.load(memberId);
+
+// Create a new member in a nested collection
+const newMember = new Member();
+newMember.setPathParams('website_id', websiteId);
+newMember.name = 'John Doe';
+newMember.photoUrl = 'https://example.com/photo.jpg';
+await newMember.save();
+```
+
+**Key Points:**
+- Use `:parameter_name` syntax in `reference_path` to define path parameters
+- Pass path parameters as the second argument to `init()`
+- Use `setPathParams()` when creating new instances with the constructor
 
 ## Working with Relationships
 
