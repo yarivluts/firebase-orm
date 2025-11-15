@@ -9,6 +9,10 @@
       "browser": "./dist/esm/index.js",
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
+    },
+    "./admin": {
+      "import": "./dist/esm/admin.js",
+      "require": "./dist/cjs/admin.js"
     }
   },
   "browser": {

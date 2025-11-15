@@ -397,6 +397,36 @@ The library supports both CommonJS (CJS) and ECMAScript Modules (ESM) formats:
   import { FirestoreOrmRepository } from "@arbel/firebase-orm";
   ```
 
+##### Browser vs Node.js Entry Points
+
+**For Browser Applications (Angular, React, Vue, etc.):**
+
+Use the default entry point. This version excludes Admin SDK functionality and is optimized for browser bundles:
+
+```typescript
+import { FirestoreOrmRepository } from "@arbel/firebase-orm";
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+
+const app = initializeApp(firebaseConfig);
+const firestore = getFirestore(app);
+FirestoreOrmRepository.initGlobalConnection(firestore);
+```
+
+**For Node.js Applications with Firebase Admin SDK:**
+
+Use the `/admin` entry point to ensure proper tree-shaking:
+
+```typescript
+import { initializeAdminApp } from "@arbel/firebase-orm/admin";
+import * as admin from 'firebase-admin';
+
+const app = admin.initializeApp(adminConfig);
+await initializeAdminApp(app);
+```
+
+> **Note**: The old pattern (`FirestoreOrmRepository.initializeAdminApp`) still works but is deprecated. See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) for more details.
+
 ## Quick Start
 
 1.Create global connection
