@@ -13,11 +13,12 @@ import type {
     getDocs as getDocsFuncType
 } from "firebase/firestore";
 
-// Support for Admin SDK types - using any to avoid forcing module resolution in browser builds
-// When firebase-admin is available (server-side), these will be properly typed at runtime
-type AdminApp = any;
-type AdminFirestore = any;
-type AdminStorage = any;
+// Support for Admin SDK types using conditional import types
+// These preserve proper typing without forcing module resolution in browser builds
+// The import() type syntax only resolves types when the module is actually used
+type AdminApp = import('firebase-admin/app').App;
+type AdminFirestore = import('firebase-admin/firestore').Firestore;
+type AdminStorage = import('firebase-admin/storage').Storage;
 
 let collection: typeof collectionFuncType;
 let doc: typeof docFuncType;
