@@ -261,10 +261,61 @@ newMember.photoUrl = 'https://example.com/photo.jpg';
 await newMember.save();
 ```
 
+### 🚀 NEW: Simplified Path Parameters with `initPathParams()`
+
+For an even cleaner API, use the static `initPathParams()` method to set all path parameters at once:
+
+```typescript
+// ✨ NEW: Set all path params at once and chain directly!
+const allMembers = await Member.initPathParams({
+  website_id: websiteId
+}).getAll();
+
+// Works with queries too
+const activeMembers = await Member.initPathParams({
+  website_id: websiteId
+}).query()
+  .where('status', '==', 'active')
+  .orderBy('name')
+  .get();
+
+// Complex nested structures
+@Model({
+  reference_path: 'courses/:course_id/lessons/:lesson_id/questions',
+  path_id: 'question_id'
+})
+export class Question extends BaseModel {
+  @Field() public text!: string;
+  @Field() public difficulty!: number;
+}
+
+// Before: Multiple lines to set params
+const questionModel = new Question();
+questionModel.setPathParams('course_id', courseId);
+questionModel.setPathParams('lesson_id', lessonId);
+const allQuestions = await questionModel.getAll();
+
+// After: Single line! ⚡
+const allQuestions = await Question.initPathParams({
+  course_id: courseId,
+  lesson_id: lessonId
+}).getAll();
+
+// You can still modify the instance after initialization
+const question = Question.initPathParams({
+  course_id: courseId,
+  lesson_id: lessonId
+});
+question.text = 'What is TypeScript?';
+question.difficulty = 2;
+await question.save();
+```
+
 **Key Points:**
 - Use `:parameter_name` syntax in `reference_path` to define path parameters
-- Pass path parameters as the second argument to `init()`
-- Use `setPathParams()` when creating new instances with the constructor
+- **NEW:** Use `initPathParams({...})` for cleaner, chainable API when setting multiple params
+- Pass path parameters as the second argument to `init()` when loading by ID
+- Use `setPathParams()` for individual parameter setting or when creating instances with the constructor
 
 ## Working with Relationships
 
