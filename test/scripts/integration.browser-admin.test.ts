@@ -175,47 +175,21 @@ describe('Integration: Browser and Admin Entry Points', () => {
         });
     });
 
-    describe('Backward Compatibility', () => {
-        it('should support deprecated initializeAdminApp on FirestoreOrmRepository', () => {
+    describe('Breaking Change: initializeAdminApp Removed', () => {
+        it('should NOT have initializeAdminApp on FirestoreOrmRepository in default entry', () => {
             const { FirestoreOrmRepository } = require('../../index');
             
-            // The deprecated method should still exist
-            expect(FirestoreOrmRepository.initializeAdminApp).toBeDefined();
-            expect(typeof FirestoreOrmRepository.initializeAdminApp).toBe('function');
+            // The deprecated method should NO LONGER exist in the default entry point
+            // to prevent browser bundlers from attempting to resolve admin dependencies
+            expect(FirestoreOrmRepository.initializeAdminApp).toBeUndefined();
         });
 
-        it('should show deprecation warning when using old method', async () => {
-            const { FirestoreOrmRepository } = require('../../index');
+        it('should have initializeAdminApp only in admin entry point', async () => {
+            const adminModule = await import('../../admin');
             
-            // Mock console.warn to capture deprecation warning
-            const originalWarn = console.warn;
-            const warnMock = jest.fn();
-            console.warn = warnMock;
-            
-            // Simulate browser environment to prevent actual admin import
-            const originalWindow = global.window;
-            (global as any).window = {};
-            
-            try {
-                await FirestoreOrmRepository.initializeAdminApp({} as any).catch(() => {
-                    // Expected to throw in browser environment
-                });
-                
-                // Should have shown deprecation warning
-                expect(warnMock).toHaveBeenCalledWith(
-                    expect.stringContaining('deprecated')
-                );
-                expect(warnMock).toHaveBeenCalledWith(
-                    expect.stringContaining('@arbel/firebase-orm/admin')
-                );
-            } finally {
-                console.warn = originalWarn;
-                if (originalWindow === undefined) {
-                    delete (global as any).window;
-                } else {
-                    (global as any).window = originalWindow;
-                }
-            }
+            // The method should only be available in the admin entry point
+            expect(adminModule.initializeAdminApp).toBeDefined();
+            expect(typeof adminModule.initializeAdminApp).toBe('function');
         });
     });
 

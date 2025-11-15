@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { FirestoreOrmRepository } from "../../index";
+import { initializeAdminApp, FirestoreOrmRepository } from "../../admin";
 import { Member } from "../model/member";
 
 describe('Firebase Admin SDK integration', () => {
@@ -17,7 +17,7 @@ describe('Firebase Admin SDK integration', () => {
       }, 'admin-test-app');
 
       // Initialize Firebase ORM with Admin app
-      FirestoreOrmRepository.initializeAdminApp(adminApp);
+      await initializeAdminApp(adminApp);
 
       // Initialize storage
       const adminStorage = admin.storage();
@@ -65,7 +65,7 @@ describe('Firebase Admin SDK integration', () => {
       }, 'admin-crud-test-app');
 
       // Initialize Firebase ORM with Admin app
-      FirestoreOrmRepository.initializeAdminApp(adminApp);
+      await initializeAdminApp(adminApp);
       FirestoreOrmRepository.initGlobalPath('website_id', '50');
 
       // Create a new member

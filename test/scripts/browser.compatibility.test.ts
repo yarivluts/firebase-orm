@@ -13,23 +13,10 @@ describe('Browser Compatibility', () => {
         expect(typeof FirestoreOrmRepository.initializeApp).toBe('function');
     });
 
-    it('should throw error when trying to use admin methods in browser environment', async () => {
-        // Simulate browser environment
-        const originalWindow = global.window;
-        (global as any).window = {}; // Set window to simulate browser
-        
-        try {
-            await expect(
-                FirestoreOrmRepository.initializeAdminApp({} as any)
-            ).rejects.toThrow('initializeAdminApp can only be called in a Node.js environment, not in the browser');
-        } finally {
-            // Restore original state
-            if (originalWindow === undefined) {
-                delete (global as any).window;
-            } else {
-                (global as any).window = originalWindow;
-            }
-        }
+    it('should not have initializeAdminApp method in default entry point', () => {
+        // The deprecated initializeAdminApp method should not exist in the default
+        // browser entry point to avoid bundlers trying to resolve admin dependencies
+        expect((FirestoreOrmRepository as any).initializeAdminApp).toBeUndefined();
     });
 
     it('should have proper type definitions without firebase-admin dependencies', () => {
