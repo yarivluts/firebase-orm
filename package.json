@@ -61,6 +61,7 @@
     "atob": "^2.1.2",
     "axios": "^1.9.0",
     "btoa": "^1.2.1",
+    "esbuild": "^0.27.0",
     "eslint": "^9.30.0",
     "firebase": "^11.8.1",
     "firebase-admin": "^13.4.0",

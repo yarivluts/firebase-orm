@@ -2,3 +2,4 @@ node_modules
 /dist
 test/config.ts
 test-*.js
+.tmp-esbuild-test

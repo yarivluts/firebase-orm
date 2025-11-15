@@ -13,11 +13,9 @@ import type {
     getDocs as getDocsFuncType
 } from "firebase/firestore";
 
-// Support for Admin SDK types using conditional import types
-// These preserve proper typing without forcing module resolution in browser builds
-// The import() type syntax only resolves types when the module is actually used
-type AdminFirestore = import('firebase-admin/firestore').Firestore;
-type AdminStorage = import('firebase-admin/storage').Storage;
+// Note: We intentionally avoid importing firebase-admin types here to prevent
+// bundlers from attempting to resolve admin dependencies in browser builds.
+// Admin SDK types are only available in the '@arbel/firebase-orm/admin' entry point.
 
 let collection: typeof collectionFuncType;
 let doc: typeof docFuncType;
@@ -78,7 +76,7 @@ export class FirestoreOrmRepository {
                (firestore._settings !== undefined || firestore.toJSON !== undefined);
     }
 
-    constructor(protected firestore: Firestore | AdminFirestore) {
+    constructor(protected firestore: Firestore | any) {
         // Detect if we're using Admin SDK or Client SDK
         const isAdminSDK = this.isAdminFirestore(firestore);
         
@@ -182,7 +180,7 @@ export class FirestoreOrmRepository {
      * @param key - The key to identify the global connection (optional).
      * @returns A promise that resolves when the connection is fully initialized.
      */
-    static initGlobalConnection(firestore: Firestore | AdminFirestore, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): Promise<FirestoreOrmRepository> {
+    static initGlobalConnection(firestore: Firestore | any, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): Promise<FirestoreOrmRepository> {
         const repository = new FirestoreOrmRepository(firestore);
         this.globalFirestores[key] = repository;
         
@@ -222,7 +220,7 @@ export class FirestoreOrmRepository {
      * @param key - The key to identify the global connection (optional).
      * @returns The provided Firebase Admin app instance.
      */
-    static async initializeAdminApp(adminApp: any, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+    static async initializeAdminApp(adminApp: any, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): Promise<any> {
         console.warn(
             'FirestoreOrmRepository.initializeAdminApp is deprecated. ' +
             'Please import initializeAdminApp from "@arbel/firebase-orm/admin" instead. ' +
@@ -249,7 +247,7 @@ export class FirestoreOrmRepository {
      * @param storage - The Firebase storage instance.
      * @param key - The key to identify the global storage (optional).
      */
-    static initGlobalStorage(storage: FirebaseStorage | AdminStorage, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+    static initGlobalStorage(storage: FirebaseStorage | any, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
         this.globalFirebaseStoages[key] = storage;
     }
 
@@ -270,7 +268,7 @@ export class FirestoreOrmRepository {
      * @returns The global Firebase storage instance.
      * @throws An error if the global Firebase storage is undefined.
      */
-    static getGlobalStorage(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): FirebaseStorage | AdminStorage {
+    static getGlobalStorage(key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): FirebaseStorage | any {
         if (this.globalFirebaseStoages[key]) {
             return this.globalFirebaseStoages[key];
         } else {
@@ -481,7 +479,7 @@ export class FirestoreOrmRepository {
      * Retrieves the Firestore instance.
      * @returns The Firestore instance.
      */
-    getFirestore(): Firestore | AdminFirestore {
+    getFirestore(): Firestore | any {
         return this.firestore;
     }
 
