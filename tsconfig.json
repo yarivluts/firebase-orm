@@ -23,7 +23,8 @@
     "skipDefaultLibCheck": true
   },
   "include": [
-    "index.ts"
+    "index.ts",
+    "admin.ts"
   ],
   "exclude": [
     "node_modules", 
