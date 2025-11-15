@@ -21,7 +21,7 @@ describe('Browser Compatibility', () => {
         try {
             await expect(
                 FirestoreOrmRepository.initializeAdminApp({} as any)
-            ).rejects.toThrow('initializeAdminApp can only be called in a Node.js environment');
+            ).rejects.toThrow('initializeAdminApp can only be called in a Node.js environment, not in the browser');
         } finally {
             // Restore original state
             if (originalWindow === undefined) {
