@@ -1,5 +1,6 @@
-import * as firebase from "firebase";
-import 'firebase/storage';
+import { initializeApp, getApp, deleteApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 import { FirestoreOrmRepository } from "../index";
 import { config } from "./config";
 
@@ -15,15 +16,15 @@ export const EXTENDED_TIMEOUT = 10000;
 export const initializeTestEnvironment = () => {
   // Initialize Firebase with test config
   try {
-    firebase.app();
-    firebase.app('test-app').delete();
+    const existingApp = getApp('test-app');
+    deleteApp(existingApp);
   } catch (e) {
     // App doesn't exist yet
   }
 
-  const firebaseApp = firebase.initializeApp(config.api.firebase, 'test-app');
-  const connection = firebaseApp.firestore();
-  const storage = firebaseApp.storage();
+  const firebaseApp = initializeApp(config.api.firebase, 'test-app');
+  const connection = getFirestore(firebaseApp);
+  const storage = getStorage(firebaseApp);
 
   // Initialize the ORM
   FirestoreOrmRepository.initGlobalConnection(connection);

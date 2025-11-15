@@ -251,6 +251,51 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
+   * Static method to initialize a model with path parameters.
+   * Provides a convenient way to set multiple path parameters at once.
+   * 
+   * @template T - The type of the model
+   * @param params - An object containing key-value pairs for path parameters
+   * @returns A new instance of the model with path parameters set
+   * 
+   * @example
+   * // Simple usage with getAll()
+   * const questions = await Question.initPathParams({
+   *   'course_id': courseId,
+   *   'lesson_id': lessonId
+   * }).getAll();
+   * 
+   * @example
+   * // Chaining with where clause
+   * const activeQuestions = await Question.initPathParams({
+   *   'course_id': courseId,
+   *   'lesson_id': lessonId
+   * }).where('status', '==', 'active').get();
+   * 
+   * @example
+   * // Using query builder
+   * const query = Question.initPathParams({
+   *   'course_id': courseId,
+   *   'lesson_id': lessonId
+   * }).query().where('difficulty', '>', 3).limit(10);
+   */
+  static initPathParams<T>(this: { new(): T }, params: { [key: string]: any }): T & BaseModel {
+    const instance = new this() as T & BaseModel;
+    
+    // Set the model type so instance methods work correctly
+    instance.setModelType(this);
+    
+    // Set all path parameters from the params object
+    for (const key in params) {
+      if (params.hasOwnProperty(key)) {
+        instance.setPathParams(key, params[key]);
+      }
+    }
+    
+    return instance;
+  }
+
+  /**
    * Parses the text indexing fields.
    * @param text - The text to parse.
    * @returns An array of parsed text indexing fields.
