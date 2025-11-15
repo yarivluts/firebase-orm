@@ -20,21 +20,22 @@ const firestore = getFirestore(app);
 FirestoreOrmRepository.initGlobalConnection(firestore);
 ```
 
-### For Firebase Admin SDK Users (Recommended Migration)
+### For Firebase Admin SDK Users (Required Migration)
 
-If you're using Firebase ORM with the Firebase **Admin SDK** in a Node.js environment, you should update your imports for optimal tree-shaking:
+If you're using Firebase ORM with the Firebase **Admin SDK** in a Node.js environment, you must update your imports to use the dedicated admin entry point:
 
-#### Before (Still Works, But Deprecated)
+#### Before (No Longer Available)
 
 ```typescript
 import { FirestoreOrmRepository } from '@arbel/firebase-orm';
 import * as admin from 'firebase-admin';
 
 const app = admin.initializeApp();
+// This method no longer exists in the main entry point
 await FirestoreOrmRepository.initializeAdminApp(app);
 ```
 
-#### After (Recommended)
+#### After (Required)
 
 ```typescript
 import { initializeAdminApp } from '@arbel/firebase-orm/admin';
@@ -70,8 +71,8 @@ By moving Admin SDK functionality to a separate entry point (`@arbel/firebase-or
 
 1. **No Build Failures**: Browser applications no longer encounter errors about missing Node.js modules
 2. **Smaller Bundle Sizes**: Admin SDK code is completely tree-shaken from browser builds
-3. **Backward Compatible**: Existing code continues to work (with a deprecation warning)
-4. **Better Type Safety**: Clear separation between browser and Node.js environments
+3. **Clean Separation**: Admin SDK functionality completely isolated from browser entry point
+4. **Better Type Safety**: Clear separation between browser and Node.js environments prevents accidental mixing of environments
 
 ## Package.json Configuration
 
@@ -121,7 +122,7 @@ This usually means:
 1. You're using an older version of TypeScript with restrictive module resolution
 2. Your bundler doesn't support package.json `exports` field
 
-**Solution**: Update to `moduleResolution: "bundler"` in tsconfig.json, or use the deprecated import pattern (with a warning).
+**Solution**: Update to `moduleResolution: "bundler"` or `"node16"` in tsconfig.json.
 
 ### "firebase-admin is not installed"
 

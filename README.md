@@ -415,7 +415,7 @@ FirestoreOrmRepository.initGlobalConnection(firestore);
 
 **For Node.js Applications with Firebase Admin SDK:**
 
-Use the `/admin` entry point to ensure proper tree-shaking:
+Use the `/admin` entry point for server-side functionality:
 
 ```typescript
 import { initializeAdminApp } from "@arbel/firebase-orm/admin";
@@ -425,7 +425,7 @@ const app = admin.initializeApp(adminConfig);
 await initializeAdminApp(app);
 ```
 
-> **Note**: The old pattern (`FirestoreOrmRepository.initializeAdminApp`) still works but is deprecated. See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) for more details.
+> **Important**: Admin SDK functionality has been moved to a separate entry point to prevent browser builds from including Node.js dependencies. See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) for migration details.
 
 ## Quick Start
 

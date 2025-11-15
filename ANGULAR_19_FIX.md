@@ -107,11 +107,12 @@ FirestoreOrmRepository.initGlobalConnection(firestore);
 **Update your imports** to use the `/admin` entry point:
 
 ```typescript
-// Old way (still works but deprecated)
+// Old way (no longer available)
 import { FirestoreOrmRepository } from '@arbel/firebase-orm';
+// This method has been removed from the main entry point
 await FirestoreOrmRepository.initializeAdminApp(adminApp);
 
-// New way (recommended)
+// New way (required)
 import { initializeAdminApp } from '@arbel/firebase-orm/admin';
 await initializeAdminApp(adminApp);
 ```
@@ -168,15 +169,15 @@ grep -c "firebase-admin" node_modules/@arbel/firebase-orm/dist/esm/admin.js
 ## Backward Compatibility
 
 ✅ All existing browser code continues to work without changes
-✅ Old admin initialization pattern still works (with deprecation warning)
-✅ No breaking changes to public API
+⚠️ Admin SDK users must update to use `/admin` entry point (breaking change for server-side code)
+✅ No changes to browser-facing public API
 ✅ All existing tests pass
 
 ## Migration Timeline
 
 - **Immediate**: Browser apps work without changes
-- **Recommended**: Update admin initialization to use `/admin` entry point
-- **Future**: Deprecated method will be removed in v2.0.0
+- **Required**: Admin SDK users must update to use `/admin` entry point
+- **Complete**: Old admin initialization method has been completely removed from main entry point
 
 ## Technical Details
 
