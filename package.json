@@ -6,11 +6,13 @@
   "module": "dist/esm/index.js",
   "exports": {
     ".": {
+      "types": "./dist/esm/index.d.ts",
       "browser": "./dist/esm/index.js",
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
     },
     "./admin": {
+      "types": "./dist/esm/admin.d.ts",
       "import": "./dist/esm/admin.js",
       "require": "./dist/cjs/admin.js"
     }

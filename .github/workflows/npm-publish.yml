@@ -33,7 +33,21 @@ jobs:
         run: npm ci
 
       - name: Build the package
-        run: npm run build  # Replace with your build command
+        run: npm run build
+
+      - name: Run critical tests before publish
+        run: |
+          npx jest test/scripts/esbuild.browser.bundle.test.ts --no-coverage
+          npx jest test/scripts/admin.entry-point.test.ts --no-coverage
+
+      - name: Verify bundle integrity
+        run: |
+          # Ensure main entry doesn't have firebase-admin
+          if grep -q "firebase-admin" dist/esm/index.js; then
+            echo "ERROR: Main bundle contains firebase-admin - cannot publish"
+            exit 1
+          fi
+          echo "✓ Bundle verification passed"
 
       - name: Publish to npm
         run: npm publish

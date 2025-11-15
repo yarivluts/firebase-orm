@@ -1,3 +1,7 @@
+# Arbel Firebase ORM
+
+[![npm version](https://badge.fury.io/js/%40arbel%2Ffirebase-orm.svg)](https://www.npmjs.com/package/@arbel/firebase-orm)
+
 Arbel Firebase Orm is an [ORM](https://en.wikipedia.org/wiki/Object-relational_mapping)
 that can run in NodeJS, Browser, Cordova, PhoneGap, Ionic, React Native, NativeScript, Expo, and Electron platforms
 and can be used with TypeScript and JavaScript (ES5, ES6, ES7, ES8).
@@ -415,7 +419,7 @@ FirestoreOrmRepository.initGlobalConnection(firestore);
 
 **For Node.js Applications with Firebase Admin SDK:**
 
-Use the `/admin` entry point to ensure proper tree-shaking:
+Use the `/admin` entry point for server-side functionality:
 
 ```typescript
 import { initializeAdminApp } from "@arbel/firebase-orm/admin";
@@ -425,7 +429,7 @@ const app = admin.initializeApp(adminConfig);
 await initializeAdminApp(app);
 ```
 
-> **Note**: The old pattern (`FirestoreOrmRepository.initializeAdminApp`) still works but is deprecated. See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) for more details.
+> **Important**: Admin SDK functionality has been moved to a separate entry point to prevent browser builds from including Node.js dependencies. See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) for migration details.
 
 ## Quick Start
 
