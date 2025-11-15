@@ -197,4 +197,46 @@ console.log('Issue scenario works!');
         expect(bundleSucceeded).toBe(true);
         expect(fs.existsSync(bundleFile)).toBe(true);
     });
+
+    it('should not include firebase-admin references in browser bundle', () => {
+        // Create a simple test file
+        const testCode = `
+import { FirestoreOrmRepository } from '${path.join(__dirname, '../../dist/esm/index.js')}';
+console.log('Loaded:', FirestoreOrmRepository);
+`;
+        fs.writeFileSync(testFile, testCode);
+
+        // Bundle the code
+        try {
+            execSync(
+                `npx esbuild ${testFile} --bundle --platform=browser --outfile=${bundleFile} --external:firebase/firestore --external:firebase/app --external:qs --external:axios 2>&1`,
+                {
+                    cwd: path.join(__dirname, '../..'),
+                    encoding: 'utf8'
+                }
+            );
+        } catch (error: any) {
+            // Ignore errors for this test - we're checking bundle content
+        }
+
+        // Read the bundle and verify no admin references
+        if (fs.existsSync(bundleFile)) {
+            const bundleContent = fs.readFileSync(bundleFile, 'utf8');
+            
+            // Should NOT contain firebase-admin imports
+            expect(bundleContent).not.toContain('firebase-admin');
+            expect(bundleContent).not.toContain('firebase-admin/firestore');
+            
+            // Should NOT contain admin module references
+            expect(bundleContent).not.toContain('admin.js');
+            expect(bundleContent).not.toContain('admin_exports');
+            expect(bundleContent).not.toContain('initializeAdminApp');
+            
+            // Should NOT contain references to Node.js built-in modules
+            expect(bundleContent).not.toContain('node_modules/firebase-admin');
+            expect(bundleContent).not.toContain('@google-cloud/firestore');
+        } else {
+            throw new Error('Bundle file was not created');
+        }
+    });
 });

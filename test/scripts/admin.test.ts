@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { FirestoreOrmRepository } from "../../index";
+import { initializeAdminApp, FirestoreOrmRepository } from "../../admin";
 import { Member } from "../model/member";
 
 // This test is meant as an example and will be skipped automatically
@@ -19,7 +19,7 @@ describe('Firebase Admin SDK integration', () => {
             });
 
             // Initialize Firebase ORM with Admin app
-            FirestoreOrmRepository.initializeAdminApp(adminApp);
+            await initializeAdminApp(adminApp);
 
             // Initialize storage
             const adminStorage = admin.storage();

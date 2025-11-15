@@ -42,9 +42,9 @@ describe('Admin Entry Point', () => {
         // Verify that importing from index doesn't pull in admin module
         const indexModule = require('../../index');
         
-        // The deprecated method should still exist for backward compatibility
-        expect(indexModule.FirestoreOrmRepository.initializeAdminApp).toBeDefined();
-        expect(typeof indexModule.FirestoreOrmRepository.initializeAdminApp).toBe('function');
+        // The deprecated method should NO LONGER exist in the default entry point
+        // to ensure browser bundlers don't attempt to resolve admin dependencies
+        expect(indexModule.FirestoreOrmRepository.initializeAdminApp).toBeUndefined();
     });
 
     it('should maintain all main exports in admin module', async () => {

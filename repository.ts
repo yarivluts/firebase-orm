@@ -59,93 +59,14 @@ export class FirestoreOrmRepository {
 
     private setupPromise: Promise<void>;
 
-    /**
-     * Determines if the provided Firestore instance is from Admin SDK
-     * @param firestore - The Firestore instance to check
-     * @returns true if it's Admin SDK, false if it's Client SDK
-     */
-    private isAdminFirestore(firestore: any): boolean {
-        // Handle null/undefined values gracefully
-        if (!firestore) {
-            return false;
-        }
-        
-        // Admin SDK Firestore has instance methods and specific properties
-        return typeof firestore.collection === 'function' && 
-               typeof firestore.doc === 'function' &&
-               (firestore._settings !== undefined || firestore.toJSON !== undefined);
-    }
-
     constructor(protected firestore: Firestore | any) {
-        // Detect if we're using Admin SDK or Client SDK
-        const isAdminSDK = this.isAdminFirestore(firestore);
-        
-        if (isAdminSDK) {
-            // For Admin SDK, create comprehensive wrapper functions
-            console.log("Admin SDK detected - setting up compatibility functions");
-            this.setupAdminSDKCompatibility();
-            FirestoreOrmRepository.isReady = true;
-            this.setupPromise = Promise.resolve();
-        } else {
-            // For Client SDK, import the functions from firebase/firestore
-            this.setupPromise = this.setupClientSDKCompatibility();
-        }
+        // For browser builds, only support Client SDK
+        // Admin SDK should use the '@arbel/firebase-orm/admin' entry point
+        this.setupPromise = this.setupClientSDKCompatibility();
         
         import('axios').then((module) => {
             axios = module.default;
         });
-    }
-
-    private setupAdminSDKCompatibility(): void {
-        const firestore = this.firestore as any;
-
-        collection = ((parent: any, collectionId: string) => {
-            if (parent === this.firestore) {
-                return firestore.collection(collectionId);
-            }
-            // Check if parent has a collection method
-            if (parent && typeof parent.collection === 'function') {
-                return parent.collection(collectionId);
-            }
-            // If parent doesn't have collection method, check if it's a document path and construct manually
-            if (parent && parent.path) {
-                // For Admin SDK, we can construct the path manually
-                return firestore.collection(`${parent.path}/${collectionId}`);
-            }
-            // Final fallback - this should not happen in normal Admin SDK usage
-            throw new Error(`Cannot access collection '${collectionId}' from parent object. Parent does not have a collection method and no path property found.`);
-        }) as any;
-        
-        doc = ((parent: any, docId?: string) => {
-            if (arguments.length === 1) {
-                return parent.doc();
-            }
-            if (parent === this.firestore) {
-                return firestore.doc(docId);
-            }
-            return parent.doc(docId);
-        }) as any;
-        
-        updateDoc = ((docRef: any, data: any) => docRef.update(data)) as any;
-        setDoc = ((docRef: any, data: any, options?: any) => {
-            return options ? docRef.set(data, options) : docRef.set(data);
-        }) as any;
-        
-        query = ((ref: any, ...constraints: any[]) => {
-            let result = ref;
-            for (const constraint of constraints) {
-                if (constraint && typeof constraint.apply === 'function') {
-                    result = constraint.apply(result);
-                }
-            }
-            return result;
-        }) as any;
-        
-        documentId = (() => '__name__') as any;
-        where = ((field: string, op: string, value: any) => ({
-            apply: (ref: any) => ref.where(field, op, value)
-        })) as any;
-        getDocs = ((ref: any) => ref.get()) as any;
     }
 
     private async setupClientSDKCompatibility(): Promise<void> {
@@ -161,14 +82,15 @@ export class FirestoreOrmRepository {
             getDocs = module.getDocs;
             FirestoreOrmRepository.isReady = true;
         } catch (error) {
-            // If Firebase client SDK fails, try Admin SDK setup as fallback
-            console.log("Client SDK import failed, checking if Admin SDK is available...");
-            if (this.isAdminFirestore(this.firestore)) {
-                console.log("Falling back to Admin SDK compatibility mode");
-                this.setupAdminSDKCompatibility();
+            // If we're in a Node.js environment without client SDK, that's okay
+            // The admin entry point will handle setup differently
+            if (typeof window === 'undefined') {
+                // We're in Node.js, admin SDK will provide the functions
+                console.log('Client SDK not available in Node.js environment - assuming Admin SDK will be used via admin entry point');
                 FirestoreOrmRepository.isReady = true;
             } else {
-                console.error("Failed to load Firebase modules and no Admin SDK detected");
+                // We're in browser and client SDK failed to load - this is an error
+                console.error("Failed to load Firebase client SDK in browser environment");
                 throw error;
             }
         }
@@ -211,36 +133,7 @@ export class FirestoreOrmRepository {
         return firebaseApp;
     }
 
-    /**
-     * Initializes Firebase Admin and sets up a global connection for Firestore ORM.
-     * @deprecated Use the initializeAdminApp function from '@arbel/firebase-orm/admin' instead.
-     * This method is kept for backward compatibility but will be removed in a future version.
-     * 
-     * @param adminApp - The Firebase Admin app instance.
-     * @param key - The key to identify the global connection (optional).
-     * @returns The provided Firebase Admin app instance.
-     */
-    static async initializeAdminApp(adminApp: any, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): Promise<any> {
-        console.warn(
-            'FirestoreOrmRepository.initializeAdminApp is deprecated. ' +
-            'Please import initializeAdminApp from "@arbel/firebase-orm/admin" instead. ' +
-            'This ensures proper tree-shaking in browser builds.'
-        );
-        
-        // Guard for server-side only
-        if (typeof window !== 'undefined') {
-            throw new Error('initializeAdminApp can only be called in a Node.js environment, not in the browser');
-        }
-        
-        try {
-            // Dynamically import the admin module
-            const adminModule = await import('./admin');
-            return await adminModule.initializeAdminApp(adminApp, key);
-        } catch (error) {
-            console.error("Error initializing Firebase Admin:", error);
-            throw error;
-        }
-    }
+
 
     /**
      * Initializes a global storage for Firestore ORM.

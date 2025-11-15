@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { FirestoreOrmRepository } from "../../index";
+import { initializeAdminApp, FirestoreOrmRepository } from "../../admin";
 import { Member } from "../model/member";
 
 /**
@@ -32,7 +32,7 @@ describe('Admin SDK Query Compatibility', () => {
       }, appName);
 
       // Initialize Firebase ORM with Admin app - this is where the timing issue occurs
-      await FirestoreOrmRepository.initializeAdminApp(adminApp);
+      await initializeAdminApp(adminApp);
 
       // Test the specific issue: calling getAll() which internally calls getFirestoreQuery()
       // This should NOT throw "TypeError: query is not a function"
