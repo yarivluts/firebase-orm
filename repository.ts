@@ -13,10 +13,12 @@ import type {
     getDocs as getDocsFuncType
 } from "firebase/firestore";
 
-// Support for Admin SDK types
-import type { App as AdminApp } from 'firebase-admin/app';
-import type { Firestore as AdminFirestore } from 'firebase-admin/firestore';
-import type { Storage as AdminStorage } from 'firebase-admin/storage';
+// Support for Admin SDK types using conditional import types
+// These preserve proper typing without forcing module resolution in browser builds
+// The import() type syntax only resolves types when the module is actually used
+type AdminApp = import('firebase-admin/app').App;
+type AdminFirestore = import('firebase-admin/firestore').Firestore;
+type AdminStorage = import('firebase-admin/storage').Storage;
 
 let collection: typeof collectionFuncType;
 let doc: typeof docFuncType;
@@ -219,8 +221,14 @@ export class FirestoreOrmRepository {
      * @returns The provided Firebase Admin app instance.
      */
     static async initializeAdminApp(adminApp: AdminApp, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME) {
+        // Guard for server-side only - this allows tree-shaking in browser builds
+        if (typeof window !== 'undefined') {
+            throw new Error('initializeAdminApp can only be called in a Node.js environment, not in the browser');
+        }
+        
         try {
-            // Dynamically import firebase-admin/firestore to avoid dependency requirements
+            // Dynamically import firebase-admin/firestore only on server-side
+            // The typeof window check above allows bundlers to tree-shake this entire code path
             const adminFirestore = await import('firebase-admin/firestore');
             const connection = adminFirestore.getFirestore(adminApp);
             await this.initGlobalConnection(connection, key);

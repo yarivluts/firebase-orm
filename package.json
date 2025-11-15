@@ -6,9 +6,16 @@
   "module": "dist/esm/index.js",
   "exports": {
     ".": {
+      "browser": "./dist/esm/index.js",
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js"
     }
+  },
+  "browser": {
+    "firebase-admin": false,
+    "firebase-admin/app": false,
+    "firebase-admin/firestore": false,
+    "firebase-admin/storage": false
   },
   "scripts": {
     "build": "rm -rf dist && bash scripts/build-dual-module.sh",
