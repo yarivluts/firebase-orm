@@ -201,6 +201,7 @@ export class BaseModel implements ModelInterface {
   protected currentQueryListener!: any;
   protected modelType!: any;
   protected pathParams: Map<string, any> = new Map();
+  protected _createdViaGetModel: boolean = false;
 
   constructor() {
     getMoment();
@@ -240,6 +241,20 @@ export class BaseModel implements ModelInterface {
   setPathParams(key: string, value: any): this {
     this.pathParams.set(key, value);
     return this;
+  }
+
+  /**
+   * Checks if instance query methods are allowed on this model.
+   * Instance query methods should only be called on models created via getModel().
+   * @throws Error if instance query methods are not allowed
+   */
+  protected checkInstanceQueryAllowed(): void {
+    if (!this._createdViaGetModel) {
+      throw new Error(
+        'Instance query methods (getAll, where, query, find, findOne) can only be called on models retrieved via getModel(). ' +
+        'Use static methods like Model.getAll() or retrieve the model through a parent: parentModel.getModel(ChildModel).getAll()'
+      );
+    }
   }
 
   /**
@@ -291,6 +306,9 @@ export class BaseModel implements ModelInterface {
         instance.setPathParams(key, params[key]);
       }
     }
+    
+    // Mark as created via static factory method (allows instance query methods)
+    instance._createdViaGetModel = true;
     
     return instance;
   }
@@ -567,6 +585,8 @@ export class BaseModel implements ModelInterface {
         object[key] = that.getId();
       }
     }
+    // Mark this instance as created via getModel
+    object._createdViaGetModel = true;
     return object;
   }
 
@@ -588,6 +608,8 @@ export class BaseModel implements ModelInterface {
         object[key] = that.getId();
       }
     }
+    // Preserve the _createdViaGetModel flag when getting current model
+    object._createdViaGetModel = this._createdViaGetModel;
     return object;
   }
 
@@ -727,13 +749,14 @@ export class BaseModel implements ModelInterface {
    * @param opStr - The operator string.
    * @param value - The value to compare against.
    * @returns The query with the where clause.
+   * @throws Error if called on a model not created via getModel()
    */
-  where<T>(
-    this: { new(): T },
+  where(
     fieldPath: string,
     opStr: WhereFilterOp,
     value: any
-  ): Query<T> {
+  ): Query<this> {
+    this.checkInstanceQueryAllowed();
     var that: any = this;
     var query = that.query().where(fieldPath, opStr, value);
     return query;
@@ -914,8 +937,10 @@ export class BaseModel implements ModelInterface {
   /**
    * Creates a query for the model.
    * @returns The query for the model.
+   * @throws Error if called on a model not created via getModel()
    */
   query(): Query<this> {
+    this.checkInstanceQueryAllowed();
     var query = new Query<this>();
     var that: any = this;
     var object: any = that.getCurrentModel();
@@ -1237,6 +1262,7 @@ export class BaseModel implements ModelInterface {
    * @param limit - An optional number specifying the maximum number of records to retrieve.
    * @param params - An optional object containing additional parameters for the query.
    * @returns A promise that resolves to an array of records.
+   * @throws Error if called on a model not created via getModel()
    */
   async getAll(whereArr?: Array<any>,
     orderBy?: {
@@ -1246,6 +1272,7 @@ export class BaseModel implements ModelInterface {
     limit?: number,
     params?: { [key: string]: string }
   ): Promise<Array<this>> {
+    this.checkInstanceQueryAllowed();
     var that: any = this.getModelType();
     var object: any = this.getCurrentModel();
     var query = object.query();
@@ -1576,11 +1603,13 @@ export class BaseModel implements ModelInterface {
    * @param callback A single object containing `next` and `error` callbacks.
    * @return An unsubscribe function that can be called to cancel
    * the snapshot listener.
+   * @throws Error if called on a model not created via getModel()
    */
   onAllList(
     callback: CallableFunction,
     eventType?: LIST_EVENTS
   ): CallableFunction {
+    this.checkInstanceQueryAllowed();
     switch (eventType) {
       case LIST_EVENTS.ADDEDD:
         return this.onCreatedList(callback, LIST_EVENTS.ADDEDD);
@@ -1609,8 +1638,10 @@ export class BaseModel implements ModelInterface {
    * @param callback A single object containing `next` and `error` callbacks.
    * @return An unsubscribe function that can be called to cancel
    * the snapshot listener.
+   * @throws Error if called on a model not created via getModel()
    */
   onModeList(options: ModelAllListOptions) {
+    this.checkInstanceQueryAllowed();
     var that: any = this;
     return that.query()
       .orderBy(BaseModel.CREATED_AT_FLAG)
@@ -1684,11 +1715,13 @@ export class BaseModel implements ModelInterface {
    * @param callback A single object containing `next` and `error` callbacks.
    * @return An unsubscribe function that can be called to cancel
    * the snapshot listener.
+   * @throws Error if called on a model not created via getModel()
    */
   onList(
     callback: CallableFunction,
     eventType?: LIST_EVENTS
   ): CallableFunction {
+    this.checkInstanceQueryAllowed();
     var that: any = this.getModelType();
     var res = () => { };
     var object: any = this.getCurrentModel();
@@ -1754,11 +1787,13 @@ export class BaseModel implements ModelInterface {
    * @param callback A single object containing `next` and `error` callbacks.
    * @return An unsubscribe function that can be called to cancel
    * the snapshot listener.
+   * @throws Error if called on a model not created via getModel()
    */
   onCreatedList(
     callback: CallableFunction,
     eventType?: LIST_EVENTS
   ): CallableFunction {
+    this.checkInstanceQueryAllowed();
     var res = () => { };
     var that: any = this.getModelType();
     var object: any = this.getCurrentModel();
@@ -1790,11 +1825,13 @@ export class BaseModel implements ModelInterface {
    * @param callback A single object containing `next` and `error` callbacks.
    * @return An unsubscribe function that can be called to cancel
    * the snapshot listener.
+   * @throws Error if called on a model not created via getModel()
    */
   onUpdatedList(
     callback: CallableFunction,
     eventType?: LIST_EVENTS
   ): CallableFunction {
+    this.checkInstanceQueryAllowed();
     var res = () => { };
     var that: any = this.getModelType();
     var object: any = this.getCurrentModel();
@@ -2279,10 +2316,12 @@ export class BaseModel implements ModelInterface {
    * @param opStr - The comparison operator.
    * @param value - The value to compare against.
    * @returns A promise that resolves to an array of documents that match the criteria.
+   * @throws Error if called on a model not created via getModel()
    */
   async find(fieldPath: string,
     opStr: WhereFilterOp,
     value: any): Promise<Array<this>> {
+    this.checkInstanceQueryAllowed();
     var that: any = this;
     return await that.where(fieldPath, opStr, value).get();
   }
@@ -2314,10 +2353,12 @@ export class BaseModel implements ModelInterface {
    * @param opStr - The comparison operator.
    * @param value - The value to compare against.
    * @returns A promise that resolves to the found document or null if no document is found.
+   * @throws Error if called on a model not created via getModel()
    */
   async findOne(fieldPath: string,
     opStr: WhereFilterOp,
     value: any): Promise<this | null> {
+    this.checkInstanceQueryAllowed();
     var that: any = this;
     return await that.where(fieldPath, opStr, value).getOne();
   }

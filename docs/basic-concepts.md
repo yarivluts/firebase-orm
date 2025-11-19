@@ -518,6 +518,52 @@ const newTask = await member.getModel(Task).create({
 });
 ```
 
+### Important: Instance Query Method Restrictions
+
+**Note**: Instance query methods (such as `getAll()`, `where()`, `query()`, `find()`, `findOne()`, and listener methods like `onList()`) can **only** be called on models retrieved via `getModel()`. This design ensures proper hierarchical data access and prevents incorrect query patterns.
+
+**❌ This pattern is NOT allowed:**
+```typescript
+// Attempting to directly instantiate and query a nested model
+const categoryModel = new Category();
+categoryModel.setPathParams('course_id', courseId);
+const categories = await categoryModel.getAll(); // ❌ Throws error
+```
+
+**✅ Correct patterns:**
+```typescript
+// Pattern 1: Use static methods for top-level models
+const categories = await Category.getAll();
+
+// Pattern 2: Use getModel() for nested models
+const course = await Course.findOne('id', '==', courseId);
+const categories = await course.getModel(Category).getAll();
+
+// Pattern 3: Use initPathParams() static factory method
+const categories = await Category.initPathParams({
+  course_id: courseId
+}).getAll();
+
+// Pattern 4: Query nested models with initPathParams()
+const activeCategories = await Category.initPathParams({
+  course_id: courseId
+}).query()
+  .where('status', '==', 'active')
+  .get();
+
+// Pattern 5: Multi-level nested collections
+const tasks = await Task.initPathParams({
+  website_id: websiteId,
+  member_id: memberId
+}).where('status', '==', 'pending').get();
+```
+
+**Why this restriction exists:**
+- Ensures proper parent-child relationship context
+- Prevents accidental data access across different hierarchies
+- Makes code more maintainable and explicit about data relationships
+- Enforces correct usage patterns for nested collections
+
 ### 2. Fields
 
 Fields define the properties of your model and how they map to Firestore document fields.
