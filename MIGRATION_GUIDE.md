@@ -1,6 +1,101 @@
-# Migration Guide: Browser Bundle Optimization
+# Migration Guide
 
-## Overview
+This document outlines breaking changes and migration steps for major updates to Firebase ORM.
+
+---
+
+## Instance Query Method Restrictions (v1.9.78+)
+
+### Overview
+
+Version 1.9.78+ introduces restrictions on instance query methods to enforce proper hierarchical data access patterns and prevent incorrect usage of nested models.
+
+### What Changed?
+
+Instance query methods (such as `getAll()`, `where()`, `query()`, `find()`, `findOne()`, and listener methods like `onList()`) can now **only** be called on models retrieved via `getModel()`.
+
+### Migration Required
+
+#### ❌ Old Pattern (No Longer Works)
+
+```typescript
+// This pattern will now throw an error
+const categoryModel = new Category();
+categoryModel.setPathParams('course_id', this.courseId);
+const categories = await categoryModel.getAll(); // ❌ Error!
+```
+
+**Error Message:**
+```
+Instance query methods (getAll, where, query, find, findOne) can only be called on models retrieved via getModel().
+Use static methods like Model.getAll() or retrieve the model through a parent: parentModel.getModel(ChildModel).getAll()
+```
+
+#### ✅ New Pattern (Correct Approach)
+
+**Option 1: Use Static Methods**
+For top-level collections, use static methods:
+```typescript
+// For models without path parameters
+const categories = await Category.getAll();
+
+// With filtering
+const activeCategories = await Category
+  .where('status', '==', 'active')
+  .get();
+```
+
+**Option 2: Use `getModel()` for Nested Collections**
+For nested collections, retrieve through parent model:
+```typescript
+// Get the parent first
+const course = await Course.findOne('id', '==', courseId);
+
+// Then get nested collection via getModel()
+const categories = await course.getModel(Category).getAll();
+
+// With filtering
+const activeCategories = await course.getModel(Category)
+  .query()
+  .where('status', '==', 'active')
+  .get();
+```
+
+### Why This Change?
+
+This restriction enforces several best practices:
+
+1. **Explicit Relationships**: Makes parent-child relationships clear and explicit in the code
+2. **Data Integrity**: Ensures queries are properly scoped to the correct hierarchy level
+3. **Security**: Aligns with Firestore security rules that often depend on document hierarchy
+4. **Maintainability**: Makes code easier to understand and maintain by showing data flow
+
+### Impact
+
+- **Static methods**: No impact - continue to work as before
+- **Direct instantiation with `new Model()`**: No impact for save/load operations
+- **Instance query methods**: Must use `getModel()` pattern
+
+### Affected Methods
+
+The following instance methods now require models to be created via `getModel()`:
+
+- `getAll()`
+- `where()`
+- `query()`
+- `find()`
+- `findOne()`
+- `onList()`
+- `onAllList()`
+- `onModeList()`
+- `onCreatedList()`
+- `onUpdatedList()`
+
+---
+
+## Browser Bundle Optimization (v1.9.74+)
+
+### Overview
 
 Version 1.9.74+ introduces optimizations for browser-only applications (like Angular, React, Vue) to ensure that Node.js-specific dependencies (firebase-admin) are properly tree-shaken and don't cause build failures.
 

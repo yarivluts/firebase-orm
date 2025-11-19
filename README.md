@@ -106,7 +106,7 @@ await user.save();
 
 // Work with hierarchical data
 const website = await Website.findOne('domain', '==', 'www.google.com');
-const members = await website.getModel(Member).getAll();
+const members = await website.getModel(Member).getAll(); // Use getModel() for nested collections
 console.log(`${website.domain} has ${members.length} members`);
 
 // Query users
