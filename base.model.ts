@@ -307,6 +307,9 @@ export class BaseModel implements ModelInterface {
       }
     }
     
+    // Mark as created via static factory method (allows instance query methods)
+    instance._createdViaGetModel = true;
+    
     return instance;
   }
 

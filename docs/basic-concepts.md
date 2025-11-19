@@ -539,11 +539,23 @@ const categories = await Category.getAll();
 const course = await Course.findOne('id', '==', courseId);
 const categories = await course.getModel(Category).getAll();
 
-// Pattern 3: Query nested models
-const activeTasks = await member.getModel(Task)
-  .query()
+// Pattern 3: Use initPathParams() static factory method
+const categories = await Category.initPathParams({
+  course_id: courseId
+}).getAll();
+
+// Pattern 4: Query nested models with initPathParams()
+const activeCategories = await Category.initPathParams({
+  course_id: courseId
+}).query()
   .where('status', '==', 'active')
   .get();
+
+// Pattern 5: Multi-level nested collections
+const tasks = await Task.initPathParams({
+  website_id: websiteId,
+  member_id: memberId
+}).where('status', '==', 'pending').get();
 ```
 
 **Why this restriction exists:**
