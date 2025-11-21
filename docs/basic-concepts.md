@@ -30,9 +30,10 @@ if (docSnap.exists()) {
 **With Firebase ORM:**
 ```typescript
 // Clean, type-safe, and intuitive
-const user = new User();
-await user.load(userId); // Automatic error handling
-console.log(user.name, user.email); // Full TypeScript support
+const user = await User.init(userId); // Automatic error handling
+if (user) {
+  console.log(user.name, user.email); // Full TypeScript support
+}
 ```
 
 ### 🛡️ **Type Safety & Validation**
@@ -112,9 +113,10 @@ export class User extends BaseModel {
 }
 
 // Usage
-const user = new User();
-await user.load('user-123');
-const posts = await user.loadAllPosts(); // Type-safe Post[] array
+const user = await User.init('user-123');
+if (user) {
+  const posts = await user.loadAllPosts(); // Type-safe Post[] array
+}
 ```
 
 ### 🔍 **Powerful Querying**
@@ -144,12 +146,10 @@ The same code works everywhere:
 
 ```typescript
 // Client-side (React, Vue, Angular)
-const user = new User();
-await user.load(userId);
+const user = await User.init(userId);
 
 // Server-side (Firebase Functions, Node.js)
-const user = new User(); 
-await user.load(userId); // Same API, different runtime
+const user = await User.init(userId); // Same API, different runtime
 ```
 
 ### 📊 **Built-in Performance Optimizations**
@@ -158,8 +158,7 @@ Firebase ORM includes performance best practices:
 
 ```typescript
 // Automatic lazy loading
-const user = new User();
-await user.load(userId);
+const user = await User.init(userId);
 // user.posts is not loaded until explicitly requested
 
 // Efficient relationship loading
@@ -652,8 +651,7 @@ console.log(user.getId());        // Access generated ID
 
 ```typescript
 // Load by ID
-const user = new User();
-await user.load('user-id');       // Steps 1-5
+const user = await User.init('user-id');       // Steps 1-5
 
 // Query operation
 const users = await User.query()  // Steps 1-5 for multiple documents
@@ -672,10 +670,11 @@ const users = await User.query()  // Steps 1-5 for multiple documents
 ```
 
 ```typescript
-const user = new User();
-await user.load('user-id');       // 1. Load existing
-user.name = 'Jane Doe';          // 2. Modify
-await user.save();               // 3-5. Update Firestore
+const user = await User.init('user-id');       // 1. Load existing
+if (user) {
+  user.name = 'Jane Doe';          // 2. Modify
+  await user.save();               // 3-5. Update Firestore
+}
 ```
 
 ## Model Lifecycle
@@ -717,15 +716,19 @@ class User extends BaseModel {
 Firebase ORM follows a fail-fast approach with clear error messages:
 
 ```typescript
-try {
-  const user = new User();
-  await user.load('non-existent-id');
-} catch (error) {
-  // Specific error types for different scenarios
-  if (error.message.includes('not found')) {
-    // Handle missing document
-  } else if (error.message.includes('permission-denied')) {
-    // Handle authorization error
+// init() returns null if document not found
+const user = await User.init('non-existent-id');
+if (!user) {
+  // Handle missing document
+  console.log('User not found');
+} else {
+  try {
+    // Work with user
+    await user.save();
+  } catch (error) {
+    // Handle other errors like permission-denied
+    if (error.message.includes('permission-denied')) {
+      // Handle authorization error
   } else {
     // Handle other errors
   }
@@ -1006,8 +1009,7 @@ If you're coming from other ORMs, here are key differences:
 const user = await User.findByPk(id);
 
 // Firebase ORM style
-const user = new User();
-await user.load(id);
+const user = await User.init(id);
 ```
 
 ### From Mongoose (MongoDB ORM)
