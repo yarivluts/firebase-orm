@@ -314,10 +314,6 @@ app.delete('/products/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting product:', error);
     res.status(500).json({ error: 'Internal server error' });
-    } else {
-      console.error('Error deleting product:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
   }
 });
 

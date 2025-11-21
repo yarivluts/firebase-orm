@@ -218,8 +218,9 @@ const post = await Post.init('post-1');
 if (post) {
   const author = await post.loadBelongsTo('author');
   console.log(author.name); // "John Doe"
+  
+  await post.loadWithRelationships(['author']);
 }
-await post.loadWithRelationships(['author']);
 ```
 
 ## Many-to-Many Relationships
