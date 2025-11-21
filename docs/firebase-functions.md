@@ -115,8 +115,11 @@ export const processProductChanges = functions.firestore
   });
 
 async function handleNewProduct(productId: string, data: any) {
-  const product = new Product();
-  await product.load(productId);
+  const product = await Product.init(productId);
+  if (!product) {
+    console.error('Product not found:', productId);
+    return;
+  }
 
   // Generate search keywords
   const keywords = generateSearchKeywords(product.name, product.description, product.category);
@@ -134,8 +137,11 @@ async function handleNewProduct(productId: string, data: any) {
 }
 
 async function handleProductUpdate(productId: string, before: any, after: any) {
-  const product = new Product();
-  await product.load(productId);
+  const product = await Product.init(productId);
+  if (!product) {
+    console.error('Product not found:', productId);
+    return;
+  }
 
   // Update search keywords if content changed
   if (before.name !== after.name || before.description !== after.description) {
@@ -228,17 +234,15 @@ app.get('/products', async (req, res) => {
 // Get single product
 app.get('/products/:id', async (req, res) => {
   try {
-    const product = new Product();
-    await product.load(req.params.id);
+    const product = await Product.init(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
     
     res.json(product.toJson());
   } catch (error) {
-    if (error.message.includes('not found')) {
-      res.status(404).json({ error: 'Product not found' });
-    } else {
-      console.error('Error fetching product:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
+    console.error('Error fetching product:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -274,8 +278,10 @@ app.post('/products', async (req, res) => {
 // Update product
 app.put('/products/:id', async (req, res) => {
   try {
-    const product = new Product();
-    await product.load(req.params.id);
+    const product = await Product.init(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
 
     const { name, price, description, category } = req.body;
 
@@ -290,26 +296,24 @@ app.put('/products/:id', async (req, res) => {
 
     res.json(product.toJson());
   } catch (error) {
-    if (error.message.includes('not found')) {
-      res.status(404).json({ error: 'Product not found' });
-    } else {
-      console.error('Error updating product:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
+    console.error('Error updating product:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Delete product
 app.delete('/products/:id', async (req, res) => {
   try {
-    const product = new Product();
-    await product.load(req.params.id);
+    const product = await Product.init(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
     await product.destroy();
 
     res.status(204).send();
   } catch (error) {
-    if (error.message.includes('not found')) {
-      res.status(404).json({ error: 'Product not found' });
+    console.error('Error deleting product:', error);
+    res.status(500).json({ error: 'Internal server error' });
     } else {
       console.error('Error deleting product:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -370,8 +374,11 @@ export const elasticsearchProductsSync = functions.firestore
     try {
       if (newData) {
         // Document created or updated
-        const product = new Product();
-        await product.load(productId);
+        const product = await Product.init(productId);
+        if (!product) {
+          console.error('Product not found:', productId);
+          return;
+        }
 
         const esDocument = {
           id: productId,
@@ -672,13 +679,11 @@ export const batchUpdateProducts = functions.https.onCall(async (data, context) 
   const { productIds, updates } = data;
   
   // Load all products in parallel
-  const products = await Promise.all(
+  const products = (await Promise.all(
     productIds.map(async (id: string) => {
-      const product = new Product();
-      await product.load(id);
-      return product;
+      return await Product.init(id);
     })
-  );
+  )).filter((p): p is Product => p !== null);
 
   // Update all products
   products.forEach(product => {

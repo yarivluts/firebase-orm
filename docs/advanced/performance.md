@@ -293,9 +293,13 @@ const processUsers = async (userIds: string[]) => {
   for (const id of userIds) {
     const user = userPool.acquire();
     try {
-      await user.load(id);
-      // Process user
-      results.push(user.name);
+      const loadedUser = await User.init(id);
+      if (loadedUser) {
+        // Copy data to pooled instance
+        Object.assign(user, loadedUser);
+        // Process user
+        results.push(user.name);
+      }
     } finally {
       userPool.release(user);
     }
@@ -397,10 +401,11 @@ class DataPreloader {
   }
 
   async preloadUserProfile(userId: string) {
-    const user = new User();
-    await user.load(userId);
-    await user.loadWithRelationships(['profile', 'preferences']);
-    this.preloadedData.set(`user_${userId}`, user);
+    const user = await User.init(userId);
+    if (user) {
+      await user.loadWithRelationships(['profile', 'preferences']);
+      this.preloadedData.set(`user_${userId}`, user);
+    }
   }
 
   getPreloadedData(key: string) {
