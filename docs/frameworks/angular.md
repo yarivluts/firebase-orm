@@ -254,6 +254,7 @@ import { User } from '../../models/user.model';
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   template: `
+{% raw %}
     <div class="user-list-container">
       <h2>Users</h2>
       
@@ -288,6 +289,7 @@ import { User } from '../../models/user.model';
         </div>
       </div>
     </div>
+{% endraw %}
   `,
   styles: [`
     .user-list-container { padding: 20px; }
