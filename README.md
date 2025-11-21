@@ -534,14 +534,13 @@ class UserProfile extends BaseModel {
 **Usage:**
 ```typescript
 // Load a profile and its related user
-const profile = new UserProfile();
-await profile.load('profile-1');
+const profile = await UserProfile.init('profile-1');
+if (profile) {
+  // Method 1: Load the relationship explicitly
+  const user = await profile.loadBelongsTo('user');
+  console.log(user.name); // "John Doe"
 
-// Method 1: Load the relationship explicitly
-const user = await profile.loadBelongsTo('user');
-console.log(user.name); // "John Doe"
-
-// Method 2: Access the loaded relationship (after loading)
+  // Method 2: Access the loaded relationship (after loading)
 await profile.loadWithRelationships(['user']);
 console.log(profile.user?.name); // "John Doe"
 ```
@@ -581,12 +580,12 @@ class User extends BaseModel {
 **Usage:**
 ```typescript
 // Load a user and their profile
-const user = new User();
-await user.load('user-1');
-
-// Load the related profile
-const profile = await user.loadHasOne('profile');
-console.log(profile.bio); // "Software developer"
+const user = await User.init('user-1');
+if (user) {
+  // Load the related profile
+  const profile = await user.loadHasOne('profile');
+  console.log(profile.bio); // "Software developer"
+}
 ```
 
 ### One-to-Many Relationships
@@ -648,24 +647,25 @@ class User extends BaseModel {
 **Usage:**
 ```typescript
 // Load a user and their posts
-const user = new User();
-await user.load('user-1');
+const user = await User.init('user-1');
+if (user) {
+  // Load all posts by this user
+  const posts = await user.loadHasMany('posts');
+  console.log(posts.length); // 2
+  console.log(posts[0].title); // "First Post"
 
-// Load all posts by this user
-const posts = await user.loadHasMany('posts');
-console.log(posts.length); // 2
-console.log(posts[0].title); // "First Post"
+  // Load both relationships at once
+  await user.loadWithRelationships(['posts']);
+}
 
 // Load a post and its author
-const post = new Post();
-await post.load('post-1');
-
-const author = await post.loadBelongsTo('author');
-console.log(author.name); // "John Doe"
-
-// Load both relationships at once
-await user.loadWithRelationships(['posts']);
-await post.loadWithRelationships(['author']);
+const post = await Post.init('post-1');
+if (post) {
+  const author = await post.loadBelongsTo('author');
+  console.log(author.name); // "John Doe"
+  
+  await post.loadWithRelationships(['author']);
+}
 ```
 
 ### Many-to-Many Relationships
@@ -753,34 +753,34 @@ class User extends BaseModel {
 **Usage:**
 ```typescript
 // Load a user and their roles
-const user = new User();
-await user.load('user-1');
-
-const roles = await user.loadBelongsToMany('roles');
-console.log(roles.length); // 2
-console.log(roles.map(r => r.name)); // ["Admin", "Editor"]
+const user = await User.init('user-1');
+if (user) {
+  const roles = await user.loadBelongsToMany('roles');
+  console.log(roles.length); // 2
+  console.log(roles.map(r => r.name)); // ["Admin", "Editor"]
+}
 
 // Load a role and its users
-const role = new Role();
-await role.load('role-1');
-
-const users = await role.loadBelongsToMany('users');
-console.log(users.length); // 1
-console.log(users[0].name); // "John Doe"
+const role = await Role.init('role-1');
+if (role) {
+  const users = await role.loadBelongsToMany('users');
+  console.log(users.length); // 1
+  console.log(users[0].name); // "John Doe"
+}
 
 // Create new many-to-many relationships
 const newUser = new User();
 newUser.name = "Bob Wilson";
 await newUser.save();
 
-const adminRole = new Role();
-await adminRole.load('role-1'); // Load existing Admin role
-
-// Create the junction record
-const userRole = new UserRole();
-userRole.userId = newUser.getId();
-userRole.roleId = adminRole.getId();
-await userRole.save();
+const adminRole = await Role.init('role-1'); // Load existing Admin role
+if (adminRole) {
+  // Create the junction record
+  const userRole = new UserRole();
+  userRole.userId = newUser.getId();
+  userRole.roleId = adminRole.getId();
+  await userRole.save();
+}
 ```
 
 ### Advanced Relationship Loading
@@ -790,19 +790,19 @@ await userRole.save();
 You can load all relationships at once using `loadWithRelationships()`:
 
 ```typescript
-const user = new User();
-await user.load('user-id');
+const user = await User.init('user-id');
+if (user) {
+  // Load multiple relationships in one call
+  await user.loadWithRelationships(['profile', 'posts', 'roles']);
 
-// Load multiple relationships in one call
-await user.loadWithRelationships(['profile', 'posts', 'roles']);
+  // Now you can access all loaded relationships
+  console.log(user.profile?.bio);
+  console.log(user.posts?.length);
+  console.log(user.roles?.map(r => r.name));
 
-// Now you can access all loaded relationships
-console.log(user.profile?.bio);
-console.log(user.posts?.length);
-console.log(user.roles?.map(r => r.name));
-
-// Or load all relationships (if none specified, loads all defined relationships)
-await user.loadWithRelationships();
+  // Or load all relationships (if none specified, loads all defined relationships)
+  await user.loadWithRelationships();
+}
 ```
 
 #### Relationship Loading Methods Reference
@@ -819,8 +819,10 @@ await user.loadWithRelationships();
 
 ```typescript
 try {
-  const user = new User();
-  await user.load('user-id');
+  const user = await User.init('user-id');
+  if (!user) {
+    throw new Error('User not found');
+  }
   
   const posts = await user.loadHasMany('posts');
   console.log(`User has ${posts.length} posts`);
@@ -898,10 +900,8 @@ class Post extends BaseModel {
   async save() {
     // Validate author exists before saving
     if (this.authorId) {
-      const author = new User();
-      try {
-        await author.load(this.authorId);
-      } catch (error) {
+      const author = await User.init(this.authorId);
+      if (!author) {
         throw new Error(`Invalid author_id: ${this.authorId}`);
       }
     }
@@ -1183,8 +1183,10 @@ async function createBlogPost() {
 
 // Load a complete blog post with all relationships
 async function loadBlogPostWithRelationships(postId: string) {
-  const post = new Post();
-  await post.load(postId);
+  const post = await Post.init(postId);
+  if (!post) {
+    throw new Error('Post not found');
+  }
 
   // Load all relationships
   await post.loadWithRelationships(['author', 'comments', 'tags']);
@@ -1234,8 +1236,10 @@ async function findPostsByTag(tagName: string) {
 
 // Get user's blog activity
 async function getUserBlogActivity(userId: string) {
-  const user = new User();
-  await user.load(userId);
+  const user = await User.init(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
 
   // Load all user's blog-related data
   await user.loadWithRelationships(['profile', 'posts', 'comments', 'followedTags']);
