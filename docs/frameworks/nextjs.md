@@ -288,10 +288,11 @@ export function UsersList({ initialUsers }: UsersListProps) {
     if (!confirm('Are you sure?')) return;
     
     try {
-      const user = new User();
-      await user.load(userId);
-      await user.destroy();
-      // Real-time listener will update the UI automatically
+      const user = await User.init(userId);
+      if (user) {
+        await user.destroy();
+        // Real-time listener will update the UI automatically
+      }
     } catch (error) {
       console.error('Error deleting user:', error);
     }
@@ -519,8 +520,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   FirestoreOrmRepository.initGlobalConnection(adminFirestore, 'admin');
   
   try {
-    const user = new User();
-    await user.load(id as string);
+    const user = await User.init(id as string);
+    if (!user) {
+      return {
+        notFound: true,
+      };
+    }
     
     return {
       props: {
@@ -741,8 +746,10 @@ export function useFirebaseORM<T extends any>(
   // Update item
   const updateItem = useCallback(async (id: string, updates: Partial<T>) => {
     try {
-      const item = new ModelClass();
-      await (item as any).load(id);
+      const item = await (ModelClass as any).init(id);
+      if (!item) {
+        throw new Error('Item not found');
+      }
       item.initFromData(updates);
       await (item as any).save();
       
@@ -760,8 +767,10 @@ export function useFirebaseORM<T extends any>(
   // Delete item
   const deleteItem = useCallback(async (id: string) => {
     try {
-      const item = new ModelClass();
-      await (item as any).load(id);
+      const item = await (ModelClass as any).init(id);
+      if (!item) {
+        throw new Error('Item not found');
+      }
       await (item as any).destroy();
       
       if (!options.realtime) {

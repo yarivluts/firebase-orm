@@ -128,8 +128,10 @@ class RetryService {
 
 // Usage
 const user = await RetryService.withRetry(async () => {
-  const u = new User();
-  await u.load('user-id');
+  const u = await User.init('user-id');
+  if (!u) {
+    throw new Error('User not found');
+  }
   return u;
 });
 ```
@@ -379,9 +381,10 @@ export class User extends BaseModel {
 }
 
 // Usage
-const user = new User();
-await user.load('user-id');
-const posts = await user.loadHasMany('posts'); // Must match property name
+const user = await User.init('user-id');
+if (user) {
+  const posts = await user.loadHasMany('posts'); // Must match property name
+}
 ```
 
 #### Problem: Circular dependency errors
@@ -443,10 +446,8 @@ export class Post extends BaseModel {
   async beforeSave(): Promise<void> {
     // Validate author exists
     if (this.authorId) {
-      try {
-        const author = new User();
-        await author.load(this.authorId);
-      } catch (error) {
+      const author = await User.init(this.authorId);
+      if (!author) {
         throw new Error(`Invalid author_id: ${this.authorId}`);
       }
     }
@@ -570,8 +571,10 @@ class PerformantModelService {
     }
 
     // Load from database
-    const user = new User();
-    await user.load(id);
+    const user = await User.init(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
     
     // Cache the result
     this.cache.set(cacheKey, user);
@@ -650,25 +653,25 @@ const user = new User();
 console.log(user.getId()); // undefined
 
 // ✅ Solution: Load model first
-const user = new User();
-await user.load('user-id');
-console.log(user.getId()); // Works
+const user = await User.init('user-id');
+if (user) {
+  console.log(user.getId()); // Works
+}
 ```
 
 ### "Document not found"
 ```typescript
 // ❌ Problem: No error handling
-const user = new User();
-await user.load('non-existent-id');
+const user = await User.init('non-existent-id');
+// user will be null
 
 // ✅ Solution: Handle missing documents
-try {
-  const user = new User();
-  await user.load('user-id');
-} catch (error) {
-  if (error.message.includes('not found')) {
-    console.log('User not found');
-  }
+const user = await User.init('user-id');
+if (!user) {
+  console.log('User not found');
+} else {
+  // Work with user
+  console.log(user.name);
 }
 ```
 

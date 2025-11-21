@@ -91,13 +91,12 @@ Listen to changes on a specific document:
 
 ```typescript
 // Load a specific user
-const user = new User();
-await user.load('user-id-here');
-
-// Listen to changes on this specific user
-const unsubscribe = user.on(() => {
-  console.log('User data changed:', user.name);
-  console.log('Updated email:', user.email);
+const user = await User.init('user-id-here');
+if (user) {
+  // Listen to changes on this specific user
+  const unsubscribe = user.on(() => {
+    console.log('User data changed:', user.name);
+    console.log('Updated email:', user.email);
   
   // The user object is automatically updated
   updateUserProfileInUI(user);
@@ -366,12 +365,13 @@ export class User extends BaseModel {
 }
 
 // Usage
-const user = new User();
-await user.load('user-id');
-const unsubscribe = await user.setupRealtimeWithPosts();
+const user = await User.init('user-id');
+if (user) {
+  const unsubscribe = await user.setupRealtimeWithPosts();
 
-// Clean up when done
-// unsubscribe();
+  // Clean up when done
+  // unsubscribe();
+}
 ```
 
 ## Advanced Real-time Patterns

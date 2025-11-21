@@ -164,8 +164,10 @@ export class AuthService {
       const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
       
       // Load user model
-      const user = new User();
-      await user.load(userCredential.user.uid);
+      const user = await User.init(userCredential.user.uid);
+      if (!user) {
+        throw new Error('User profile not found');
+      }
       
       // Update last login
       await user.updateLastLogin();
@@ -182,8 +184,7 @@ export class AuthService {
     if (!firebaseUser) return null;
 
     try {
-      const user = new User();
-      await user.load(firebaseUser.uid);
+      const user = await User.init(firebaseUser.uid);
       return user;
     } catch (error) {
       console.error('Failed to load current user:', error);
@@ -227,8 +228,10 @@ function RequirePermission(permission: string) {
 export class AdminService {
   @RequirePermission('manage_users')
   async deleteUser(userId: string): Promise<void> {
-    const user = new User();
-    await user.load(userId);
+    const user = await User.init(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
     await user.destroy();
   }
 
