@@ -8,7 +8,8 @@ Global configuration allows you to:
 
 1. **Auto Lower Case Field Names**: Automatically convert camelCase field names to snake_case format
 2. **Auto Path ID**: Automatically generate path_id from class names
-3. **Validation**: Ensure all models have proper path_id configuration
+3. **Throw on Required Field Null**: Throw exceptions when required fields are null during save
+4. **Validation**: Ensure all models have proper path_id configuration
 
 ## Setting Global Configuration
 
@@ -17,10 +18,11 @@ Use the `FirestoreOrmRepository.setGlobalConfig()` method to configure global op
 ```typescript
 import { FirestoreOrmRepository } from '@arbel/firebase-orm';
 
-// Enable both auto features
+// Enable all features
 FirestoreOrmRepository.setGlobalConfig({
   auto_lower_case_field_name: true,
-  auto_path_id: true
+  auto_path_id: true,
+  throw_on_required_field_null: true
 });
 
 // Or configure individually
@@ -30,6 +32,10 @@ FirestoreOrmRepository.setGlobalConfig({
 
 FirestoreOrmRepository.setGlobalConfig({
   auto_path_id: true
+});
+
+FirestoreOrmRepository.setGlobalConfig({
+  throw_on_required_field_null: true
 });
 ```
 
@@ -150,6 +156,84 @@ export class UserProfile extends BaseModel {
 
 **Important**: Explicit `path_id` values always take precedence over auto generation.
 
+## Throw on Required Field Null
+
+When `throw_on_required_field_null` is enabled, the ORM will throw an exception when attempting to save a model with null required fields. This makes it easier to identify missing required values during development and debugging.
+
+### Without Throw on Required Field Null (Default)
+
+```typescript
+@Model({
+  reference_path: 'users',
+  path_id: 'user_id'
+})
+export class User extends BaseModel {
+  @Field({ is_required: true })
+  public email!: string;
+
+  @Field({ is_required: false })
+  public nickname?: string;
+}
+
+const user = new User();
+// email is not set
+
+await user.save();
+// Logs error to console: "Can't save email with null!"
+// Returns the model without saving to database
+```
+
+### With Throw on Required Field Null Enabled
+
+```typescript
+// Enable global configuration
+FirestoreOrmRepository.setGlobalConfig({
+  throw_on_required_field_null: true
+});
+
+@Model({
+  reference_path: 'users',
+  path_id: 'user_id'
+})
+export class User extends BaseModel {
+  @Field({ is_required: true })
+  public email!: string;
+
+  @Field({ is_required: false })
+  public nickname?: string;
+}
+
+const user = new User();
+// email is not set
+
+try {
+  await user.save();
+} catch (error) {
+  // Error thrown: "users/:user_id - Can't save email with null!"
+  console.error('Failed to save user:', error.message);
+}
+
+// Correct usage
+const validUser = new User();
+validUser.email = 'user@example.com';
+await validUser.save(); // Saves successfully
+```
+
+### Benefits
+
+1. **Early Error Detection**: Catch missing required fields immediately during development
+2. **Predictable Error Handling**: Use try-catch blocks to handle validation errors
+3. **Better Debugging**: Stack traces show exactly where the error occurred
+4. **Type Safety**: Complements TypeScript's type checking at runtime
+
+### Use Cases
+
+- **Development**: Enable during development to catch errors early
+- **Production**: Enable for critical applications where data integrity is paramount
+- **Testing**: Helps ensure test data is properly configured
+
+**Important**: This option affects the `save()` method behavior. When enabled, `verifyRequiredFields()` will throw instead of returning false.
+
 ## Validation
 
 When `auto_path_id` is **disabled** (default), all models must have an explicit `path_id` defined. If missing, the decorator will throw an error:
@@ -174,18 +258,30 @@ You can retrieve the current global configuration:
 const config = FirestoreOrmRepository.getGlobalConfig();
 console.log(config.auto_lower_case_field_name); // true/false
 console.log(config.auto_path_id); // true/false
+console.log(config.throw_on_required_field_null); // true/false
 ```
 
 ## Best Practices
 
 ### Recommended Configuration
 
-For new projects, we recommend enabling both features:
+For new projects, we recommend the following configurations:
 
+**Development Environment:**
 ```typescript
 FirestoreOrmRepository.setGlobalConfig({
   auto_lower_case_field_name: true,
-  auto_path_id: true
+  auto_path_id: true,
+  throw_on_required_field_null: true  // Catch errors early in development
+});
+```
+
+**Production Environment:**
+```typescript
+FirestoreOrmRepository.setGlobalConfig({
+  auto_lower_case_field_name: true,
+  auto_path_id: true,
+  throw_on_required_field_null: false  // Or true for strict validation
 });
 ```
 
@@ -238,7 +334,8 @@ import { FirestoreOrmRepository, Model, Field, BaseModel } from '@arbel/firebase
 // Configure global settings
 FirestoreOrmRepository.setGlobalConfig({
   auto_lower_case_field_name: true,
-  auto_path_id: true
+  auto_path_id: true,
+  throw_on_required_field_null: true
 });
 
 // User model with auto-generated path_id and auto-converted field names
