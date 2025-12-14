@@ -2388,7 +2388,7 @@ export class BaseModel implements ModelInterface {
     const missingFields: string[] = [];
     
     for (var i = 0; fields.length > i; i++) {
-      if (that[fields[i]] == null || typeof that[fields[i]] === 'undefined') {
+      if (that[fields[i]] === null || that[fields[i]] === undefined) {
         result = false;
         missingFields.push(fields[i]);
         
