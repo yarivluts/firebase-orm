@@ -2378,23 +2378,31 @@ export class BaseModel implements ModelInterface {
   /**
    * Verifies if all the required fields of the model have values.
    * @returns {boolean} Returns true if all the required fields have values, otherwise returns false.
+   * @throws {Error} If throw_on_required_field_null is enabled and a required field is null
    */
   verifyRequiredFields(): boolean {
     var that: any = this;
     var fields = this.getRequiredFields();
     var result = true;
+    const globalConfig = FirestoreOrmRepository.getGlobalConfig();
+    
     for (var i = 0; fields.length > i; i++) {
       if (that[fields[i]] == null || typeof that[fields[i]] === undefined) {
         result = false;
-        console.error(
+        const errorMessage = 
           this['referencePath'] +
           "/:" +
           this['pathId'] +
           " - " +
           "Can't save " +
           fields[i] +
-          " with null!"
-        );
+          " with null!";
+        
+        if (globalConfig.throw_on_required_field_null) {
+          throw new Error(errorMessage);
+        } else {
+          console.error(errorMessage);
+        }
       }
     }
     return result;

@@ -53,7 +53,8 @@ export class FirestoreOrmRepository {
     static readyPromises: { [key: string]: Promise<FirestoreOrmRepository> } = {};
     static globalConfig: GlobalConfig = {
         auto_lower_case_field_name: false,
-        auto_path_id: false
+        auto_path_id: false,
+        throw_on_required_field_null: false
     };
     static usedPathIds = new Set<string>();
 

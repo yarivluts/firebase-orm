@@ -14,4 +14,11 @@ export interface GlobalConfig {
    * Uses the class name in snake_case format as the path_id
    */
   auto_path_id?: boolean;
+
+  /**
+   * Throw an exception when a required field is null during save
+   * When enabled, attempting to save a model with null required fields will throw an error
+   * When disabled (default), a console error is logged and save returns the model unchanged
+   */
+  throw_on_required_field_null?: boolean;
 }
