@@ -917,6 +917,7 @@ export class BaseModel implements ModelInterface {
     var query = new Query<T>();
     var object: any = new this();
     object.setModelType(this);
+    object._createdViaGetModel = true;
     query.init(object, null);
     return query;
   }
@@ -930,6 +931,7 @@ export class BaseModel implements ModelInterface {
     var query = new Query<T>();
     var object: any = new this();
     object.setModelType(this);
+    object._createdViaGetModel = true;
     query.init(object, null, isCollectionGroup);
     return query;
   }
@@ -1240,6 +1242,7 @@ export class BaseModel implements ModelInterface {
   ): Promise<Array<T>> {
     var object: any = new this();
     object.setModelType(this);
+    object._createdViaGetModel = true;
     var query: Query<any> = object.query();
     if (whereArr && whereArr[0] && whereArr[0].length == 3) {
       for (var i = 0; i < whereArr.length; i++) {
