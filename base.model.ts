@@ -2385,26 +2385,39 @@ export class BaseModel implements ModelInterface {
     var fields = this.getRequiredFields();
     var result = true;
     const globalConfig = FirestoreOrmRepository.getGlobalConfig();
+    const missingFields: string[] = [];
     
     for (var i = 0; fields.length > i; i++) {
-      if (that[fields[i]] == null || typeof that[fields[i]] === undefined) {
+      if (that[fields[i]] == null || typeof that[fields[i]] === 'undefined') {
         result = false;
-        const errorMessage = 
-          this['referencePath'] +
-          "/:" +
-          this['pathId'] +
-          " - " +
-          "Can't save " +
-          fields[i] +
-          " with null!";
+        missingFields.push(fields[i]);
         
-        if (globalConfig.throw_on_required_field_null) {
-          throw new Error(errorMessage);
-        } else {
-          console.error(errorMessage);
+        if (!globalConfig.throw_on_required_field_null) {
+          console.error(
+            this['referencePath'] +
+            "/:" +
+            this['pathId'] +
+            " - " +
+            "Can't save " +
+            fields[i] +
+            " with null!"
+          );
         }
       }
     }
+    
+    if (!result && globalConfig.throw_on_required_field_null) {
+      const errorMessage = 
+        this['referencePath'] +
+        "/:" +
+        this['pathId'] +
+        " - " +
+        "Can't save " +
+        missingFields[0] +
+        " with null!";
+      throw new Error(errorMessage);
+    }
+    
     return result;
   }
 
