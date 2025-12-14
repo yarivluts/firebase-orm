@@ -122,10 +122,10 @@ describe('Throw on Null Required Fields Configuration', () => {
 
     const model = new TestModel();
     
-    // Should throw an error for the first required field
+    // Should throw an error listing all missing required fields
     expect(() => {
       model.verifyRequiredFields();
-    }).toThrow(/Can't save requiredField1 with null!/);
+    }).toThrow(/Can't save requiredField1, requiredField2 with null!/);
   });
 
   test('should allow null values in optional fields when throw_on_required_field_null is enabled', () => {

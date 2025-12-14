@@ -2407,13 +2407,16 @@ export class BaseModel implements ModelInterface {
     }
     
     if (!result && globalConfig.throw_on_required_field_null) {
+      const fieldsList = missingFields.length === 1 
+        ? missingFields[0]
+        : missingFields.join(', ');
       const errorMessage = 
         this['referencePath'] +
         "/:" +
         this['pathId'] +
         " - " +
         "Can't save " +
-        missingFields[0] +
+        fieldsList +
         " with null!";
       throw new Error(errorMessage);
     }
