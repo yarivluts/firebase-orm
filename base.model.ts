@@ -2378,25 +2378,49 @@ export class BaseModel implements ModelInterface {
   /**
    * Verifies if all the required fields of the model have values.
    * @returns {boolean} Returns true if all the required fields have values, otherwise returns false.
+   * @throws {Error} If throw_on_required_field_null is enabled and a required field is null
    */
   verifyRequiredFields(): boolean {
     var that: any = this;
     var fields = this.getRequiredFields();
     var result = true;
+    const globalConfig = FirestoreOrmRepository.getGlobalConfig();
+    const missingFields: string[] = [];
+    
     for (var i = 0; fields.length > i; i++) {
-      if (that[fields[i]] == null || typeof that[fields[i]] === undefined) {
+      if (that[fields[i]] === null || that[fields[i]] === undefined) {
         result = false;
-        console.error(
-          this['referencePath'] +
-          "/:" +
-          this['pathId'] +
-          " - " +
-          "Can't save " +
-          fields[i] +
-          " with null!"
-        );
+        missingFields.push(fields[i]);
+        
+        if (!globalConfig.throw_on_required_field_null) {
+          console.error(
+            this['referencePath'] +
+            "/:" +
+            this['pathId'] +
+            " - " +
+            "Can't save " +
+            fields[i] +
+            " with null!"
+          );
+        }
       }
     }
+    
+    if (!result && globalConfig.throw_on_required_field_null) {
+      const fieldsList = missingFields.length === 1 
+        ? missingFields[0]
+        : missingFields.join(', ');
+      const errorMessage = 
+        this['referencePath'] +
+        "/:" +
+        this['pathId'] +
+        " - " +
+        "Can't save " +
+        fieldsList +
+        " with null!";
+      throw new Error(errorMessage);
+    }
+    
     return result;
   }
 
