@@ -387,6 +387,7 @@ export class FirestoreOrmRepository {
         object.setRepository(this);
         object.setModelType(model);
         object.currentModel = object;
+        object._createdViaGetModel = true;
         return <T & BaseModel>object;
     }
 
