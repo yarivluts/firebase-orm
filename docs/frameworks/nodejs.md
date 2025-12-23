@@ -458,9 +458,8 @@ export class UserService {
 
   static async getUserById(id: string): Promise<User | null> {
     try {
-      const user = new User();
-      await user.load(id);
-      return user.isActive ? user : null;
+      const user = await User.init(id);
+      return (user && user.isActive) ? user : null;
     } catch (error) {
       return null;
     }
@@ -605,8 +604,7 @@ export class PostService {
 
   static async getPostById(id: string): Promise<Post | null> {
     try {
-      const post = new Post();
-      await post.load(id);
+      const post = await Post.init(id);
       return post;
     } catch (error) {
       return null;
@@ -1720,11 +1718,12 @@ export class TransactionService {
     
     return await db.runTransaction(async (transaction) => {
       // Read operations must come before write operations
-      const fromUser = new User();
-      await fromUser.load(fromId);
+      const fromUser = await User.init(fromId);
+      const toUser = await User.init(toId);
       
-      const toUser = new User();
-      await toUser.load(toId);
+      if (!fromUser || !toUser) {
+        throw new Error('User not found');
+      }
       
       if (fromUser.balance < amount) {
         throw new Error('Insufficient balance');

@@ -170,58 +170,58 @@ await product.save();
 ### Get Storage Reference
 
 ```typescript
-const product = new Product();
-await product.load('product-id');
-
-// Get Firebase Storage reference
-const ref = product.getStorageFile("photoUrl").getRef();
-console.log('Storage path:', ref.fullPath);
+const product = await Product.init('product-id');
+if (product) {
+  // Get Firebase Storage reference
+  const ref = product.getStorageFile("photoUrl").getRef();
+  console.log('Storage path:', ref.fullPath);
+}
 ```
 
 ### Download File
 
 ```typescript
-const product = new Product();
-await product.load('product-id');
+const product = await Product.init('product-id');
+if (product) {
+  const storageRef = product.getStorageFile("photoUrl");
 
-const storageRef = product.getStorageFile("photoUrl");
+  // Get download URL
+  const downloadURL = await storageRef.getDownloadURL();
+  console.log('Download URL:', downloadURL);
 
-// Get download URL
-const downloadURL = await storageRef.getDownloadURL();
-console.log('Download URL:', downloadURL);
+  // Download file as blob (browser)
+  const blob = await storageRef.getBlob();
 
-// Download file as blob (browser)
-const blob = await storageRef.getBlob();
-
-// Download file as buffer (Node.js)
-const buffer = await storageRef.getBuffer();
+  // Download file as buffer (Node.js)
+  const buffer = await storageRef.getBuffer();
+}
 ```
 
 ### Delete File
 
 ```typescript
-const product = new Product();
-await product.load('product-id');
+const product = await Product.init('product-id');
+if (product) {
+  // Delete file from storage
+  await product.getStorageFile("photoUrl").delete();
 
-// Delete file from storage
-await product.getStorageFile("photoUrl").delete();
-
-// Clear the URL from the model
-product.photoUrl = null;
-await product.save();
+  // Clear the URL from the model
+  product.photoUrl = null;
+  await product.save();
+}
 ```
 
 ### File Metadata
 
 ```typescript
-const product = new Product();
-await product.load('product-id');
-
-// Get file metadata
-const metadata = await product.getStorageFile("photoUrl").getMetadata();
-console.log('File size:', metadata.size);
-console.log('Content type:', metadata.contentType);
-console.log('Created:', metadata.timeCreated);
+const product = await Product.init('product-id');
+if (product) {
+  // Get file metadata
+  const metadata = await product.getStorageFile("photoUrl").getMetadata();
+  console.log('File size:', metadata.size);
+  console.log('Content type:', metadata.contentType);
+  console.log('Created:', metadata.timeCreated);
+}
 ```
 
 ## Multiple File Uploads
@@ -376,14 +376,13 @@ try {
 ### Download Errors
 
 ```typescript
-const product = new Product();
-await product.load('product-id');
-
-try {
-  const downloadURL = await product.getStorageFile("photoUrl").getDownloadURL();
-  console.log('Download URL:', downloadURL);
-} catch (error) {
-  if (error.code === 'storage/object-not-found') {
+const product = await Product.init('product-id');
+if (product) {
+  try {
+    const downloadURL = await product.getStorageFile("photoUrl").getDownloadURL();
+    console.log('Download URL:', downloadURL);
+  } catch (error) {
+    if (error.code === 'storage/object-not-found') {
     console.error('File not found in storage');
   } else if (error.code === 'storage/unauthorized') {
     console.error('User not authorized to download file');
@@ -443,12 +442,12 @@ const storageRef = product.getStorageFile("photoUrl", { customPath });
 
 ```typescript
 // Clean up old files when updating
-const product = new Product();
-await product.load('product-id');
-
-// Delete old file before uploading new one
-if (product.photoUrl) {
-  await product.getStorageFile("photoUrl").delete();
+const product = await Product.init('product-id');
+if (product) {
+  // Delete old file before uploading new one
+  if (product.photoUrl) {
+    await product.getStorageFile("photoUrl").delete();
+  }
 }
 
 // Upload new file
@@ -584,8 +583,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 app.post('/products/:id/upload', upload.single('image'), async (req, res) => {
   try {
-    const product = new Product();
-    await product.load(req.params.id);
+    const product = await Product.init(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
 
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });

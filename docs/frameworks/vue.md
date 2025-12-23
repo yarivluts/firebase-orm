@@ -270,8 +270,10 @@ export function useFirebaseORM<T extends any>(
   // Update item
   const updateItem = async (id: string, updates: Partial<T>) => {
     try {
-      const item = new ModelClass();
-      await (item as any).load(id);
+      const item = await (ModelClass as any).init(id);
+      if (!item) {
+        throw new Error('Item not found');
+      }
       item.initFromData(updates);
       await (item as any).save();
 
@@ -292,8 +294,10 @@ export function useFirebaseORM<T extends any>(
   // Delete item
   const deleteItem = async (id: string) => {
     try {
-      const item = new ModelClass();
-      await (item as any).load(id);
+      const item = await (ModelClass as any).init(id);
+      if (!item) {
+        throw new Error('Item not found');
+      }
       await (item as any).destroy();
 
       if (!options.realtime) {
@@ -361,8 +365,10 @@ export function useUser(userId: Ref<string | undefined>) {
     error.value = null;
 
     try {
-      const userInstance = new User();
-      await userInstance.load(id);
+      const userInstance = await User.init(id);
+      if (!userInstance) {
+        throw new Error('User not found');
+      }
       user.value = userInstance;
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to load user';
@@ -472,8 +478,10 @@ export const useUserStore = defineStore('user', {
     // Update user
     async updateUser(id: string, updates: Partial<User>) {
       try {
-        const user = new User();
-        await user.load(id);
+        const user = await User.init(id);
+        if (!user) {
+          throw new Error('User not found');
+        }
         user.initFromData(updates);
         await user.save();
 
@@ -496,8 +504,10 @@ export const useUserStore = defineStore('user', {
     // Delete user
     async deleteUser(id: string) {
       try {
-        const user = new User();
-        await user.load(id);
+        const user = await User.init(id);
+        if (!user) {
+          throw new Error('User not found');
+        }
         await user.destroy();
 
         this.users = this.users.filter(u => u.getId() !== id);
@@ -514,8 +524,10 @@ export const useUserStore = defineStore('user', {
     // Load single user
     async loadUser(id: string) {
       try {
-        const user = new User();
-        await user.load(id);
+        const user = await User.init(id);
+        if (!user) {
+          throw new Error('User not found');
+        }
         this.selectedUser = user;
         return user;
       } catch (error) {
@@ -1194,10 +1206,11 @@ export default defineComponent({
     async handleDeleteUser(userId: string) {
       if (confirm('Are you sure you want to delete this user?')) {
         try {
-          const user = new User();
-          await user.load(userId);
-          await user.destroy();
-          // Real-time listener will update the UI
+          const user = await User.init(userId);
+          if (user) {
+            await user.destroy();
+            // Real-time listener will update the UI
+          }
         } catch (error) {
           console.error('Failed to delete user:', error);
         }

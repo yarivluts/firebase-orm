@@ -44,8 +44,10 @@ export class ProductService {
 
   // Read
   async getProduct(id: string): Promise<Product> {
-    const product = new Product();
-    await product.load(id);
+    const product = await Product.init(id);
+    if (!product) {
+      throw new Error('Product not found');
+    }
     return product;
   }
 
@@ -102,8 +104,10 @@ export class BaseRepository<T extends BaseModel> implements IRepository<T> {
   constructor(private ModelClass: new () => T) {}
 
   async findById(id: string): Promise<T> {
-    const model = new this.ModelClass();
-    await model.load(id);
+    const model = await (this.ModelClass as any).init(id);
+    if (!model) {
+      throw new Error('Model not found');
+    }
     return model;
   }
 
@@ -873,8 +877,10 @@ export class Result<T, E = Error> {
 export class SafeProductService {
   async getProduct(id: string): Promise<Result<Product, string>> {
     try {
-      const product = new Product();
-      await product.load(id);
+      const product = await Product.init(id);
+      if (!product) {
+        return Result.error('Product not found');
+      }
       return Result.ok(product);
     } catch (error) {
       return Result.error('Product not found');

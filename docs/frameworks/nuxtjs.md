@@ -441,8 +441,13 @@ const userId = route.params.id;
 // Server-side data fetching with error handling
 const { data: user, pending, error } = await useLazyAsyncData(`user-${userId}`, async () => {
   try {
-    const userInstance = new User();
-    await userInstance.load(userId);
+    const userInstance = await User.init(userId);
+    if (!userInstance) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'User not found'
+      });
+    }
     return userInstance.toJSON();
   } catch (err) {
     throw createError({
@@ -461,10 +466,11 @@ const loadUserPosts = async () => {
   
   loadingPosts.value = true;
   try {
-    const userInstance = new User();
-    await userInstance.load(userId);
-    const userPosts = await userInstance.loadHasMany('posts');
-    posts.value = userPosts.map(post => post.toJSON());
+    const userInstance = await User.init(userId);
+    if (userInstance) {
+      const userPosts = await userInstance.loadHasMany('posts');
+      posts.value = userPosts.map(post => post.toJSON());
+    }
   } catch (error) {
     console.error('Error loading posts:', error);
   } finally {
@@ -689,10 +695,11 @@ const loadPosts = async () => {
   
   loadingPosts.value = true;
   try {
-    const user = new User();
-    await user.load(props.user.id);
-    const userPosts = await user.loadHasMany('posts');
-    posts.value = userPosts.map(post => post.toJSON());
+    const user = await User.init(props.user.id);
+    if (user) {
+      const userPosts = await user.loadHasMany('posts');
+      posts.value = userPosts.map(post => post.toJSON());
+    }
   } catch (error) {
     console.error('Error loading posts:', error);
   } finally {
@@ -709,11 +716,11 @@ const deleteUser = async () => {
   if (!confirm('Are you sure you want to delete this user?')) return;
   
   try {
-    const user = new User();
-    await user.load(props.user.id);
-    await user.destroy();
-    
-    emit('user-deleted', props.user.id);
+    const user = await User.init(props.user.id);
+    if (user) {
+      await user.destroy();
+      emit('user-deleted', props.user.id);
+    }
   } catch (error) {
     console.error('Error deleting user:', error);
     alert('Failed to delete user');
@@ -783,8 +790,10 @@ export function useFirebaseORM<T extends any>(
   // Update item
   const updateItem = async (id: string, updates: Partial<T>) => {
     try {
-      const item = new ModelClass();
-      await (item as any).load(id);
+      const item = await (ModelClass as any).init(id);
+      if (!item) {
+        throw new Error('Item not found');
+      }
       item.initFromData(updates);
       await (item as any).save();
       
@@ -805,8 +814,10 @@ export function useFirebaseORM<T extends any>(
   // Delete item
   const deleteItem = async (id: string) => {
     try {
-      const item = new ModelClass();
-      await (item as any).load(id);
+      const item = await (ModelClass as any).init(id);
+      if (!item) {
+        throw new Error('Item not found');
+      }
       await (item as any).destroy();
       
       if (!options.realtime) {
@@ -1004,8 +1015,13 @@ export default defineEventHandler(async (event) => {
       });
     }
     
-    const user = new User();
-    await user.load(id);
+    const user = await User.init(id);
+    if (!user) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'User not found'
+      });
+    }
     
     return user.toJSON();
   } catch (error) {
