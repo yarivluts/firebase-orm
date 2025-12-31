@@ -322,6 +322,14 @@ export class BaseModel implements ModelInterface {
    * }).query().where('difficulty', '>', 3).limit(10);
    */
   static initPathParams<T>(this: { new(): T }, params: { [key: string]: any }): T & BaseModel {
+    // Defensive check for bundler/transpiler contexts where 'this' binding might be lost
+    if (!this || typeof this !== 'function') {
+      throw new Error(
+        'Static method called without proper context. This can happen in some bundler configurations (Next.js/RSC). ' +
+        '\n\nTo fix this, ensure the class is properly imported and not destructured.'
+      );
+    }
+    
     const instance = new this() as T & BaseModel;
     
     // Set the model type so instance methods work correctly
@@ -977,6 +985,17 @@ export class BaseModel implements ModelInterface {
    * @returns The query for the model.
    */
   static query<T>(this: { new(): T }): Query<T> {
+    // Defensive check for bundler/transpiler contexts where 'this' binding might be lost
+    if (!this || typeof this !== 'function') {
+      throw new Error(
+        'Static method called without proper context. This can happen in some bundler configurations (Next.js/RSC). ' +
+        '\n\nTo fix this, ensure the class is properly imported and not destructured. ' +
+        '\nIf using Next.js App Router with RSC, try importing the entire module: ' +
+        '\n  import * as Models from "@shared/models"; ' +
+        '\n  const items = await Models.YourModel.query().get();'
+      );
+    }
+    
     var query = new Query<T>();
     var object: any = new this();
     object.setModelType(this);
@@ -990,6 +1009,14 @@ export class BaseModel implements ModelInterface {
    * @returns The collection query for the model.
    */
   static collectionQuery<T>(this: { new(): T }): Query<T> {
+    // Defensive check for bundler/transpiler contexts where 'this' binding might be lost
+    if (!this || typeof this !== 'function') {
+      throw new Error(
+        'Static method called without proper context. This can happen in some bundler configurations (Next.js/RSC). ' +
+        '\n\nTo fix this, ensure the class is properly imported and not destructured.'
+      );
+    }
+    
     const isCollectionGroup = true;
     var query = new Query<T>();
     var object: any = new this();
@@ -1303,6 +1330,17 @@ export class BaseModel implements ModelInterface {
     limit?: number,
     params?: { [key: string]: string }
   ): Promise<Array<T>> {
+    // Defensive check for bundler/transpiler contexts where 'this' binding might be lost
+    if (!this || typeof this !== 'function') {
+      throw new Error(
+        'Static method called without proper context. This can happen in some bundler configurations (Next.js/RSC). ' +
+        '\n\nTo fix this, ensure the class is properly imported and not destructured. ' +
+        '\nIf using Next.js App Router with RSC, try importing the entire module: ' +
+        '\n  import * as Models from "@shared/models"; ' +
+        '\n  const items = await Models.YourModel.getAll();'
+      );
+    }
+    
     var object: any = new this();
     object.setModelType(this);
     object._createdViaGetModel = true;
