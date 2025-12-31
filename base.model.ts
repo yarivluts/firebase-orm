@@ -344,8 +344,9 @@ export class BaseModel implements ModelInterface {
    */
   static initPath<T>(this: { new(): T }, params: { [key: string]: any }): T & BaseModel {
     // Call initPathParams using the constructor context
-    const Constructor = this as any;
-    return Constructor.initPathParams(params);
+    // We need to cast to typeof BaseModel to access the static method
+    const Constructor = this as unknown as typeof BaseModel;
+    return Constructor.initPathParams(params) as T & BaseModel;
   }
 
   /**
