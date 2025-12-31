@@ -177,4 +177,24 @@ describe('Instance Query Method Restrictions', () => {
       expect(errorMessage).toContain('pass CLASS not instance');
     }
   });
+
+  test('error message should detect potential bundler/static method binding issues', () => {
+    const model = new PathParamTestModel();
+    model.setPathParams('userId', 'user123');
+    // Don't set modelType to simulate static method binding failure
+    
+    try {
+      model.where('someField', '==', 'value');
+      fail('Expected error to be thrown');
+    } catch (error) {
+      const errorMessage = error.message;
+      
+      // Should detect the bundler issue
+      expect(errorMessage).toContain('DETECTED');
+      expect(errorMessage).toContain('static method binding issue');
+      expect(errorMessage).toContain('bundler');
+      expect(errorMessage).toContain('Next.js/RSC');
+      expect(errorMessage).toContain('YourModel.query().get()');
+    }
+  });
 });

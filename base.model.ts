@@ -250,7 +250,10 @@ export class BaseModel implements ModelInterface {
    */
   protected checkInstanceQueryAllowed(): void {
     if (!this._createdViaGetModel) {
-      throw new Error(
+      // Check if we might be in a static method context that failed
+      const isLikelyStaticMethodFailure = !this.modelType;
+      
+      let errorMessage = 
         'Instance query methods (getAll, where, query, find, findOne) can only be called on models retrieved via getModel(). ' +
         '\n\nYou called an INSTANCE method, but static methods are available:\n' +
         '\n' +
@@ -267,8 +270,17 @@ export class BaseModel implements ModelInterface {
         '✓ const parent = await ParentModel.findOne(...); const items = await parent.getModel(ChildModel).getAll(); // CORRECT\n' +
         '\n' +
         '✗ function getItems(model) { return model.getAll(); } getItems(new YourModel()); // WRONG\n' +
-        '✓ function getItems(Model) { return Model.getAll(); } getItems(YourModel); // CORRECT - pass CLASS not instance'
-      );
+        '✓ function getItems(Model) { return Model.getAll(); } getItems(YourModel); // CORRECT - pass CLASS not instance';
+      
+      if (isLikelyStaticMethodFailure) {
+        errorMessage += '\n\n' +
+          '⚠️  DETECTED: This might be a static method binding issue in your bundler (Next.js/RSC).\n' +
+          'Try this workaround:\n' +
+          '  // Instead of: const items = await YourModel.getAll();\n' +
+          '  // Use: const items = await YourModel.query().get();';
+      }
+      
+      throw new Error(errorMessage);
     }
   }
 
