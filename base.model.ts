@@ -324,22 +324,22 @@ export class BaseModel implements ModelInterface {
    * @example
    * // Simple usage with getAll()
    * const questions = await Question.initPath({
-   *   course_id: courseId,
-   *   lesson_id: lessonId
+   *   'course_id': courseId,
+   *   'lesson_id': lessonId
    * }).getAll();
    * 
    * @example
    * // Chaining with where clause
    * const activeQuestions = await Question.initPath({
-   *   course_id: courseId,
-   *   lesson_id: lessonId
+   *   'course_id': courseId,
+   *   'lesson_id': lessonId
    * }).where('status', '==', 'active').get();
    * 
    * @example
    * // Using query builder and multiple chaining
    * const query = Question.initPath({
-   *   course_id: courseId,
-   *   lesson_id: lessonId
+   *   'course_id': courseId,
+   *   'lesson_id': lessonId
    * }).query().where('difficulty', '>', 3).limit(10);
    */
   static initPath<T>(this: { new(): T }, params: { [key: string]: any }): T & BaseModel {

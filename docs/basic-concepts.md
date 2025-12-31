@@ -544,7 +544,7 @@ const categories = await Category.initPath({
   course_id: courseId
 }).getAll();
 
-// Pattern 4: Query nested models with initPath()
+// Pattern 4: Query nested models with initPath() / initPathParams()
 const activeCategories = await Category.initPath({
   course_id: courseId
 }).query()
