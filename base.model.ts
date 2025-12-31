@@ -252,7 +252,22 @@ export class BaseModel implements ModelInterface {
     if (!this._createdViaGetModel) {
       throw new Error(
         'Instance query methods (getAll, where, query, find, findOne) can only be called on models retrieved via getModel(). ' +
-        'Use static methods like Model.getAll() or retrieve the model through a parent: parentModel.getModel(ChildModel).getAll()'
+        '\n\nYou called an INSTANCE method, but static methods are available:\n' +
+        '\n' +
+        'Valid patterns:\n' +
+        '1. Static methods on the CLASS: Course.getAll(), Course.where(...).get(), Course.query()\n' +
+        '2. Via parent: parentModel.getModel(ChildModel).getAll()\n' +
+        '3. With path params: Course.initPath({ param_id: value }).getAll()\n' +
+        '\n' +
+        'Common mistakes:\n' +
+        '✗ const courseModel = new Course(); await courseModel.getAll(); // WRONG - instance method\n' +
+        '✓ const courses = await Course.getAll(); // CORRECT - static method on CLASS\n' +
+        '\n' +
+        '✗ const course = await Course.findOne(...); const lessons = await course.getAll(); // WRONG\n' +
+        '✓ const course = await Course.findOne(...); const lessons = await course.getModel(Lesson).getAll(); // CORRECT\n' +
+        '\n' +
+        '✗ function getCourses(model) { return model.getAll(); } getCourses(new Course()); // WRONG\n' +
+        '✓ function getCourses(Model) { return Model.getAll(); } getCourses(Course); // CORRECT - pass CLASS not instance'
       );
     }
   }
