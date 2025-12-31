@@ -343,7 +343,9 @@ export class BaseModel implements ModelInterface {
    * }).query().where('difficulty', '>', 3).limit(10);
    */
   static initPath<T>(this: { new(): T }, params: { [key: string]: any }): T & BaseModel {
-    return this.initPathParams(params);
+    // Call initPathParams using the constructor context
+    const Constructor = this as any;
+    return Constructor.initPathParams(params);
   }
 
   /**
