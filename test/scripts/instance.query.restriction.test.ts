@@ -163,8 +163,8 @@ describe('Instance Query Method Restrictions', () => {
       expect(errorMessage).toContain('Via parent');
       expect(errorMessage).toContain('With path params');
       
-      // Should include examples
-      expect(errorMessage).toContain('Course.getAll()');
+      // Should include examples with generic model names
+      expect(errorMessage).toContain('YourModel.getAll()');
       expect(errorMessage).toContain('parentModel.getModel(ChildModel)');
       expect(errorMessage).toContain('initPath');
       

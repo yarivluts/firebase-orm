@@ -255,19 +255,19 @@ export class BaseModel implements ModelInterface {
         '\n\nYou called an INSTANCE method, but static methods are available:\n' +
         '\n' +
         'Valid patterns:\n' +
-        '1. Static methods on the CLASS: Course.getAll(), Course.where(...).get(), Course.query()\n' +
+        '1. Static methods on the CLASS: YourModel.getAll(), YourModel.where(...).get(), YourModel.query()\n' +
         '2. Via parent: parentModel.getModel(ChildModel).getAll()\n' +
-        '3. With path params: Course.initPath({ param_id: value }).getAll()\n' +
+        '3. With path params: YourModel.initPath({ param_id: value }).getAll()\n' +
         '\n' +
         'Common mistakes:\n' +
-        '✗ const courseModel = new Course(); await courseModel.getAll(); // WRONG - instance method\n' +
-        '✓ const courses = await Course.getAll(); // CORRECT - static method on CLASS\n' +
+        '✗ const model = new YourModel(); await model.getAll(); // WRONG - instance method\n' +
+        '✓ const items = await YourModel.getAll(); // CORRECT - static method on CLASS\n' +
         '\n' +
-        '✗ const course = await Course.findOne(...); const lessons = await course.getAll(); // WRONG\n' +
-        '✓ const course = await Course.findOne(...); const lessons = await course.getModel(Lesson).getAll(); // CORRECT\n' +
+        '✗ const parent = await ParentModel.findOne(...); const items = await parent.getAll(); // WRONG\n' +
+        '✓ const parent = await ParentModel.findOne(...); const items = await parent.getModel(ChildModel).getAll(); // CORRECT\n' +
         '\n' +
-        '✗ function getCourses(model) { return model.getAll(); } getCourses(new Course()); // WRONG\n' +
-        '✓ function getCourses(Model) { return Model.getAll(); } getCourses(Course); // CORRECT - pass CLASS not instance'
+        '✗ function getItems(model) { return model.getAll(); } getItems(new YourModel()); // WRONG\n' +
+        '✓ function getItems(Model) { return Model.getAll(); } getItems(YourModel); // CORRECT - pass CLASS not instance'
       );
     }
   }
