@@ -261,18 +261,19 @@ newMember.photoUrl = 'https://example.com/photo.jpg';
 await newMember.save();
 ```
 
-### 🚀 NEW: Simplified Path Parameters with `initPathParams()`
+### 🚀 NEW: Simplified Path Parameters with `initPath()` / `initPathParams()`
 
-For an even cleaner API, use the static `initPathParams()` method to set all path parameters at once:
+For an even cleaner API, use the static `initPath()` or `initPathParams()` method to set all path parameters at once:
 
 ```typescript
 // ✨ NEW: Set all path params at once and chain directly!
-const allMembers = await Member.initPathParams({
+// Use the shorter initPath() or the more explicit initPathParams()
+const allMembers = await Member.initPath({
   website_id: websiteId
 }).getAll();
 
 // Works with queries too
-const activeMembers = await Member.initPathParams({
+const activeMembers = await Member.initPath({
   website_id: websiteId
 }).query()
   .where('status', '==', 'active')
@@ -296,13 +297,13 @@ questionModel.setPathParams('lesson_id', lessonId);
 const allQuestions = await questionModel.getAll();
 
 // After: Single line! ⚡
-const allQuestions = await Question.initPathParams({
+const allQuestions = await Question.initPath({
   course_id: courseId,
   lesson_id: lessonId
 }).getAll();
 
 // You can still modify the instance after initialization
-const question = Question.initPathParams({
+const question = Question.initPath({
   course_id: courseId,
   lesson_id: lessonId
 });
@@ -313,7 +314,8 @@ await question.save();
 
 **Key Points:**
 - Use `:parameter_name` syntax in `reference_path` to define path parameters
-- **NEW:** Use `initPathParams({...})` for cleaner, chainable API when setting multiple params
+- **NEW:** Use `initPath({...})` or `initPathParams({...})` for cleaner, chainable API when setting multiple params
+- Both methods are equivalent - `initPath()` is shorter, `initPathParams()` is more explicit
 - Pass path parameters as the second argument to `init()` when loading by ID
 - Use `setPathParams()` for individual parameter setting or when creating instances with the constructor
 

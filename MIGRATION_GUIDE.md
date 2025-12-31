@@ -61,23 +61,24 @@ const activeCategories = await course.getModel(Category)
   .get();
 ```
 
-**Option 3: Use `initPathParams()` Static Factory Method**
+**Option 3: Use `initPath()` or `initPathParams()` Static Factory Method**
 For nested collections with known path parameters, use the static factory method:
 ```typescript
 // Set path parameters and query in one flow
-const categories = await Category.initPathParams({
+// Use initPath() for brevity or initPathParams() for clarity
+const categories = await Category.initPath({
   course_id: courseId
 }).getAll();
 
 // With filtering
-const activeCategories = await Category.initPathParams({
+const activeCategories = await Category.initPath({
   course_id: courseId
 }).query()
   .where('status', '==', 'active')
   .get();
 
 // Multi-level nested collections
-const questions = await Question.initPathParams({
+const questions = await Question.initPath({
   course_id: courseId,
   lesson_id: lessonId
 }).where('difficulty', '>', 3).get();
