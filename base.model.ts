@@ -314,6 +314,39 @@ export class BaseModel implements ModelInterface {
   }
 
   /**
+   * Alias for initPathParams - shorter and more ergonomic.
+   * Static method to initialize a model with path parameters.
+   * 
+   * @template T - The type of the model
+   * @param params - An object containing key-value pairs for path parameters
+   * @returns A new instance of the model with path parameters set
+   * 
+   * @example
+   * // Simple usage with getAll()
+   * const questions = await Question.initPath({
+   *   course_id: courseId,
+   *   lesson_id: lessonId
+   * }).getAll();
+   * 
+   * @example
+   * // Chaining with where clause
+   * const activeQuestions = await Question.initPath({
+   *   course_id: courseId,
+   *   lesson_id: lessonId
+   * }).where('status', '==', 'active').get();
+   * 
+   * @example
+   * // Using query builder and multiple chaining
+   * const query = Question.initPath({
+   *   course_id: courseId,
+   *   lesson_id: lessonId
+   * }).query().where('difficulty', '>', 3).limit(10);
+   */
+  static initPath<T>(this: { new(): T }, params: { [key: string]: any }): T & BaseModel {
+    return this.initPathParams(params);
+  }
+
+  /**
    * Parses the text indexing fields.
    * @param text - The text to parse.
    * @returns An array of parsed text indexing fields.
