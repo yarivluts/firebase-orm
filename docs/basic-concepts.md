@@ -539,20 +539,20 @@ const categories = await Category.getAll();
 const course = await Course.findOne('id', '==', courseId);
 const categories = await course.getModel(Category).getAll();
 
-// Pattern 3: Use initPathParams() static factory method
-const categories = await Category.initPathParams({
+// Pattern 3: Use initPath() or initPathParams() static factory method
+const categories = await Category.initPath({
   course_id: courseId
 }).getAll();
 
-// Pattern 4: Query nested models with initPathParams()
-const activeCategories = await Category.initPathParams({
+// Pattern 4: Query nested models with initPath()
+const activeCategories = await Category.initPath({
   course_id: courseId
 }).query()
   .where('status', '==', 'active')
   .get();
 
 // Pattern 5: Multi-level nested collections
-const tasks = await Task.initPathParams({
+const tasks = await Task.initPath({
   website_id: websiteId,
   member_id: memberId
 }).where('status', '==', 'pending').get();

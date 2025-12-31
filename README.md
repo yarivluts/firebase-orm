@@ -157,6 +157,11 @@ const member = new Member();
 member.setPathParams('website_id', websiteId);
 await member.load(memberId);
 
+// NEW: Use initPath() for cleaner nested model queries
+const members = await Member.initPath({
+  website_id: websiteId
+}).getAll();
+
 // For creating new instances, use the constructor
 const newUser = new User();
 newUser.name = "Jane Doe";
@@ -170,6 +175,12 @@ await newUser.save();
 - 🛡️ Returns null if not found (easier error handling)
 - 🗂️ Easy path parameters for nested collections
 - ✅ Fully compatible with existing code
+
+**Benefits of `initPath()`:**
+- ⚡ Set multiple path parameters in one call
+- 🔗 Chain directly with query methods (getAll, where, query, etc.)
+- 📝 Clean, readable syntax for nested collections
+- 🎯 Perfect for models with complex path hierarchies
 
 ## 🔄 Generic ORM Alias Functions
 
