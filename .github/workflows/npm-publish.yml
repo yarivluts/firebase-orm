@@ -7,9 +7,6 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write  # <--- REQUIRED: Generates the OIDC ID card
 
     steps:
       - uses: actions/checkout@v4
@@ -18,7 +15,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org' # <--- REQUIRED: Triggers the auth logic
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Set Git user
         run: |
@@ -53,3 +50,5 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
