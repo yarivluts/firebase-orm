@@ -104,6 +104,17 @@ export class FirestoreOrmRepository {
      * @returns A promise that resolves when the connection is fully initialized.
      */
     static initGlobalConnection(firestore: Firestore | any, key: string = FirestoreOrmRepository.DEFAULT_KEY_NAME): Promise<FirestoreOrmRepository> {
+        // HMR Safety: Check if connection already exists and is the same instance
+        if (this.globalFirestores[key]) {
+            const existingRepo = this.globalFirestores[key];
+            // If the firestore instance is the same, return the existing promise
+            if (existingRepo.getFirestore() === firestore) {
+                return this.readyPromises[key] || Promise.resolve(existingRepo);
+            }
+            // Different firestore instance, log a warning but allow re-initialization
+            console.warn(`Reinitializing Firestore ORM connection for key '${key}' (HMR or config change detected)`);
+        }
+        
         const repository = new FirestoreOrmRepository(firestore);
         this.globalFirestores[key] = repository;
         
@@ -381,15 +392,34 @@ export class FirestoreOrmRepository {
      * Retrieves the model object based on the model class.
      * @param model - The model class.
      * @returns The model object.
+     * @throws Error if model is not a valid constructor
      */
     getModel<T>(model: { new(): T; }): T & BaseModel {
+        if (!model || typeof model !== 'function') {
+            throw new Error(
+                'getModel requires a valid model constructor. ' +
+                `Received: ${typeof model}. ` +
+                'This can happen if the model class reference is lost during serialization or in subcollection mapping. ' +
+                'Ensure the model is properly imported and not destructured.'
+            );
+        }
+        
         var m: any | T = model;
-        var object: any = new m();
-        object.setRepository(this);
-        object.setModelType(model);
-        object.currentModel = object;
-        object._createdViaGetModel = true;
-        return <T & BaseModel>object;
+        try {
+            var object: any = new m();
+            object.setRepository(this);
+            object.setModelType(model);
+            object.currentModel = object;
+            object._createdViaGetModel = true;
+            return <T & BaseModel>object;
+        } catch (error) {
+            throw new Error(
+                `Failed to instantiate model. ` +
+                `Error: ${error.message}. ` +
+                `This can happen if the model class is not properly defined or imported. ` +
+                `Model type: ${model.name || 'unknown'}`
+            );
+        }
     }
 
     /**
