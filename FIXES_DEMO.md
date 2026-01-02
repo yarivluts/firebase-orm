@@ -2,37 +2,51 @@
 
 This document demonstrates the fixes implemented for the reported issues.
 
-## Issue 1: Instance Query Methods Now Work on Manual Instantiation
+## Issue 1: Static Methods Now Work Correctly
 
-### Before (would throw error):
+### Problem
+Static methods like `Post.getAll()` and `Post.query()` were failing in some bundler configurations (Next.js/RSC) because the internal instance check was too strict.
+
+### Solution
+The library's static methods now properly set internal flags so they work reliably across all environments.
+
+### Correct Usage:
 ```typescript
-const user = new User();
-await user.getAll(); // ERROR: Instance query methods can only be called on models retrieved via getModel()
+// Static methods (recommended and working)
+const items = await Item.getAll();
+const posts = await Post.query().where('status', '==', 'active').get();
+
+// Static factory with path params
+const posts = await Post.initPath({ user_id: userId }).getAll();
 ```
 
-### After (works correctly):
+### Note on Manual Instantiation
+Manual instantiation with instance methods is intentionally NOT supported to maintain API consistency:
 ```typescript
-const user = new User();
-await user.getAll(); // ✓ Works! Auto-configures on first call
+// ✗ NOT SUPPORTED - will throw error
+const post = new Post();
+await post.getAll(); // ERROR!
+
+// ✓ CORRECT - use static methods
+const posts = await Post.getAll();
 ```
 
 ## Issue 2: setPathParams Now Supports Object-Based API
 
 ### Old API (still works):
 ```typescript
-const post = new Post();
-post.setPathParams('user_id', userId);
-post.setPathParams('post_id', postId);
+const post = Post.initPath({ user_id: userId });
+post.setPathParams('category_id', categoryId);
 ```
 
 ### New Object-Based API:
 ```typescript
-const post = new Post();
-post.setPathParams({ user_id: userId, post_id: postId });
+const post = Post.initPath({ user_id: userId });
+post.setPathParams({ category_id: categoryId, tag_id: tagId });
 
 // Or chain them:
-post.setPathParams({ user_id: userId })
-    .setPathParams({ post_id: postId });
+post.setPathParams({ category_id: categoryId })
+    .setPathParams({ tag_id: tagId });
 ```
 
 ### Using Static Factory (recommended):
@@ -93,7 +107,7 @@ repository.getModel(null);
 
 repository.getModel(undefined);
 // Error: getModel requires a valid model constructor...
-// Ensure the model is properly imported and not destructured
+// Ensure the model is properly imported as a class reference
 ```
 
 ## Backward Compatibility
@@ -108,10 +122,9 @@ All changes are backward compatible:
 
 No migration required! All new features are additive:
 
-1. You can continue using existing patterns
+1. Continue using static methods (recommended pattern)
 2. Optionally adopt the new object-based `setPathParams` API
-3. Optionally use manual instantiation if it fits your use case better
-4. Better error messages appear automatically
+3. Better error messages appear automatically
 
 ## Best Practices
 
@@ -119,21 +132,13 @@ No migration required! All new features are additive:
 ```typescript
 // Static method (recommended)
 const items = await Item.getAll();
-
-// Or manual instantiation (now works)
-const item = new Item();
-const items = await item.getAll();
+const item = await Item.findOne('id', '==', itemId);
 ```
 
 ### For models with path parameters:
 ```typescript
 // Static factory (recommended - most ergonomic)
 const posts = await Post.initPath({ user_id: userId }).getAll();
-
-// Or manual with setPathParams
-const post = new Post();
-post.setPathParams({ user_id: userId });
-const posts = await post.getAll();
 
 // Or via parent model (original pattern)
 const user = await User.findOne('id', '==', userId);
@@ -149,3 +154,4 @@ const recentPosts = await Post.initPath({ user_id: userId })
     .limit(10)
     .get();
 ```
+

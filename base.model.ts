@@ -260,53 +260,43 @@ export class BaseModel implements ModelInterface {
 
   /**
    * Checks if instance query methods are allowed on this model.
-   * Instance query methods can be called on:
-   * 1. Models created via getModel()
-   * 2. Models with a valid repository and model type
-   * 
-   * This allows for more flexible usage patterns while still catching obvious errors.
+   * Instance query methods should only be called on models created via getModel() or static methods.
+   * @throws Error if instance query methods are not allowed
    */
   protected checkInstanceQueryAllowed(): void {
-    // Allow if explicitly created via getModel or static factory methods
-    if (this._createdViaGetModel) {
-      return;
-    }
-    
-    // Allow if the model has a repository and model type set (manually instantiated but properly configured)
-    if (this.repository && this.modelType) {
-      // Automatically set the flag for future calls
-      this._createdViaGetModel = true;
-      return;
-    }
-    
-    // If no model type is set, try to infer it from the constructor
-    // Check that constructor is a valid function and not the base Object constructor
-    if (!this.modelType && this.constructor && this.constructor !== Object && typeof this.constructor === 'function') {
-      this.modelType = this.constructor;
-      // Also set repository if not already set
-      if (!this.repository) {
-        const connectionName = this['connectionName'] || FirestoreOrmRepository.DEFAULT_KEY_NAME;
-        this.repository = FirestoreOrmRepository.getGlobalConnection(connectionName);
+    if (!this._createdViaGetModel) {
+      // Check if we might be in a static method context that failed
+      const isLikelyStaticMethodFailure = !this.modelType;
+      
+      let errorMessage = 
+        'Instance query methods (getAll, where, query, find, findOne) can only be called on models retrieved via getModel(). ' +
+        '\n\nYou called an INSTANCE method, but static methods are available:\n' +
+        '\n' +
+        'Valid patterns:\n' +
+        '1. Static methods on the CLASS: YourModel.getAll(), YourModel.where(...).get(), YourModel.query()\n' +
+        '2. Via parent: parentModel.getModel(ChildModel).getAll()\n' +
+        '3. With path params: YourModel.initPath({ param_id: value }).getAll()\n' +
+        '\n' +
+        'Common mistakes:\n' +
+        '✗ const model = new YourModel(); await model.getAll(); // WRONG - instance method\n' +
+        '✓ const items = await YourModel.getAll(); // CORRECT - static method on CLASS\n' +
+        '\n' +
+        '✗ const parent = await ParentModel.findOne(...); const items = await parent.getAll(); // WRONG\n' +
+        '✓ const parent = await ParentModel.findOne(...); const items = await parent.getModel(ChildModel).getAll(); // CORRECT\n' +
+        '\n' +
+        '✗ function getItems(model) { return model.getAll(); } getItems(new YourModel()); // WRONG\n' +
+        '✓ function getItems(Model) { return Model.getAll(); } getItems(YourModel); // CORRECT - pass CLASS not instance';
+      
+      if (isLikelyStaticMethodFailure) {
+        errorMessage += '\n\n' +
+          '⚠️  DETECTED: This might be a static method binding issue in your bundler (Next.js/RSC).\n' +
+          'Try this workaround:\n' +
+          '  // Instead of: const items = await YourModel.getAll();\n' +
+          '  // Use: const items = await YourModel.query().get();';
       }
-      this._createdViaGetModel = true;
-      return;
+      
+      throw new Error(errorMessage);
     }
-    
-    // Last resort: throw a helpful error
-    let errorMessage = 
-      'Instance query methods require a properly initialized model. ' +
-      '\n\nValid patterns:\n' +
-      '1. Static methods on the CLASS: YourModel.getAll(), YourModel.where(...).get()\n' +
-      '2. Via getModel(): parentModel.getModel(ChildModel).getAll()\n' +
-      '3. With path params: YourModel.initPath({ param_id: value }).getAll()\n' +
-      '4. Manual instantiation (now supported): const model = new YourModel(); model.getAll()\n' +
-      '\n' +
-      'Note: If using manual instantiation with path parameters, ensure you set them:\n' +
-      '  const model = new YourModel();\n' +
-      '  model.setPathParams({ user_id: "123" });\n' +
-      '  const items = await model.getAll();';
-    
-    throw new Error(errorMessage);
   }
 
   /**

@@ -5,19 +5,23 @@ This PR successfully addresses all 5 issues reported in the bug report while mai
 
 ## Issues Fixed
 
-### ✅ Issue 1: Instance Query Methods Restriction
-**Problem:** Calling query methods (getAll, where, query, find, findOne) on manually instantiated models threw an error.
+### ✅ Issue 1: Static Methods Now Work Reliably
+**Problem:** Static query methods like `Post.getAll()` or `Post.query()` were failing in some bundler configurations (Next.js/RSC) due to strict internal instance checks.
 
 **Solution:** 
-- Modified `checkInstanceQueryAllowed()` to auto-configure models on first query call
-- Auto-detects repository and model type from constructor when not explicitly set
-- Allows flexible usage patterns while maintaining safety
+- Static methods now properly set the `_createdViaGetModel` flag on internally-created instances
+- Maintains strict checking to prevent unintended usage of instance methods on manually-created objects
+- Static methods work reliably across all environments
 
 **Example:**
 ```typescript
-// Now works!
-const user = new User();
-await user.getAll();
+// Static methods work correctly
+const posts = await Post.getAll();
+const items = await Item.query().where('status', '==', 'active').get();
+
+// Manual instantiation remains restricted (intentional)
+const post = new Post();
+await post.getAll(); // Still throws error - use static methods instead
 ```
 
 ### ✅ Issue 2: TypeError in Subcollections
