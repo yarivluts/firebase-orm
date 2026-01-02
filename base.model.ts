@@ -234,18 +234,33 @@ export class BaseModel implements ModelInterface {
   /**
    * Sets path parameters for the model.
    * Manages the pathParams map property that will be used in getPathList, etc.
-   * @param key - The parameter key
-   * @param value - The parameter value
+   * 
+   * Supports two signatures:
+   * 1. setPathParams(key: string, value: any) - Set a single parameter
+   * 2. setPathParams(params: Record<string, any>) - Set multiple parameters from an object
+   * 
+   * @param keyOrParams - Either a parameter key (string) or an object with key-value pairs
+   * @param value - The parameter value (only used when first argument is a string)
    * @returns The updated model instance
    */
-  setPathParams(key: string, value: any): this {
-    this.pathParams.set(key, value);
+  setPathParams(keyOrParams: string | Record<string, any>, value?: any): this {
+    if (typeof keyOrParams === 'string') {
+      // Single key-value pair
+      this.pathParams.set(keyOrParams, value);
+    } else if (typeof keyOrParams === 'object' && keyOrParams !== null) {
+      // Object with multiple key-value pairs
+      for (const key in keyOrParams) {
+        if (Object.prototype.hasOwnProperty.call(keyOrParams, key)) {
+          this.pathParams.set(key, keyOrParams[key]);
+        }
+      }
+    }
     return this;
   }
 
   /**
    * Checks if instance query methods are allowed on this model.
-   * Instance query methods should only be called on models created via getModel().
+   * Instance query methods should only be called on models created via getModel() or static methods.
    * @throws Error if instance query methods are not allowed
    */
   protected checkInstanceQueryAllowed(): void {
@@ -664,8 +679,24 @@ export class BaseModel implements ModelInterface {
   /**
    * Gets the current model instance.
    * @returns The current model instance.
+   * @throws Error if modelType is not set
    */
   getCurrentModel(): this {
+    const modelType = this.getModelType();
+    if (!modelType) {
+      // Try to use the constructor as a fallback
+      const constructorType = this.constructor;
+      if (constructorType && typeof constructorType === 'function') {
+        this.setModelType(constructorType);
+      } else {
+        throw new Error(
+          'Cannot get current model: modelType is not set and constructor is not available. ' +
+          'This can happen if the model was not properly initialized. ' +
+          'Use getModel() or static methods instead.'
+        );
+      }
+    }
+    
     var object: any = this.getRepository().getModel(this.getModelType());
     var keys = object.getPathListKeys();
     var that: any = this;
@@ -2636,14 +2667,18 @@ export class BaseModel implements ModelInterface {
         } else if (FirestoreOrmRepository.getGlobalPath(subPath)) {
           value = FirestoreOrmRepository.getGlobalPath(subPath);
         } else {
-          console.error(
-            this['referencePath'] +
-            "/:" +
-            this['pathId'] +
-            " - " +
-            subPath +
-            " is missing!"
-          );
+          // Improved error message with model name and context
+          const modelName = this.constructor.name || 'Model';
+          const errorMsg = 
+            `Path parameter '${subPath}' is required for model '${modelName}' but was not provided.\n` +
+            `Reference path: ${this['referencePath']}\n` +
+            `Path ID: ${this['pathId']}\n\n` +
+            `To fix this, set the path parameter using one of these methods:\n` +
+            `1. model.setPathParams('${subPath}', value)\n` +
+            `2. model.setPathParams({ ${subPath}: value })\n` +
+            `3. Model.initPath({ ${subPath}: value })`;
+          
+          console.error(errorMsg);
           return false;
         }
         result.push({
@@ -2694,14 +2729,18 @@ export class BaseModel implements ModelInterface {
       } else if (FirestoreOrmRepository.getGlobalPath(subPath)) {
         value = FirestoreOrmRepository.getGlobalPath(subPath);
       } else {
-        console.error(
-          this['referencePath'] +
-          "/:" +
-          this['pathId'] +
-          " - " +
-          subPath +
-          " is missing!"
-        );
+        // Improved error message with model name and context
+        const modelName = this.constructor.name || 'Model';
+        const errorMsg = 
+          `Path parameter '${subPath}' is required for model '${modelName}' but was not provided.\n` +
+          `Reference path: ${this['referencePath']}\n` +
+          `Path ID: ${this['pathId']}\n\n` +
+          `To fix this, set the path parameter using one of these methods:\n` +
+          `1. model.setPathParams('${subPath}', value)\n` +
+          `2. model.setPathParams({ ${subPath}: value })\n` +
+          `3. Model.initPath({ ${subPath}: value })`;
+        
+        console.error(errorMsg);
         return false;
       }
       result[subPath] = value;
