@@ -250,7 +250,7 @@ export class BaseModel implements ModelInterface {
     } else if (typeof keyOrParams === 'object' && keyOrParams !== null) {
       // Object with multiple key-value pairs
       for (const key in keyOrParams) {
-        if (keyOrParams.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(keyOrParams, key)) {
           this.pathParams.set(key, keyOrParams[key]);
         }
       }
@@ -280,7 +280,8 @@ export class BaseModel implements ModelInterface {
     }
     
     // If no model type is set, try to infer it from the constructor
-    if (!this.modelType && this.constructor) {
+    // Check that constructor is a valid function and not the base Object constructor
+    if (!this.modelType && this.constructor && this.constructor !== Object && typeof this.constructor === 'function') {
       this.modelType = this.constructor;
       // Also set repository if not already set
       if (!this.repository) {

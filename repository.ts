@@ -397,10 +397,10 @@ export class FirestoreOrmRepository {
     getModel<T>(model: { new(): T; }): T & BaseModel {
         if (!model || typeof model !== 'function') {
             throw new Error(
-                'getModel requires a valid model constructor. ' +
+                'getModel requires a valid model constructor (class reference). ' +
                 `Received: ${typeof model}. ` +
                 'This can happen if the model class reference is lost during serialization or in subcollection mapping. ' +
-                'Ensure the model is properly imported and not destructured.'
+                'Ensure the model is properly imported as a class reference, not as an instance or other value.'
             );
         }
         
