@@ -339,8 +339,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // Update user
   const updateUser = async (id: string, updates: Partial<User>): Promise<User> => {
     try {
-      const user = new User();
-      await user.load(id);
+      const user = await User.init(id);
+      if (!user) {
+        throw new Error('User not found');
+      }
       user.initFromData(updates);
       await user.save();
       
@@ -356,8 +358,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // Delete user
   const deleteUser = async (id: string): Promise<void> => {
     try {
-      const user = new User();
-      await user.load(id);
+      const user = await User.init(id);
+      if (!user) {
+        throw new Error('User not found');
+      }
       await user.destroy();
       
       dispatch({ type: 'DELETE_USER', payload: id });
@@ -371,8 +375,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // Load single user
   const loadUser = async (id: string): Promise<User> => {
     try {
-      const user = new User();
-      await user.load(id);
+      const user = await User.init(id);
+      if (!user) {
+        throw new Error('User not found');
+      }
       dispatch({ type: 'SET_SELECTED_USER', payload: user });
       return user;
     } catch (error) {
@@ -481,8 +487,10 @@ export function useFirebaseORM<T extends any>(
   // Update item
   const updateItem = useCallback(async (id: string, updates: Partial<T>) => {
     try {
-      const item = new ModelClass();
-      await (item as any).load(id);
+      const item = await (ModelClass as any).init(id);
+      if (!item) {
+        throw new Error('Item not found');
+      }
       item.initFromData(updates);
       await (item as any).save();
 
@@ -500,8 +508,10 @@ export function useFirebaseORM<T extends any>(
   // Delete item
   const deleteItem = useCallback(async (id: string) => {
     try {
-      const item = new ModelClass();
-      await (item as any).load(id);
+      const item = await (ModelClass as any).init(id);
+      if (!item) {
+        throw new Error('Item not found');
+      }
       await (item as any).destroy();
 
       if (!options.realtime) {
@@ -575,8 +585,10 @@ export function useUser(userId?: string) {
       setError(null);
 
       try {
-        const userInstance = new User();
-        await userInstance.load(userId);
+        const userInstance = await User.init(userId);
+        if (!userInstance) {
+          throw new Error('User not found');
+        }
         setUser(userInstance);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load user');
@@ -1245,8 +1257,10 @@ export const createUser = createAsyncThunk(
 export const updateUser = createAsyncThunk(
   'users/updateUser',
   async ({ id, updates }: { id: string; updates: Partial<User> }) => {
-    const user = new User();
-    await user.load(id);
+    const user = await User.init(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
     user.initFromData(updates);
     await user.save();
     return user;
@@ -1254,8 +1268,10 @@ export const updateUser = createAsyncThunk(
 );
 
 export const deleteUser = createAsyncThunk('users/deleteUser', async (id: string) => {
-  const user = new User();
-  await user.load(id);
+  const user = await User.init(id);
+  if (!user) {
+    throw new Error('User not found');
+  }
   await user.destroy();
   return id;
 });
