@@ -130,13 +130,11 @@ if (typeof btoa === 'undefined') {
 }
 
 if (typeof XMLHttpRequest === 'undefined') {
-  // Polyfills required for Firebase
-  var XMLHttpRequest: any;
-  // @ts-ignore
-  import('xhr2').then((XMLHttpRequest) => {
-    globalVar.XMLHttpRequest = XMLHttpRequest;
-    import('ws').then((WebSocket) => {
-      globalVar.WebSocket = WebSocket;
+  // Polyfills required for Firebase (server-side only)
+  import('xhr2').then((xhr2) => {
+    globalVar.XMLHttpRequest = xhr2.default || xhr2;
+    import('ws').then((ws) => {
+      globalVar.WebSocket = ws.default || ws;
     });
   });
 }
