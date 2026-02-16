@@ -25,6 +25,7 @@
   },
   "scripts": {
     "build": "rm -rf dist && bash scripts/build-dual-module.sh",
+    "validate-esm": "node scripts/validate-esm-imports.js",
     "test": "jest --detectOpenHandles --runInBand --watch --onlyChanged",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix"
