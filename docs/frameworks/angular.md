@@ -176,8 +176,10 @@ export class UserService {
   }
 
   private async loadUser(id: string): Promise<User> {
-    const user = new User();
-    await user.load(id);
+    const user = await User.init(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
     return user;
   }
 
@@ -200,8 +202,10 @@ export class UserService {
   }
 
   private async updateUserAsync(id: string, updates: Partial<User>): Promise<User> {
-    const user = new User();
-    await user.load(id);
+    const user = await User.init(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
     user.initFromData(updates);
     await user.save();
     return user;
@@ -213,8 +217,10 @@ export class UserService {
   }
 
   private async deleteUserAsync(id: string): Promise<void> {
-    const user = new User();
-    await user.load(id);
+    const user = await User.init(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
     await user.destroy();
   }
 

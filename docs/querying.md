@@ -14,8 +14,7 @@ const allUsers = await User.getAll();
 const user = await User.findOne('email', '==', 'john@example.com');
 
 // Find one record by ID
-const user = new User();
-await user.load('user-123');
+const user = await User.init('user-123');
 ```
 
 ### Query Builder
@@ -467,8 +466,10 @@ const getMonthlyPosts = async (year: number, month: number) => {
 ```typescript
 // Query related data
 const getUserWithPosts = async (userId: string) => {
-  const user = new User();
-  await user.load(userId);
+  const user = await User.init(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
   
   const posts = await Post.query()
     .where('authorId', '==', userId)

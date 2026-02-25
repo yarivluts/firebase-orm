@@ -139,14 +139,10 @@ console.log(`User saved with ID: ${user.getId()}`);
 
 ```typescript
 // Load by ID
-const user = new User();
-await user.load('user-123');
-
-// Load and check if exists
-try {
-  await user.load('user-123');
+const user = await User.init('user-123');
+if (user) {
   console.log(`Loaded user: ${user.name}`);
-} catch (error) {
+} else {
   console.log('User not found');
 }
 ```
@@ -155,19 +151,21 @@ try {
 
 ```typescript
 // Load, modify, and save
-const user = new User();
-await user.load('user-123');
-user.name = "Jane Doe";
-await user.save();
+const user = await User.init('user-123');
+if (user) {
+  user.name = "Jane Doe";
+  await user.save();
+}
 ```
 
 ### Deleting Models
 
 ```typescript
 // Delete a model
-const user = new User();
-await user.load('user-123');
-await user.destroy();
+const user = await User.init('user-123');
+if (user) {
+  await user.destroy();
+}
 ```
 
 ## Lifecycle Hooks

@@ -212,14 +212,14 @@ const unsubscribe = User.onList((user) => {
 });
 
 // Listen to a specific user
-const user = new User();
-await user.load('user-id-here');
+const user = await User.init('user-id-here');
+if (user) {
+  const unsubscribeUser = user.on(() => {
+    console.log('User data changed:', user.name);
+  });
 
-const unsubscribeUser = user.on(() => {
-  console.log('User data changed:', user.name);
-});
-
-// Don't forget to unsubscribe when done
+  // Don't forget to unsubscribe when done
+}
 // unsubscribe();
 // unsubscribeUser();
 ```
@@ -362,19 +362,19 @@ export class User extends BaseModel {
 
 ```typescript
 // Load a user with their posts
-const user = new User();
-await user.load('user-id-here');
-
-// Load related posts
-const posts = await user.loadHasMany('posts');
-console.log(`${user.name} has ${posts.length} posts`);
+const user = await User.init('user-id-here');
+if (user) {
+  // Load related posts
+  const posts = await user.loadHasMany('posts');
+  console.log(`${user.name} has ${posts.length} posts`);
+}
 
 // Load a post with its author
-const post = new Post();
-await post.load('post-id-here');
-
-const author = await post.loadBelongsTo('author');
-console.log(`Post "${post.title}" by ${author.name}`);
+const post = await Post.init('post-id-here');
+if (post) {
+  const author = await post.loadBelongsTo('author');
+  console.log(`Post "${post.title}" by ${author.name}`);
+}
 ```
 
 ## Error Handling
@@ -382,13 +382,15 @@ console.log(`Post "${post.title}" by ${author.name}`);
 Always wrap database operations in try-catch blocks:
 
 ```typescript
-try {
-  const user = new User();
-  await user.load('non-existent-id');
-} catch (error) {
-  if (error.message.includes('not found')) {
-    console.log('User not found');
-  } else {
+// Using init() returns null if document not found
+const user = await User.init('non-existent-id');
+if (!user) {
+  console.log('User not found');
+} else {
+  try {
+    // Work with user
+    await user.save();
+  } catch (error) {
     console.error('Database error:', error);
   }
 }
@@ -466,11 +468,11 @@ async function main() {
     console.log('✅ Post created:', post.getId());
 
     // Load user with their posts
-    const userWithPosts = new User();
-    await userWithPosts.load(user.getId());
-    const posts = await userWithPosts.loadHasMany('posts');
-
-    console.log(`✅ ${userWithPosts.name} has ${posts.length} post(s)`);
+    const userWithPosts = await User.init(user.getId());
+    if (userWithPosts) {
+      const posts = await userWithPosts.loadHasMany('posts');
+      console.log(`✅ ${userWithPosts.name} has ${posts.length} post(s)`);
+    }
 
     // Query all users
     const allUsers = await User.getAll();
