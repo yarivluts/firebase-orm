@@ -4,6 +4,7 @@
  */
 
 import { FirestoreOrmRepository } from './repository';
+import { setupAdminSDKQueryCompatibility } from './query';
 
 // Admin SDK types using conditional import types
 type AdminApp = import('firebase-admin/app').App;
@@ -144,6 +145,13 @@ export async function initializeAdminApp(adminApp: AdminApp, key: string = Fires
         
         // Setup Admin SDK compatibility wrapper
         setupAdminSDKWrapper(connection as any, repository);
+
+        // Force admin-mode query functions. Without this, if the client SDK
+        // was importable when query.ts first loaded (common in fullstack
+        // bundles), the module-level query/where/orderBy stay locked on the
+        // client implementations and crash on Admin refs with e.g.
+        // `TypeError: <ref>._freezeSettings is not a function`.
+        setupAdminSDKQueryCompatibility();
         
         // Mark as ready immediately for Admin SDK
         (FirestoreOrmRepository as any).isReady = true;
