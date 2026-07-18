@@ -121,7 +121,13 @@ export function setupAdminSDKQueryCompatibility(): void {
         apply: (ref: any) => ref.where(field, op, value)
     })) as any;
     
-    collectionGroup = ((collectionId: string) => {
+    collectionGroup = ((...args: any[]) => {
+        // getFirestoreQuery calls this with the CLIENT SDK's two-arg
+        // signature collectionGroup(firestore, collectionId); accepting only
+        // (collectionId) passed a Firestore instance into
+        // firestore.collectionGroup(), crashing every admin collection-group
+        // query with `collectionId.indexOf is not a function`. Accept both.
+        const collectionId = typeof args[0] === 'string' ? args[0] : args[1];
         const connection = FirestoreOrmRepository.getGlobalConnection();
         const firestore = connection.getFirestore() as any;
         return firestore.collectionGroup(collectionId);

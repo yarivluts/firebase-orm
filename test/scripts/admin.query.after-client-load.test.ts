@@ -41,3 +41,16 @@ describe('Admin SDK query compatibility after client SDK load', () => {
     expect(typeof firestoreQuery.get).toBe('function');
   });
 });
+
+describe('Admin SDK collection-group queries after client SDK load', () => {
+  it('builds collection-group queries with the client two-arg collectionGroup signature', async () => {
+    // initializeAdminApp already ran in the sibling describe via the shared
+    // module state; building a CG query goes through the admin collectionGroup
+    // shim, which must tolerate getFirestoreQuery's client-SDK call shape
+    // collectionGroup(firestore, collectionId).
+    const { Member } = await import('../model/member');
+    const cgQuery = Member.collectionQuery().where('name', '==', 'x').getFirestoreQuery() as any;
+    expect(cgQuery).toBeDefined();
+    expect(typeof cgQuery.get).toBe('function');
+  });
+});
