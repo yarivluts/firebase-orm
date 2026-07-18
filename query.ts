@@ -39,9 +39,18 @@ function isAdminFirestore(firestore: any): boolean {
 }
 
 /**
- * Setup Admin SDK compatibility for query functions
+ * Setup Admin SDK compatibility for query functions.
+ *
+ * Exported (as an internal API) so the `admin` entry point can force admin
+ * mode from `initializeAdminApp`: `lazyLoadFirestoreImports()` below runs at
+ * module-load time, usually *before* any connection exists, and in
+ * environments where the client SDK is importable (e.g. a Next.js server
+ * bundle that also ships `firebase/firestore` for the browser) it locks the
+ * module-level `query`/`where`/`orderBy`/... onto the client implementations.
+ * Running those against Admin SDK refs later crashes with errors like
+ * `TypeError: <ref>._freezeSettings is not a function`.
  */
-function setupAdminSDKQueryCompatibility(): void {
+export function setupAdminSDKQueryCompatibility(): void {
     console.log("Setting up Admin SDK query compatibility");
     
     endAt = ((...values: any[]) => ({
@@ -112,7 +121,13 @@ function setupAdminSDKQueryCompatibility(): void {
         apply: (ref: any) => ref.where(field, op, value)
     })) as any;
     
-    collectionGroup = ((collectionId: string) => {
+    collectionGroup = ((...args: any[]) => {
+        // getFirestoreQuery calls this with the CLIENT SDK's two-arg
+        // signature collectionGroup(firestore, collectionId); accepting only
+        // (collectionId) passed a Firestore instance into
+        // firestore.collectionGroup(), crashing every admin collection-group
+        // query with `collectionId.indexOf is not a function`. Accept both.
+        const collectionId = typeof args[0] === 'string' ? args[0] : args[1];
         const connection = FirestoreOrmRepository.getGlobalConnection();
         const firestore = connection.getFirestore() as any;
         return firestore.collectionGroup(collectionId);
